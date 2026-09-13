@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thalys-shell-v0.25';
+const CACHE_NAME = 'thalys-shell-v0.26';
 
 const APP_SHELL = [
   './',
@@ -8,10 +8,10 @@ const APP_SHELL = [
   './css/thalys.css?v=024',
   './js/tailwind-config.js?v=015',
   './js/theme-bootstrap.js?v=015',
-  './js/local-db.js?v=023',
-  './js/ui-foundation.js?v=0241',
-  './js/google-auth.js?v=0241',
-  './js/drive.js?v=025',
+  './js/local-db.js?v=026',
+  './js/ui-foundation.js?v=026',
+  './js/drive.js?v=026',
+  './js/auth.js?v=026',
   './js/app-core.js?v=025',
   './js/oauth-ui.js?v=015',
   './js/media-tools.js?v=025',

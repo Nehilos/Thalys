@@ -1,4 +1,25 @@
-    async function findDriveFolder(name,parentId=null){
+// Thalys v0.26 - Google Drive module
+// Drive I/O, workspace, synchronization state and Drive connection status live here.
+
+let driveSyncTimer = null, driveSyncRunning = false, driveSyncQueued = false, driveRefreshRunning = false;
+let driveFolders = null, lastDriveSyncAt = Number(localStorage.getItem('thalys_last_drive_sync') || 0) || null, driveDirty = localStorage.getItem('thalys_drive_dirty')==='1';
+let lastSyncError = null;
+
+const DRIVE_DB_NAMES = ['thalys_manifest.json','app_state.json','nutrition_targets.json','workouts.json','workout_history.json','meal_history.json','active_plan_history.json','workout_plans.json','nutrition.json','alim_database.json','body_metrics.json','wellness_data.json','water.json','foto_index.json','foto_profilo.json','messages.json','meditation.json','consultations.json','ai_consults.json','lang_it.json','lang_en.json','lang_es.json','lang_pt.json','lang_ro.json'];
+
+function escapeDriveQuery(v){ return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function setDriveStatus(mode='idle', text){
+  const icon=document.getElementById('sync-icon'), label=document.getElementById('sync-text');
+  if(mode==='saving'){ if(icon) icon.className='fa-solid fa-cloud-arrow-up text-amber-400'; if(label) label.textContent=text||'Salvataggio…'; }
+  else if(mode==='error'){ if(icon) icon.className='fa-solid fa-cloud-exclamation text-rose-400'; if(label) label.textContent=text||'Sync errore'; }
+  else if(mode==='ok'){ if(icon) icon.className='fa-solid fa-cloud-check text-emerald-400'; if(label) label.textContent=text||'Sincronizzato'; }
+  else { if(icon) icon.className='fa-solid fa-cloud text-slate-500'; if(label) label.textContent=text||'Locale'; }
+  if(typeof updateSyncStatus==='function') updateSyncStatus(mode==='ok' || (typeof getAccessToken==='function' && !!getAccessToken()));
+  const detail=document.getElementById('cloud-user-status');
+  if(detail && typeof getAccessToken==='function' && getAccessToken()) detail.textContent=text || (lastDriveSyncAt ? `Drive sincronizzato ${new Date(lastDriveSyncAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` : 'Google Drive · Thalys App attivo');
+}
+
+async function findDriveFolder(name,parentId=null){
       const q=parentId?`'${parentId}' in parents and name='${escapeDriveQuery(name)}' and mimeType='application/vnd.google-apps.folder' and trashed=false`:`name='${escapeDriveQuery(name)}' and mimeType='application/vnd.google-apps.folder' and trashed=false and 'root' in parents`;
       const r=await gapi.client.drive.files.list({q,fields:'files(id,name,modifiedTime)',pageSize:20}); return (r.result.files||[])[0]||null;
     }

@@ -1,4 +1,4 @@
-# Thalys v0.25
+# Thalys v0.26
 
 Questa versione aggiunge:
 - ripristino automatico della connessione Google Drive dopo l'accesso/reapertura quando il token e ancora valido;
@@ -22,7 +22,7 @@ Questa versione mantiene struttura HTML, login, Google Drive e funzioni nello st
   - `ui-foundation.js`: gestisce viewport mobile e funzioni UI di base;
   - `pwa-register.js`: registra il service worker già previsto dall'app.
 - La parte Google è stata estratta dal file HTML e divisa in:
-  - `google-auth.js`: configurazione Google, token, login, logout e stato condiviso della connessione;
+  - `auth.js`: login Google, OAuth, token, sessione, ripristino automatico e logout;
   - `drive.js`: cartelle, database JSON, sincronizzazione, backup, importazione e cestino di Google Drive.
 - Il nuovo `media-tools.js` contiene il blocco dedicato a:
   - caricamento e gestione delle foto progresso;
@@ -152,3 +152,13 @@ Se uno di questi controlli fallisce, torna alla versione GitHub precedente e ann
 - Foto e strumenti media non eseguono piu chiamate dirette alle API Drive: usano helper centralizzati.
 - Nessuna modifica intenzionale a login, dati, sincronizzazione offline/online o interfaccia.
 - Cache PWA aggiornata alla v0.25.
+
+
+## v0.26 - Autenticazione separata
+
+- Creato `js/auth.js` come unico modulo responsabile di login Google, OAuth, token, sessione ricordata, schermata di accesso e ripristino automatico all'avvio.
+- Rimossa la vecchia dipendenza `js/google-auth.js`.
+- La logica Google che era ancora dentro `ui-foundation.js` è stata estratta in `auth.js`.
+- `drive.js` possiede ora lo stato di sincronizzazione Drive e gli indicatori Drive; Auth e Drive restano separati ma collaborano durante il bootstrap.
+- Nessuna modifica intenzionale al comportamento utente di login, offline, riconnessione o sincronizzazione.
+- Cache PWA aggiornata alla v0.26.
