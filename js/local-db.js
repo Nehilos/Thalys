@@ -91,9 +91,9 @@
 
   async function warmOfflineAppShell() {
     if (!window.caches || !window.isSecureContext) return 0;
-    const urls = ['./', './index.html', './manifest.json', './css/thalys.css?v=016', './js/local-db.js?v=027', './js/ui-foundation.js?v=027', './js/drive.js?v=027', './js/auth.js?v=027', './js/app-core.js?v=027', './js/meditation.js?v=027', './js/app-enhancements.js?v=027'];
-    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.27').map(k=>caches.delete(k)));}catch(_){}
-    const cache = await caches.open('thalys-manual-offline-v0.27');
+    const urls = ['./', './index.html', './manifest.json', './css/thalys.css?v=016', './js/local-db.js?v=028', './js/ui-foundation.js?v=028', './js/drive.js?v=028', './js/auth.js?v=028', './js/app-core.js?v=028', './js/body.js?v=028', './js/meditation.js?v=028', './js/app-enhancements.js?v=028'];
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.28').map(k=>caches.delete(k)));}catch(_){}
+    const cache = await caches.open('thalys-manual-offline-v0.28');
     let saved = 0;
     for (const url of urls) {
       try { await cache.add(url); saved += 1; } catch (_) {}
