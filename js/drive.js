@@ -1,4 +1,4 @@
-// Thalys v0.28.1 - Google Drive module
+// Thalys v0.28.3 - Google Drive module
 // Drive I/O, workspace, synchronization state and Drive connection status live here.
 
 let driveSyncTimer = null, driveSyncRunning = false, driveSyncQueued = false, driveRefreshRunning = false;

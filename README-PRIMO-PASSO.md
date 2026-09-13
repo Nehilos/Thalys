@@ -1,4 +1,12 @@
-# Thalys v0.28.2
+# Thalys v0.28.3
+
+
+## v0.28.3 - Startup/TDZ consistency fix
+
+- `homeSelectedDate` e `analyticsSelectedDate` vengono inizializzate all'inizio di `app-core.js`, prima di qualsiasi percorso di bootstrap/rendering che possa usarle.
+- Cache PWA e cache offline manuale allineate alla stessa versione (`0.28.3` / query `0283`).
+- `language.js` incluso anche nella preparazione manuale della modalità offline.
+- Nessuna modifica funzionale intenzionale a Corpo, Meditazione, Drive, Auth o dati.
 
 Questa versione aggiunge:
 - ripristino automatico della connessione Google Drive dopo l'accesso/reapertura quando il token e ancora valido;

@@ -1,4 +1,4 @@
-// Thalys v0.28.1 - Meditation module
+// Thalys v0.28.3 - Meditation module
 // Extracted from app-core.js without changing behavior.
 // Owns meditation timer, breathing, mindfulness, body scan, gratitude and ambient sound UI.
 

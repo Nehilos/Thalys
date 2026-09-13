@@ -1,4 +1,4 @@
-// Thalys v0.28.1 - Body module
+// Thalys v0.28.3 - Body module
 // Owns profile/body metrics, BMI/BMR, avatar, measurement history and progress photos.
 
     // ----------------------------------------------------

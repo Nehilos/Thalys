@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thalys-shell-v0.28.2';
+const CACHE_NAME = 'thalys-shell-v0.28.3';
 
 const APP_SHELL = [
   './',
@@ -8,18 +8,18 @@ const APP_SHELL = [
   './css/thalys.css?v=024',
   './js/tailwind-config.js?v=015',
   './js/theme-bootstrap.js?v=015',
-  './js/local-db.js?v=0282',
-  './js/ui-foundation.js?v=0282',
-  './js/language.js?v=0282',
-  './js/drive.js?v=0282',
-  './js/auth.js?v=0282',
-  './js/app-core.js?v=0282',
-  './js/body.js?v=0282',
-  './js/meditation.js?v=0282',
+  './js/local-db.js?v=0283',
+  './js/ui-foundation.js?v=0283',
+  './js/language.js?v=0283',
+  './js/drive.js?v=0283',
+  './js/auth.js?v=0283',
+  './js/app-core.js?v=0283',
+  './js/body.js?v=0283',
+  './js/meditation.js?v=0283',
   './js/oauth-ui.js?v=015',
   './js/media-tools.js?v=025',
   './js/pwa-register.js?v=015',
-  './js/app-enhancements.js?v=0282',
+  './js/app-enhancements.js?v=0283',
   './lang/lang_it.json?v=23',
   './lang/lang_en.json?v=23',
   './lang/lang_es.json?v=23',

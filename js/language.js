@@ -1,4 +1,4 @@
-// Thalys v0.28.2 - Language engine
+// Thalys v0.28.3 - Language engine
 // Loaded before Drive so language state is initialized before automatic Drive reconnect.
 
 /* ===== External language packs =====

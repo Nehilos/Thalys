@@ -1,5 +1,13 @@
 
     // Global Application State Default Structure
+    // Shared date state must exist before any bootstrap/render path can reference it.
+    // Keeping these declarations at the top prevents Safari/WebKit temporal-dead-zone errors.
+
+    // Shared date state must exist before any bootstrap/render path can reference it.
+    // Keeping these declarations at the top prevents Safari/WebKit temporal-dead-zone errors.
+    let homeSelectedDate = new Date().toISOString().split('T')[0];
+    let analyticsSelectedDate = new Date().toISOString().split('T')[0];
+
     const DEFAULT_STATE = {
       profile: { gender: 'male', age: 25, height: 175, sleepHours: 7, lifestyle: 'moderato' },
       profilePhoto: null,
@@ -1719,7 +1727,6 @@ if(c)c.innerHTML='';
     function updateDateLabels(){
       const pairs=[['workout-date','workout-weekday'],['nutrition-date','nutrition-weekday'],['body-date','body-weekday'],['wellness-date','wellness-weekday']];pairs.forEach(([input,label])=>{const i=document.getElementById(input),l=document.getElementById(label);if(i&&l)l.textContent=weekdayLabel(i.value);});
     }
-    let homeSelectedDate = new Date().toISOString().split('T')[0];
 
     function setHomeDate(date){
       if(!date) return;
@@ -2284,7 +2291,6 @@ if(c)c.innerHTML='';
     // ----------------------------------------------------
     // ANALYTICS & CHARTS (Chart.js)
     // ----------------------------------------------------
-    let analyticsSelectedDate = new Date().toISOString().split('T')[0];
     function setAnalyticsDate(date){if(!date)return;analyticsSelectedDate=date;const p=document.getElementById('analytics-date-picker');if(p)p.value=date;const l=document.getElementById('analytics-date-label');if(l)l.textContent=weekdayLabel(date);renderWellnessSummary();updateAnalyticsCharts();}
     let chartEx = null;
     let chartWeight = null;
