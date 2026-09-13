@@ -1,4 +1,4 @@
-// Thalys v0.28.3 - Authentication and session module
+// Thalys v0.28.4 - Authentication and session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -80,7 +80,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         await initializeDriveWorkspace();
         if(window.thalysNeedsDriveReconnectSync&&typeof syncAfterNetworkRestore==='function')await syncAfterNetworkRestore();
         else await refreshFromDrive(false,true);
-        if(typeof renderAllViews==='function')renderAllViews();
+        if(typeof runWhenThalysCoreReady==='function')runWhenThalysCoreReady(()=>{if(typeof renderAllViews==='function')renderAllViews();});
         unlockApp();
         window.thalysRefreshAfterGoogleReconnect=false;
         if(typeof resetAppDatesToToday==='function')resetAppDatesToToday(true);

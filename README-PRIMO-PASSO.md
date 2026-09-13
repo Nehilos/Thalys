@@ -1,10 +1,10 @@
-# Thalys v0.28.3
+# Thalys v0.28.4
 
 
-## v0.28.3 - Startup/TDZ consistency fix
+## v0.28.4 - Startup/TDZ consistency fix
 
 - `homeSelectedDate` e `analyticsSelectedDate` vengono inizializzate all'inizio di `app-core.js`, prima di qualsiasi percorso di bootstrap/rendering che possa usarle.
-- Cache PWA e cache offline manuale allineate alla stessa versione (`0.28.3` / query `0283`).
+- Cache PWA e cache offline manuale allineate alla stessa versione (`0.28.4` / query `0284`).
 - `language.js` incluso anche nella preparazione manuale della modalità offline.
 - Nessuna modifica funzionale intenzionale a Corpo, Meditazione, Drive, Auth o dati.
 
@@ -182,3 +182,10 @@ Se uno di questi controlli fallisce, torna alla versione GitHub precedente e ann
 
 ## Architettura v0.28.2
 La logica Corpo è stata separata in `js/body.js` (profilo, misure, BMI/BMR, avatar, storico misure e foto progresso). La logica Analytics resta in `app-core.js` per il passaggio dedicato successivo.
+
+
+## v0.28.4 startup audit
+- normalizeProfileGenderValue moved into app-core before appState normalization.
+- Core/body/meditation now load before Drive/Auth bootstrap.
+- Added core-ready barrier to prevent early render callbacks.
+- Full classic-script evaluation order tested before packaging.

@@ -8,6 +8,15 @@
     let homeSelectedDate = new Date().toISOString().split('T')[0];
     let analyticsSelectedDate = new Date().toISOString().split('T')[0];
 
+    // v0.28.4 startup safety: this helper must exist before appState normalization.
+    // It used to live in body.js, which is loaded after app-core.js.
+    function normalizeProfileGenderValue(gender){
+      const v=String(gender||'').trim().toLowerCase();
+      return ['female','femmina','donna','woman','mujer','mulher','femeie','f'].includes(v)?'female':'male';
+    }
+    window.normalizeProfileGenderValue = normalizeProfileGenderValue;
+    window.__THALYS_APP_CORE_READY__ = false;
+
     const DEFAULT_STATE = {
       profile: { gender: 'male', age: 25, height: 175, sleepHours: 7, lifestyle: 'moderato' },
       profilePhoto: null,
@@ -2522,4 +2531,7 @@ if(c)c.innerHTML='';
         showToast('Dati resettati');
       }
     }
-  
+
+    // Core finished evaluating successfully. External modules may now render safely.
+    window.__THALYS_APP_CORE_READY__ = true;
+    window.dispatchEvent(new CustomEvent('thalys:core-ready'));

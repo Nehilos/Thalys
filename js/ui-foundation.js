@@ -1,4 +1,13 @@
 
+
+// v0.28.4: prevent Drive/Auth/UI callbacks from rendering a partially initialized core.
+function runWhenThalysCoreReady(callback){
+  if(typeof callback!=='function')return;
+  if(window.__THALYS_APP_CORE_READY__===true){callback();return;}
+  window.addEventListener('thalys:core-ready',()=>callback(),{once:true});
+}
+window.runWhenThalysCoreReady=runWhenThalysCoreReady;
+
       function updateViewportHeight() {
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--app-vh', `${vh}px`);
@@ -32,7 +41,7 @@
         }
         if (typeof getAccessToken === 'function' && getAccessToken()) {
           if (typeof refreshFromDrive === 'function') await refreshFromDrive(true, true);
-          if (typeof renderAllViews === 'function') renderAllViews();
+          if(typeof runWhenThalysCoreReady==='function')runWhenThalysCoreReady(()=>{if(typeof renderAllViews==='function')renderAllViews();});
           showToast('Rete presente · pagine aggiornate ✓', 'fa-wifi');
           return;
         }
@@ -56,7 +65,7 @@
         const returningFromOffline=thalysWasOffline||window.thalysOfflineSessionActive;
         thalysWasOffline = false;
         window.thalysOfflineSessionActive = false;
-        if (typeof renderAllViews === 'function') renderAllViews();
+        if(typeof runWhenThalysCoreReady==='function')runWhenThalysCoreReady(()=>{if(typeof renderAllViews==='function')renderAllViews();});
         if (typeof updateSyncStatus === 'function') updateSyncStatus();
         if(returningFromOffline)showToast('modalità online attivata');
         setTimeout(()=>{

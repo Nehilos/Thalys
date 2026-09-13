@@ -1,4 +1,4 @@
-// Thalys v0.28.3 - Body module
+// Thalys v0.28.4 - Body module
 // Owns profile/body metrics, BMI/BMR, avatar, measurement history and progress photos.
 
     // ----------------------------------------------------
@@ -353,11 +353,6 @@
       document.getElementById('avatar-measure-toggle')?.classList.toggle('active',avatarShowMeasures);
       appState.avatar={...(appState.avatar||{}),showMeasures:avatarShowMeasures};saveStateToLocal();
     }
-    function normalizeProfileGenderValue(gender){
-      const v=String(gender||'').trim().toLowerCase();
-      return ['female','femmina','donna','woman','mujer','mulher','femeie','f'].includes(v)?'female':'male';
-    }
-
     function setProfileGender(gender,{sync=true}={}){
       const value=normalizeProfileGenderValue(gender);
       appState.profile={...(appState.profile||{}),gender:value,updatedAt:new Date().toISOString()};

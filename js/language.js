@@ -1,4 +1,4 @@
-// Thalys v0.28.3 - Language engine
+// Thalys v0.28.4 - Language engine
 // Loaded before Drive so language state is initialized before automatic Drive reconnect.
 
 /* ===== External language packs =====
@@ -86,7 +86,7 @@ async function setAppLanguage(lang,{silent=false}={}){
   document.documentElement.lang=appLanguage;
   const sel=document.getElementById('app-language-select');if(sel&&sel.value!==appLanguage)sel.value=appLanguage;
   // Re-render first so all dynamic strings are recreated from canonical data.
-  renderAllViews();
+  if(typeof runWhenThalysCoreReady==='function')runWhenThalysCoreReady(()=>{if(typeof renderAllViews==='function')renderAllViews();});
   renderHelpTree(activeHelpKey);
   translateElementTree(document.body);
   setTimeout(()=>translateElementTree(document.body),40);
