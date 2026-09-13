@@ -1,12 +1,14 @@
 (function () {
-  const DB_NAME = 'Thalys App';
-  const DB_VERSION = 1;
-  const STORE_NAME = 'files';
+  const STORAGE_CONFIG = window.ThalysStorage?.CONFIG;
+  const DB_NAME = STORAGE_CONFIG?.dbName || 'Thalys App';
+  const DB_VERSION = STORAGE_CONFIG?.dbVersion || 2;
+  const STORE_NAME = STORAGE_CONFIG?.stores?.files || 'files';
   const READY_KEY = 'thalys_offline_storage_ready_v2';
 
   function openLocalDatabase() {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = window.ThalysStorage?.open ? null : indexedDB.open(DB_NAME, DB_VERSION);
+      if (window.ThalysStorage?.open) { window.ThalysStorage.open().then(resolve, reject); return; }
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'name' });
@@ -91,9 +93,9 @@
 
   async function warmOfflineAppShell() {
     if (!window.caches || !window.isSecureContext) return 0;
-    const urls = ['./', './index.html', './manifest.json', './css/thalys.css?v=016', './js/local-db.js?v=031', './js/ui-foundation.js?v=031', './js/language.js?v=031', './js/drive.js?v=031', './js/auth.js?v=031', './js/app-core.js?v=031', './js/body.js?v=031', './js/meditation.js?v=031', './js/nutrition.js?v=031', './js/workout.js?v=031', './js/home.js?v=031', './js/analytics.js?v=031', './js/app-enhancements.js?v=031'];
-    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.31').map(k=>caches.delete(k)));}catch(_){}
-    const cache = await caches.open('thalys-manual-offline-v0.31');
+    const urls = ['./', './index.html', './manifest.json', './css/thalys.css?v=016', './js/storage-manager.js?v=032', './js/local-db.js?v=032', './js/ui-foundation.js?v=032', './js/language.js?v=032', './js/drive.js?v=032', './js/auth.js?v=032', './js/app-core.js?v=032', './js/body.js?v=032', './js/meditation.js?v=032', './js/nutrition.js?v=032', './js/workout.js?v=032', './js/home.js?v=032', './js/analytics.js?v=032', './js/app-enhancements.js?v=032'];
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.32').map(k=>caches.delete(k)));}catch(_){}
+    const cache = await caches.open('thalys-manual-offline-v0.32');
     let saved = 0;
     for (const url of urls) {
       try { await cache.add(url); saved += 1; } catch (_) {}
