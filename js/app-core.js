@@ -277,10 +277,6 @@
       if(!r.ok)throw new Error(`LANG_HTTP_${r.status}`);
       return await r.json();
     }
-    async function fetchDriveLanguagePack(lang){
-      if(!getAccessToken()||!driveFolders?.databaseFolderId)return null;
-      try{return await readDriveJSON(LANG_FILES[lang],driveFolders.databaseFolderId);}catch(e){console.warn('Drive language pack',lang,e);return null;}
-    }
     async function loadLanguagePack(lang){
       lang=APP_LOCALES[lang]?lang:'it';
       if(languageCache[lang])return languageCache[lang];
@@ -297,38 +293,6 @@
       return pack;
     }
 
-    async function refreshCurrentLanguageFromDrive(){
-      if(!getAccessToken()||!driveFolders?.databaseFolderId)return;
-      try{
-        const remote=await fetchDriveLanguagePack(appLanguage);
-        if(remote&&typeof remote==='object'){
-          remote.locale=remote.locale||APP_LOCALES[appLanguage];remote.phrases=remote.phrases||{};remote.words=remote.words||[];remote.keys=remote.keys||{};
-          languageCache[appLanguage]=remote;languagePack=remote;
-          try{localStorage.setItem(`thalys_lang_pack_${appLanguage}_v22`,JSON.stringify(remote))}catch(_){}
-          renderAllViews();renderHelpTree(activeHelpKey);translateElementTree(document.body);
-        }
-      }catch(e){console.warn('Refresh language pack from Drive',e)}
-    }
-
-    async function ensureLanguagePacksOnDrive(){
-      if(!getAccessToken()||!driveFolders?.databaseFolderId)return;
-      try{
-        const current=await listDatabaseFiles(driveFolders.databaseFolderId),names=new Set(current.map(f=>f.name));
-        for(const lang of Object.keys(LANG_FILES)){
-          try{
-            const shipped=await fetchLocalLanguagePack(lang);
-            let shouldUpload=!names.has(LANG_FILES[lang]);
-            if(!shouldUpload){
-              try{
-                const remote=await readDriveJSON(LANG_FILES[lang],driveFolders.databaseFolderId);
-                shouldUpload=Number(remote?.version||0)<Number(shipped?.version||0);
-              }catch(_){shouldUpload=true}
-            }
-            if(shouldUpload)await uploadDriveFile(LANG_FILES[lang],JSON.stringify(shipped),'application/json',driveFolders.databaseFolderId,true);
-          }catch(e){console.warn('Language pack Drive sync',lang,e)}
-        }
-      }catch(e){console.warn('Language pack Drive sync',e)}
-    }
     function translateElementTree(root=document.body){
       if(languageMutationLock||!root)return;
       languageMutationLock=true;

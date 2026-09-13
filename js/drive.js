@@ -29,6 +29,25 @@
     }
     async function readDriveJSON(name,parentId){const f=await findDriveFile(name,parentId);if(!f)return null;const r=await gapi.client.drive.files.get({fileId:f.id,alt:'media'});let d=r.body;try{if(typeof d==='string')d=JSON.parse(d);}catch(e){throw new Error(`JSON non valido: ${name}`)}return d;}
 
+    // v0.25: low-level Google Drive I/O is centralized here.
+    async function listDriveImageFiles(parentId,pageSize=100){
+      if(!parentId)return[];
+      const q=`'${parentId}' in parents and trashed=false and mimeType contains 'image/'`;
+      const resp=await gapi.client.drive.files.list({q,fields:'files(id,name,mimeType,createdTime,modifiedTime)',orderBy:'createdTime desc',pageSize});
+      return resp.result.files||[];
+    }
+    async function downloadDriveFileBlob(fileId){
+      const token=getAccessToken();if(!token){const e=new Error('AUTH_REQUIRED');e.code='AUTH_REQUIRED';throw e;}
+      let r;try{r=await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{headers:{Authorization:`Bearer ${token}`}});}catch(err){err.code=navigator.onLine?'NETWORK_ERROR':'OFFLINE';throw err;}
+      if(!r.ok){const e=new Error(`Drive download ${r.status}`);e.status=r.status;e.code=r.status===401?'AUTH_EXPIRED':r.status===404?'NOT_FOUND':'DRIVE_HTTP';throw e;}
+      return r.blob();
+    }
+    window.listDriveImageFiles=listDriveImageFiles;
+    window.downloadDriveFileBlob=downloadDriveFileBlob;
+    function getDriveMediaUrl(fileId){return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=`;}
+    window.getDriveMediaUrl=getDriveMediaUrl;
+
+
     async function initializeDriveWorkspace(){
       if(!getAccessToken())return null;
       if(!driveFolders){
@@ -413,3 +432,51 @@
 
     window.addEventListener('load',()=>{setTimeout(()=>{if(window.google?.accounts?.oauth2&&!gisInited)gisLoaded();if(window.gapi&&!gapiInited)gapiLoaded();},150);setTimeout(()=>{try{const p=JSON.parse(sessionStorage.getItem('gymbro_google_profile')||'null');if(getAccessToken())updateAuthUI(p);}catch(e){}},1200);});
   
+
+
+    // ===== v0.25: language synchronization with Drive (moved from app-core.js) =====
+    async function fetchDriveLanguagePack(lang){
+      if(!getAccessToken()||!driveFolders?.databaseFolderId)return null;
+      try{return await readDriveJSON(LANG_FILES[lang],driveFolders.databaseFolderId);}catch(e){console.warn('Drive language pack',lang,e);return null;}
+    }
+    async function refreshCurrentLanguageFromDrive(){
+      if(!getAccessToken()||!driveFolders?.databaseFolderId)return;
+      try{
+        const remote=await fetchDriveLanguagePack(appLanguage);
+        if(remote&&typeof remote==='object'){
+          remote.locale=remote.locale||APP_LOCALES[appLanguage];remote.phrases=remote.phrases||{};remote.words=remote.words||[];remote.keys=remote.keys||{};
+          languageCache[appLanguage]=remote;languagePack=remote;
+          try{localStorage.setItem(`thalys_lang_pack_${appLanguage}_v22`,JSON.stringify(remote))}catch(_){}
+          renderAllViews();renderHelpTree(activeHelpKey);translateElementTree(document.body);
+        }
+      }catch(e){console.warn('Refresh language pack from Drive',e)}
+    }
+
+    async function ensureLanguagePacksOnDrive(){
+      if(!getAccessToken()||!driveFolders?.databaseFolderId)return;
+      try{
+        const current=await listDatabaseFiles(driveFolders.databaseFolderId),names=new Set(current.map(f=>f.name));
+        for(const lang of Object.keys(LANG_FILES)){
+          try{
+            const shipped=await fetchLocalLanguagePack(lang);
+            let shouldUpload=!names.has(LANG_FILES[lang]);
+            if(!shouldUpload){
+              try{
+                const remote=await readDriveJSON(LANG_FILES[lang],driveFolders.databaseFolderId);
+                shouldUpload=Number(remote?.version||0)<Number(shipped?.version||0);
+              }catch(_){shouldUpload=true}
+            }
+            if(shouldUpload)await uploadDriveFile(LANG_FILES[lang],JSON.stringify(shipped),'application/json',driveFolders.databaseFolderId,true);
+          }catch(e){console.warn('Language pack Drive sync',lang,e)}
+        }
+      }catch(e){console.warn('Language pack Drive sync',e)}
+    }
+
+
+    // ===== v0.25: current Drive workspace/database implementation (moved from app-enhancements.js) =====
+/* Drive database payload and single first-run consent */
+function databasePayloads(){const {consultations:_c,aiConsults:_a,workoutHistory:_wh,activeWorkoutPlanHistory:_ph,...core}=appState||{};return {'thalys_manifest.json':{app:'Thalys',schemaVersion:8,updatedAt:new Date().toISOString(),databaseVersion:6},'app_state.json':{...core,photos:[],profilePhoto:null},'workouts.json':appState.workouts||[],'workout_history.json':appState.workoutHistory||[],'meal_history.json':appState.nutrition||[],'active_plan_history.json':appState.activeWorkoutPlanHistory||[],'workout_plans.json':{plans:(appState.workoutPlans||[]).map(normalizeWorkoutPlanV7),activePlanId:appState.activeWorkoutPlanId||null,assignments:appState.workoutAssignments||{},completions:appState.workoutCompletions||{},activeHistory:appState.activeWorkoutPlanHistory||[]},'nutrition.json':appState.nutrition||[],'alim_database.json':appState.presets||[],'body_metrics.json':appState.bodyMetrics||[],'wellness_data.json':appState.wellness||[],'water.json':appState.water||{},'foto_index.json':Object.fromEntries((appState.photos||[]).filter(p=>p.driveFileId).map(p=>[p.driveFileId,{id:p.driveFileId,name:p.driveName||'',date:p.date,updatedAt:p.updatedAt||null}])),'foto_profilo.json':appState.profilePhoto||null,'messages.json':appState.messages||[],'meditation.json':appState.meditation||[],'consultations.json':appState.consultations||[],'ai_consults.json':appState.aiConsults||[]};}
+const THALYS_REQUIRED_DB_V7=['thalys_manifest.json','app_state.json','nutrition_targets.json','workouts.json','workout_history.json','meal_history.json','active_plan_history.json','workout_plans.json','nutrition.json','alim_database.json','body_metrics.json','wellness_data.json','water.json','foto_index.json','foto_profilo.json','messages.json','meditation.json','consultations.json','ai_consults.json','lang_it.json','lang_en.json','lang_es.json','lang_pt.json','lang_ro.json'];
+async function ensureAllDriveDatabasesV7(initial=false){if(!driveFolders?.databaseFolderId)return[];const files=await listDatabaseFiles(driveFolders.databaseFolderId),have=new Set(files.map(x=>x.name)),missing=THALYS_REQUIRED_DB_V7.filter(x=>!have.has(x));if(!missing.length)return[];const p=databasePayloads(),made=[];for(const name of missing){try{let data=p[name];if(name.startsWith('lang_'))data=await (await fetch(`./lang/${name}?v=22`,{cache:'no-store'})).json();if(data===undefined)data=[];await uploadDriveFile(name,JSON.stringify(data),'application/json',driveFolders.databaseFolderId,true);made.push(name)}catch(e){console.warn(name,e)}}return made;}
+async function initializeDriveWorkspace(){if(!getAccessToken())return null;if(driveFolders?.databaseFolderId){const repaired=await ensureAllDriveDatabasesV7(false);if(repaired.length)showToast(`${tr('Ho ricreato i database mancanti')}: ${repaired.length}`,'fa-database');return driveFolders;}let root=await findDriveFolder('Thalys App'),fresh=false;if(!root){if(!confirm(tr('Thalys può creare una sola volta la propria cartella, tutti i database e le cartelle di servizio nel tuo Google Drive personale. Vuoi procedere?')))return null;root=await createDriveFolder('Thalys App',null);fresh=true;}let db=await findDriveFolder('database',root.id);if(!db)db=await createDriveFolder('database',root.id);let photos=await findDriveFolder('foto',root.id);if(!photos)photos=await createDriveFolder('foto',root.id);let backups=await findDriveFolder('backups',root.id);if(!backups)backups=await createDriveFolder('backups',root.id);driveFolders={appFolderId:root.id,databaseFolderId:db.id,photoFolderId:photos.id,backupFolderId:backups.id};const made=await ensureAllDriveDatabasesV7(fresh);if(fresh)showToast(tr('Struttura Thalys creata nel Drive ✓'),'fa-cloud-check');else if(made.length)showToast(`${tr('Ho ricreato i database mancanti')}: ${made.length}`,'fa-database');return driveFolders;}
+

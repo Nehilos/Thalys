@@ -36,7 +36,7 @@ function legacyRenderPhotoGallery(filterOpts) {
     const div = document.createElement('div');
     div.className = 'bg-slate-900/60 p-2 rounded-lg';
     const img = document.createElement('img');
-    img.src = `https://www.googleapis.com/drive/v3/files/${item.id}?alt=media&key=`; // Note: requires auth header; we'll open in new tab via preview link
+    img.src = getDriveMediaUrl(item.id); // Legacy renderer; endpoint ownership stays in drive.js.
     img.alt = item.name;
     img.style.width = '100%';
     const btnRow = document.createElement('div');
@@ -571,20 +571,6 @@ function saveRecognizedNutrition(e) {
 }
 
 
-async function moveFileToTrash(fileId) {
-  const token = (gapi.client.getToken() && gapi.client.getToken().access_token) || null;
-  if (!token) throw new Error('Not authorized');
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, { method:'PATCH', headers:{ 'Authorization':`Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ trashed: true }) });
-  if (!res.ok) throw new Error('Trash failed');
-  return await res.json();
-}
-
-async function permanentlyDeleteFile(fileId) {
-  const token = (gapi.client.getToken() && gapi.client.getToken().access_token) || null;
-  if (!token) throw new Error('Not authorized');
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, { method:'DELETE', headers:{ 'Authorization':`Bearer ${token}` } });
-  if (!res.ok) throw new Error('Delete failed');
-  return true;
-}
+// Drive trash/delete operations are centralized in js/drive.js (v0.25).
 
 // Lightweight autosave: meaningful app changes call saveStateToLocal(); input events are not uploaded per keystroke.

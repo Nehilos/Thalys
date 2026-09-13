@@ -1,4 +1,4 @@
-# Thalys v0.24
+# Thalys v0.25
 
 Questa versione aggiunge:
 - ripristino automatico della connessione Google Drive dopo l'accesso/reapertura quando il token e ancora valido;
@@ -142,3 +142,13 @@ Se uno di questi controlli fallisce, torna alla versione GitHub precedente e ann
 - Spostati fuori da `index.html` gli stili statici residui per viewport, modali e controlli.
 - Gli `style="width:0%"` dei progress bar restano intenzionalmente inline: sono stato iniziale che il JavaScript aggiorna a runtime.
 - Aggiornate le cache PWA alla v0.24.
+
+
+## v0.25 - Google Drive separato
+
+- Centralizzato in `js/drive.js` l'accesso diretto alle API Google Drive.
+- Spostata in `drive.js` la preparazione/riparazione della struttura `Thalys App/database`.
+- Spostata in `drive.js` la sincronizzazione dei pacchetti lingua con Drive.
+- Foto e strumenti media non eseguono piu chiamate dirette alle API Drive: usano helper centralizzati.
+- Nessuna modifica intenzionale a login, dati, sincronizzazione offline/online o interfaccia.
+- Cache PWA aggiornata alla v0.25.
