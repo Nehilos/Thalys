@@ -1,3 +1,13 @@
+# Thalys v0.29
+
+## v0.29 - Nutrition module separated
+
+- Estratta la logica Dieta in `js/nutrition.js`.
+- Include alimenti, database alimenti/preset, acqua, target nutrizionali, riepilogo settimanale e rendering Dieta.
+- Analytics generali e Consult/AI restano in `app-core.js` per rispettare la roadmap modulare.
+- Nessuna modifica intenzionale al formato dati o al comportamento di sincronizzazione.
+- Cache PWA e cache offline manuale aggiornate a v0.29.
+
 # Thalys v0.28.4
 
 
