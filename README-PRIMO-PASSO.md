@@ -1,4 +1,4 @@
-# Thalys v0.23
+# Thalys v0.24
 
 Questa versione aggiunge:
 - ripristino automatico della connessione Google Drive dopo l'accesso/reapertura quando il token e ancora valido;
@@ -133,3 +133,12 @@ Il server locale è preferibile al doppio clic su `index.html`, perché login, r
 - Da smartphone non compaiono elementi fuori schermo.
 
 Se uno di questi controlli fallisce, torna alla versione GitHub precedente e annota la schermata e l'azione che hanno prodotto il problema.
+
+
+## v0.24 - CSS separato
+- Basata sulla v0.23 stabile.
+- Nessun cambiamento funzionale intenzionale.
+- Confermato `css/thalys.css` come foglio di stile principale.
+- Spostati fuori da `index.html` gli stili statici residui per viewport, modali e controlli.
+- Gli `style="width:0%"` dei progress bar restano intenzionalmente inline: sono stato iniziale che il JavaScript aggiorna a runtime.
+- Aggiornate le cache PWA alla v0.24.

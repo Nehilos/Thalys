@@ -3304,3 +3304,31 @@
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px) !important;
   }
 }
+
+/* v0.24 - static presentation rules moved out of index.html.
+   Dynamic progress widths remain inline because JavaScript updates them at runtime. */
+#welcome-screen,
+#app-shell {
+  height: calc(var(--app-vh, 1vh) * 100);
+  min-height: calc(var(--app-vh, 1vh) * 100);
+}
+#meditation-date {
+  font-size: 12px;
+  font-weight: 800;
+}
+#avatar-source-female { display: none; }
+#consult-snapshot-modal {
+  left: 0;
+  right: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 4.6rem);
+}
+#messages-modal { z-index: 175; }
+#nutrition-info-modal,
+#water-target-modal { z-index: 130; }
+#body-history-modal { z-index: 140; }
+#profile-photo-modal { z-index: 170; }
+#gratitude-note-modal { z-index: 165; }
+#mind-info-modal { z-index: 160; }
+#breathing-modal { z-index: 145; }
+

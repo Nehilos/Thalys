@@ -1,11 +1,11 @@
-const CACHE_NAME = 'thalys-shell-v0.23';
+const CACHE_NAME = 'thalys-shell-v0.24';
 
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
   './assets/icons/thalys-app-icon-black.png',
-  './css/thalys.css?v=016',
+  './css/thalys.css?v=024',
   './js/tailwind-config.js?v=015',
   './js/theme-bootstrap.js?v=015',
   './js/local-db.js?v=023',
