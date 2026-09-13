@@ -142,11 +142,12 @@
         const label = document.getElementById('enter-app-label');
         const icon = document.getElementById('enter-app-icon');
         const note = document.getElementById('enter-app-note');
-        if (label) label.textContent = offline ? 'Continua offline' : 'Continua con Google';
+        const remembered = localStorage.getItem(THALYS_APP_SESSION_KEY) === '1' || !!localStorage.getItem(THALYS_PROFILE_KEY);
+        if (label) label.textContent = offline ? 'Continua offline' : (remembered ? 'Riconnetti con Google' : 'Continua con Google');
         if (icon) icon.className = offline ? 'fa-solid fa-cloud-arrow-down text-base' : 'fa-brands fa-google text-base';
         if (note) note.textContent = offline
           ? 'Userai i dati locali. Potrai riconnettere Google Drive quando torni online.'
-          : 'I tuoi dati restano nel tuo spazio Google Drive.';
+          : (remembered ? 'La sessione Drive deve essere rinnovata prima di entrare.' : 'I tuoi dati restano nel tuo spazio Google Drive.');
       }
 
       window.addEventListener('online', updateWelcomeConnectionUI, { passive: true });
@@ -158,29 +159,41 @@
         enterApp();
       }
 
+      function hasRememberedGoogleSession() {
+        return localStorage.getItem(THALYS_APP_SESSION_KEY) === '1' || !!localStorage.getItem(THALYS_PROFILE_KEY);
+      }
+
       function refreshAuthUIFromStorage() {
         const saved = localStorage.getItem('google_id_token') || sessionStorage.getItem('google_id_token');
-        if (!saved) {
-          if (typeof updateAuthUI === 'function') updateAuthUI(null);
-          if (localStorage.getItem(THALYS_APP_SESSION_KEY) === '1') {
+        const p = saved ? parseJwt(saved) : null;
+        if (p) {
+          try { localStorage.setItem(THALYS_PROFILE_KEY, JSON.stringify(p)); } catch (_) {}
+        }
+
+        // Offline-first: a previously authenticated installation may still open locally
+        // when there is no network. Online, however, we do NOT unlock the app until
+        // Google Drive has a valid access token and the databases have been connected.
+        if (!navigator.onLine) {
+          if (hasRememberedGoogleSession()) {
             unlockApp(false);
-            if (navigator.onLine && typeof requestGoogleAccessOnStartup === 'function') requestGoogleAccessOnStartup();
+            if (typeof updateAuthUI === 'function') updateAuthUI(p || null);
+            if (typeof setDriveStatus === 'function') setDriveStatus('error', 'Offline · dati locali');
+            if (typeof updateSyncStatus === 'function') updateSyncStatus(false);
+          } else {
+            lockApp();
           }
           return;
         }
 
-        const p = parseJwt(saved);
-        if (p) {
-          setCloudUserUI(p);
-          if (typeof updateAuthUI === 'function') updateAuthUI({ displayName: p.name || p.given_name || p.email, email: p.email });
-          updateSyncStatus(true);
-          localStorage.setItem(THALYS_PROFILE_KEY, JSON.stringify(p));
-          unlockApp(false);
-          if (navigator.onLine && typeof requestGoogleAccessOnStartup === 'function') requestGoogleAccessOnStartup();
-          return;
-        }
-
-        if (typeof updateAuthUI === 'function') updateAuthUI(null);
+        // Online startup: keep/show the initial access screen until google-auth.js
+        // restores a still-valid Drive token or completes Google authorization.
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const appShell = document.getElementById('app-shell');
+        if (appShell) appShell.classList.add('hidden');
+        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+        if (typeof updateAuthUI === 'function') updateAuthUI(p || null);
+        updateWelcomeConnectionUI();
+        if (typeof requestGoogleAccessOnStartup === 'function') requestGoogleAccessOnStartup();
       }
 
       (function initGoogle() {

@@ -68,7 +68,7 @@
     }
 
     function gapiLoaded(){ if(window.gapi) gapi.load('client',initializeGapiClient); }
-    async function initializeGapiClient(){ try{await gapi.client.init({discoveryDocs:[GYM_DISCOVERY_DOC,GYM_DISCOVERY_DOC_OAUTH2]});gapiInited=true;restoreCachedDriveAccessToken();maybeEnableButtons();requestGoogleAccessOnStartup();}catch(e){console.error(e);showToast('Google non disponibile al momento','fa-triangle-exclamation');} }
+    async function initializeGapiClient(){ try{await gapi.client.init({discoveryDocs:[GYM_DISCOVERY_DOC,GYM_DISCOVERY_DOC_OAUTH2]});gapiInited=true;const restored=restoreCachedDriveAccessToken();maybeEnableButtons();if(restored){setTimeout(()=>connectDriveAfterToken(true),50);}else{requestGoogleAccessOnStartup();}}catch(e){console.error(e);showToast('Google non disponibile al momento','fa-triangle-exclamation');} }
     function gisLoaded(){ if(!window.google?.accounts?.oauth2) return; const remembered=savedGoogleProfile();tokenClient=google.accounts.oauth2.initTokenClient({client_id:GYM_CLIENT_ID,scope:GYM_SCOPES,hint:remembered?.email||undefined,callback:()=>{}});gisInited=true;maybeEnableButtons();requestGoogleAccessOnStartup(); }
     function maybeEnableButtons(){const b=document.getElementById('google-login-btn');if(b)b.style.visibility=(gapiInited&&gisInited)?'visible':'visible';}
     function requestGoogleAccessOnStartup(){
@@ -87,13 +87,14 @@
       if(!navigator.onLine||!getAccessToken())return false;
       const profile=savedGoogleProfile()||await getGoogleProfile();
       if(profile&&Object.keys(profile).length){try{sessionStorage.setItem('gymbro_google_profile',JSON.stringify(profile));localStorage.setItem(AUTH_PROFILE_STORAGE_KEY,JSON.stringify(profile));}catch(_){}}
-      updateAuthUI(profile);unlockApp();
+      updateAuthUI(profile);
       try{
         setDriveStatus('saving','Collegamento ai database Drive…');
         await initializeDriveWorkspace();
         if(window.thalysNeedsDriveReconnectSync&&typeof syncAfterNetworkRestore==='function')await syncAfterNetworkRestore();
         else await refreshFromDrive(false,true);
         if(typeof renderAllViews==='function')renderAllViews();
+        unlockApp();
         window.thalysRefreshAfterGoogleReconnect=false;
         if(typeof resetAppDatesToToday==='function')resetAppDatesToToday(true);
         updateAuthUI(profile);
@@ -106,6 +107,7 @@
         if(status===401){if(window.gapi?.client)gapi.client.setToken('');clearCachedDriveAccessToken();startupAccessRequested=false;}
         setDriveStatus('error',navigator.onLine?'Drive da riconnettere':'Offline · dati locali');
         updateAuthUI(profile);
+        if(navigator.onLine&&typeof lockApp==='function')lockApp();
         return false;
       }
     }
