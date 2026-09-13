@@ -5,7 +5,7 @@
     dbName: 'Thalys App',
     dbVersion: 2,
     schemaVersion: 3,
-    syncProtocolVersion: 2,
+    syncProtocolVersion: 3,
     stores: Object.freeze({ files: 'files', meta: 'meta', snapshots: 'snapshots', syncQueue: 'sync_queue' })
   });
 
@@ -90,7 +90,7 @@
       },
       updatedAt: now
     });
-    await put(CONFIG.stores.meta, { key: 'versions', value: { appVersion: '0.34', dbVersion: CONFIG.dbVersion, schemaVersion: CONFIG.schemaVersion, syncProtocolVersion: CONFIG.syncProtocolVersion }, updatedAt: now });
+    await put(CONFIG.stores.meta, { key: 'versions', value: { appVersion: '0.35', dbVersion: CONFIG.dbVersion, schemaVersion: CONFIG.schemaVersion, syncProtocolVersion: CONFIG.syncProtocolVersion }, updatedAt: now });
     window.dispatchEvent(new CustomEvent('thalys:storage-ready', { detail: { deviceId, dbVersion: CONFIG.dbVersion } }));
     return { available: true, deviceId, dbVersion: CONFIG.dbVersion };
   }

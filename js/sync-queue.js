@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.34';
+  const APP_VERSION = '0.35';
   const STORE = 'sync_queue';
   const GLOBAL_STATE_ID_PREFIX = 'state:';
   let writeChain = Promise.resolve();

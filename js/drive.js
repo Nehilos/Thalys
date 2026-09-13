@@ -229,7 +229,18 @@ async function findDriveFolder(name,parentId=null){
       if(dedicatedAIConsults!==undefined)cloud.aiConsults=dedicatedAIConsults;if(dedicatedWorkoutHistory!==undefined)cloud.workoutHistory=dedicatedWorkoutHistory;if(dedicatedActivePlanHistory!==undefined)cloud.activeWorkoutPlanHistory=dedicatedActivePlanHistory;if(Array.isArray(dedicatedMealHistory))cloud.nutrition=mergeByKey(cloud.nutrition||[],dedicatedMealHistory,x=>x.id||`${x.date}|${x.meal}|${x.name}|${x.grams}`);
       if(cloud.plansPayload){cloud.workoutPlans=cloud.plansPayload.plans||[];cloud.activeWorkoutPlanId=cloud.plansPayload.activePlanId||cloud.activeWorkoutPlanId||null;cloud.workoutAssignments=cloud.plansPayload.assignments||{};cloud.workoutCompletions=cloud.plansPayload.completions||cloud.workoutCompletions||{};}
       if(cloud.photoIndex&&typeof cloud.photoIndex==='object')localStorage.setItem('photo_index',JSON.stringify({...cloud.photoIndex,...JSON.parse(localStorage.getItem('photo_index')||'{}')}));
-      appState=mergeCloudIntoLocal(cloud);window.appState=appState;
+      let conflictResolution=null;
+      try{
+        if(window.ThalysSyncQueue?.flushWrites)await window.ThalysSyncQueue.flushWrites();
+        const pendingOps=window.ThalysSyncQueue?.listPendingOperations?await window.ThalysSyncQueue.listPendingOperations():[];
+        if(pendingOps.length&&window.ThalysConflictResolver?.resolve){
+          conflictResolution=await window.ThalysConflictResolver.resolve(cloud,appState,pendingOps);
+          cloud=conflictResolution.state||cloud;
+        }
+      }catch(e){console.warn('Conflict resolver fallback',e);conflictResolution=null;}
+      appState=mergeCloudIntoLocal(cloud);
+      if(conflictResolution&&window.ThalysConflictResolver?.overlayResolved){appState=window.ThalysConflictResolver.overlayResolved(appState,cloud,conflictResolution);}
+      window.appState=appState;
       try{await loadPhotosFromDriveFolder();}catch(e){console.warn('Drive photo load failed',e);}
       persistThalysStateLocally(appState);localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);
       renderAllViews();loadProfileUI();loadTargetsUI();renderPhotos();renderProfilePhotoUI();
