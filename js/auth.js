@@ -1,4 +1,4 @@
-// Thalys v0.26 - Authentication and session module
+// Thalys v0.27 - Authentication and session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====

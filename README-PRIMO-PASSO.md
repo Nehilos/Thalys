@@ -1,4 +1,4 @@
-# Thalys v0.26
+# Thalys v0.27
 
 Questa versione aggiunge:
 - ripristino automatico della connessione Google Drive dopo l'accesso/reapertura quando il token e ancora valido;
@@ -162,3 +162,11 @@ Se uno di questi controlli fallisce, torna alla versione GitHub precedente e ann
 - `drive.js` possiede ora lo stato di sincronizzazione Drive e gli indicatori Drive; Auth e Drive restano separati ma collaborano durante il bootstrap.
 - Nessuna modifica intenzionale al comportamento utente di login, offline, riconnessione o sincronizzazione.
 - Cache PWA aggiornata alla v0.26.
+
+
+## v0.27 - Meditazione separata
+
+- Estratta la logica Meditazione da `js/app-core.js` in `js/meditation.js`.
+- Il nuovo modulo gestisce timer meditazione, respirazione, mindfulness, body scan, diario gratitudine e suoni ambiente.
+- Nessun cambiamento intenzionale a UI, dati, login, Drive, sincronizzazione o comportamento offline.
+- Aggiornata la cache PWA/manuale alla v0.27 e aggiunto `meditation.js` all'app shell offline.
