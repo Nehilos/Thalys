@@ -101,7 +101,7 @@
 
 
     // Save State locally and sync to cloud if available
-    function saveStateToLocal(){persistThalysStateLocally(appState);try{localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));}catch(e){console.warn('Food cache quota',e);localStorage.removeItem('thalys_foods');}if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();scheduleDriveSync(350);}
+    function saveStateToLocal(){persistThalysStateLocally(appState);try{localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));}catch(e){console.warn('Food cache quota',e);localStorage.removeItem('thalys_foods');}if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);if(window.ThalysSyncQueue?.enqueueStateChange)window.ThalysSyncQueue.enqueueStateChange({source:'saveStateToLocal'});driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();scheduleDriveSync(350);}
     window.saveStateToLocal = saveStateToLocal;
 
 

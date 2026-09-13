@@ -1,7 +1,7 @@
 // Thalys v0.29 - Nutrition domain extracted from app-core.js
 // Food logging, water, nutrition targets, presets and nutrition rendering.
 
-    function persistFoodDatabase(){appState.presets=(appState.presets||[]).map(normalizeFoodPreset).filter(x=>x.name);localStorage.setItem('thalys_foods',JSON.stringify(appState.presets));persistThalysStateLocally(appState);if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();scheduleDriveSync(250); }
+    function persistFoodDatabase(){appState.presets=(appState.presets||[]).map(normalizeFoodPreset).filter(x=>x.name);localStorage.setItem('thalys_foods',JSON.stringify(appState.presets));persistThalysStateLocally(appState);if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);if(window.ThalysSyncQueue?.enqueueStateChange)window.ThalysSyncQueue.enqueueStateChange({source:'nutrition-presets'});driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();scheduleDriveSync(250); }
 
     function shiftNutritionDate(days) {
       const input = document.getElementById('nutrition-date');

@@ -154,14 +154,16 @@ async function findDriveFolder(name,parentId=null){
       }
       driveSyncRunning=true;setDriveStatus('saving','Salvataggio Drive…');
       try{
+        if(window.ThalysSyncQueue?.flushWrites)await window.ThalysSyncQueue.flushWrites();
         const payloads=databasePayloads();
         const results=await Promise.allSettled(Object.entries(payloads).map(async ([name,data])=>({name,result:await uploadDriveFile(name,JSON.stringify(data),'application/json',driveFolders.databaseFolderId,true)})));
         const failed=results.filter(r=>r.status==='rejected');
         if(failed.length){const first=failed[0].reason||new Error('Errore salvataggio');first.failedCount=failed.length;first.failedNames=results.map((r,i)=>r.status==='rejected'?Object.keys(payloads)[i]:null).filter(Boolean);throw first;}
         lastDriveSyncAt=Date.now();driveDirty=false;localStorage.setItem('thalys_drive_dirty','0');localStorage.setItem('thalys_last_drive_sync',String(lastDriveSyncAt));
+        if(window.ThalysSyncQueue?.markPendingSynced)await window.ThalysSyncQueue.markPendingSynced({driveSyncAt:lastDriveSyncAt});
         lastSyncError=null;setDriveStatus('ok','Sincronizzato');updateManualSyncUI();return true;
       }catch(e){
-        console.error('Drive save',e);driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');lastSyncError=classifyDriveError(e);setDriveStatus('error',lastSyncError.short||'Sync non riuscito');updateManualSyncUI();showSyncError(lastSyncError);return false;
+        console.error('Drive save',e);driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');if(window.ThalysSyncQueue?.noteSyncFailure)window.ThalysSyncQueue.noteSyncFailure(e);lastSyncError=classifyDriveError(e);setDriveStatus('error',lastSyncError.short||'Sync non riuscito');updateManualSyncUI();showSyncError(lastSyncError);return false;
       }finally{driveSyncRunning=false;if(driveSyncQueued){driveSyncQueued=false;scheduleDriveSync(300);}}
     }
     function scheduleDriveSync(delay=350){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');if(!getAccessToken()||!navigator.onLine){updateManualSyncUI();return;}if(driveSyncTimer)clearTimeout(driveSyncTimer);driveSyncTimer=setTimeout(()=>{if(!navigator.onLine){updateManualSyncUI();return;}if(driveSyncRunning){driveSyncQueued=true;return;}saveAllDatabasesToDrive(false);},delay);}

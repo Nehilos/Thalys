@@ -1,4 +1,13 @@
-# Thalys v0.32
+# Thalys v0.33
+
+## v0.33 - Sync Queue foundation
+
+- Aggiunta `js/sync-queue.js` con coda persistente in IndexedDB.
+- Ogni salvataggio locale registra una modifica pendente con `deviceId`, timestamp, revisione e stato.
+- Le modifiche pendenti vengono marcate sincronizzate solo dopo un salvataggio Drive completato con successo.
+- Gli errori di sincronizzazione restano registrati nella coda senza perdere le modifiche locali.
+- Il sistema `driveDirty` della v0.32 resta attivo come fallback di sicurezza.
+- Cache PWA e cache offline manuale aggiornate a v0.33.
 
 ## v0.32 - Home + Analytics separated
 
