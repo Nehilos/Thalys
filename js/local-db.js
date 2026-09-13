@@ -93,9 +93,9 @@
 
   async function warmOfflineAppShell() {
     if (!window.caches || !window.isSecureContext) return 0;
-    const urls = ['./', './index.html', './manifest.json', './css/thalys.css?v=016', './js/storage-manager.js?v=033', './js/sync-queue.js?v=033', './js/local-db.js?v=033', './js/ui-foundation.js?v=033', './js/language.js?v=033', './js/drive.js?v=033', './js/auth.js?v=033', './js/app-core.js?v=033', './js/body.js?v=033', './js/meditation.js?v=033', './js/nutrition.js?v=033', './js/workout.js?v=033', './js/home.js?v=033', './js/analytics.js?v=033', './js/app-enhancements.js?v=033'];
-    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.33').map(k=>caches.delete(k)));}catch(_){}
-    const cache = await caches.open('thalys-manual-offline-v0.33');
+    const urls = ['./', './index.html', './manifest.json', './css/thalys.css?v=016', './js/storage-manager.js?v=034', './js/sync-queue.js?v=034', './js/local-db.js?v=034', './js/ui-foundation.js?v=034', './js/language.js?v=034', './js/drive.js?v=034', './js/auth.js?v=034', './js/app-core.js?v=034', './js/body.js?v=034', './js/meditation.js?v=034', './js/nutrition.js?v=034', './js/workout.js?v=034', './js/home.js?v=034', './js/analytics.js?v=034', './js/app-enhancements.js?v=034'];
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.34').map(k=>caches.delete(k)));}catch(_){}
+    const cache = await caches.open('thalys-manual-offline-v0.34');
     let saved = 0;
     for (const url of urls) {
       try { await cache.add(url); saved += 1; } catch (_) {}
