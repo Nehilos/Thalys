@@ -1,4 +1,12 @@
-# Thalys v0.29
+# Thalys v0.30
+
+## v0.30 - Workout module separated
+
+- Estratta la logica Palestra in `js/workout.js`.
+- Include schede, esercizi, completamenti, storico allenamenti e timer recupero.
+- Le estensioni Workout V7 precedentemente in `app-enhancements.js` sono state riunite nello stesso modulo.
+- Home/Analytics continuano a consumare i dati workout ma restano nei rispettivi moduli per la tappa successiva della roadmap.
+- Cache PWA e cache offline manuale aggiornate a v0.30.
 
 ## v0.29 - Nutrition module separated
 
