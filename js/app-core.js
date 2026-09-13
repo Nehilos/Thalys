@@ -66,7 +66,7 @@
       };
     }
 
-    window.persistThalysStateLocally = function(state = appState) {
+    function persistThalysStateLocally(state = appState) {
       try {
         localStorage.setItem('thalys_data', JSON.stringify(compactStateForLocalStorage(state)));
         return true;
@@ -78,13 +78,15 @@
         }
         throw error;
       }
-    };
+    }
+    window.persistThalysStateLocally = persistThalysStateLocally;
     persistThalysStateLocally(appState);
 
     function persistFoodDatabase(){appState.presets=(appState.presets||[]).map(normalizeFoodPreset).filter(x=>x.name);localStorage.setItem('thalys_foods',JSON.stringify(appState.presets));persistThalysStateLocally(appState);if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();scheduleDriveSync(250); }
 
     // Save State locally and sync to cloud if available
-    window.saveStateToLocal = function(){persistThalysStateLocally(appState);try{localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));}catch(e){console.warn('Food cache quota',e);localStorage.removeItem('thalys_foods');}if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();scheduleDriveSync(350);};
+    function saveStateToLocal(){persistThalysStateLocally(appState);try{localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));}catch(e){console.warn('Food cache quota',e);localStorage.removeItem('thalys_foods');}if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();scheduleDriveSync(350);}
+    window.saveStateToLocal = saveStateToLocal;
 
 
     const PROFILE_MESSAGES=[
