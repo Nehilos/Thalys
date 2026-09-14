@@ -1,4 +1,4 @@
-# Thalys v0.36.4
+# Thalys v0.36.5
 
 Correzioni di coerenza multi-device e avatar.
 
@@ -19,3 +19,10 @@ Correzioni di coerenza multi-device e avatar.
 - La schermata mostra direttamente gli alimenti del database, con i piu recenti in alto.
 - Aggiunta ricerca rapida e quantita in grammi per ogni alimento.
 - Il pulsante Aggiungi inserisce direttamente l'alimento nel pasto selezionato.
+
+
+## v0.36.5 - Avatar cache bust
+- `male.svg` e `female.svg` sono gli originali caricati dall'utente, senza modifiche.
+- Tutti i percorsi avatar usano query versionata `?v=0365`.
+- Cache PWA/manuale aggiornata per forzare il refresh degli SVG.
+- Nessuna modifica funzionale a Dieta, sync o Workout rispetto alla v0.36.4.
