@@ -57,6 +57,7 @@ window.runWhenThalysCoreReady=runWhenThalysCoreReady;
       window.addEventListener('offline', () => {
         thalysWasOffline = true;
         window.thalysOfflineSessionActive = true;
+        window.thalysNetworkRecoveryPending = true;
         if (typeof setDriveStatus === 'function') setDriveStatus('error', 'Offline · modifiche salvate sul dispositivo');
         if (typeof updateSyncStatus === 'function') updateSyncStatus(false);
         showToast('modalità offline attivata - assenza connessione');
@@ -65,7 +66,8 @@ window.runWhenThalysCoreReady=runWhenThalysCoreReady;
         const returningFromOffline=thalysWasOffline||window.thalysOfflineSessionActive;
         thalysWasOffline = false;
         window.thalysOfflineSessionActive = false;
-        if(typeof runWhenThalysCoreReady==='function')runWhenThalysCoreReady(()=>{if(typeof renderAllViews==='function')renderAllViews();});
+        // v0.36.2: do not render stale local data before Drive/tombstone reconciliation.
+        window.thalysNetworkRecoveryPending = true;
         if (typeof updateSyncStatus === 'function') updateSyncStatus();
         if(returningFromOffline)showToast('modalità online attivata');
         setTimeout(()=>{

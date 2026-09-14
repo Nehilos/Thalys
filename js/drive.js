@@ -143,6 +143,7 @@ async function findDriveFolder(name,parentId=null){
       };
     }
     async function saveAllDatabasesToDrive(force=false){
+      if(window.thalysNetworkRecoveryPending && !force){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();return false;}
       if(!getAccessToken()){
         lastSyncError={code:'AUTH_REQUIRED',message:'Non sei connesso a Google.'};
         showSyncError(lastSyncError); return false;
@@ -157,7 +158,7 @@ async function findDriveFolder(name,parentId=null){
       try{
         if(window.ThalysSyncQueue?.flushWrites)await window.ThalysSyncQueue.flushWrites();
         const payloads=databasePayloads();
-        // v0.36.1: publish sync metadata/tombstones before domain files.
+        // v0.36.2: publish sync metadata/tombstones before domain files.
         // This prevents another device from reading a newly-deleted database state with stale deletion metadata
         // (or an old database copy without knowing that the record is already tombstoned).
         if(Object.prototype.hasOwnProperty.call(payloads,'sync_meta.json')){
@@ -178,7 +179,7 @@ async function findDriveFolder(name,parentId=null){
         setDriveStatus('error',lastSyncError.short||'Sync non riuscito');updateManualSyncUI();showSyncError(lastSyncError);return false;
       }finally{driveSyncRunning=false;if(driveSyncQueued){driveSyncQueued=false;scheduleDriveSync(300);}}
     }
-    function scheduleDriveSync(delay=350){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');if(!getAccessToken()||!navigator.onLine){updateManualSyncUI();return;}if(driveSyncTimer)clearTimeout(driveSyncTimer);driveSyncTimer=setTimeout(()=>{if(!navigator.onLine){updateManualSyncUI();return;}if(driveSyncRunning){driveSyncQueued=true;return;}saveAllDatabasesToDrive(false);},delay);}
+    function scheduleDriveSync(delay=350){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');if(!getAccessToken()||!navigator.onLine||window.thalysNetworkRecoveryPending){updateManualSyncUI();return;}if(driveSyncTimer)clearTimeout(driveSyncTimer);driveSyncTimer=setTimeout(()=>{if(!navigator.onLine||window.thalysNetworkRecoveryPending){updateManualSyncUI();return;}if(driveSyncRunning){driveSyncQueued=true;return;}saveAllDatabasesToDrive(false);},delay);}
 
     function isMeaningfulProfile(p){if(!p)return false;return Number(p.age)!==25||Number(p.height)!==175||Number(p.sleepHours)!==7||String(p.lifestyle||'moderato')!=='moderato'||String(p.gender||'male')!=='male';}
     function mergeByKey(localArr,cloudArr,keyFn){
@@ -266,7 +267,7 @@ async function findDriveFolder(name,parentId=null){
       renderAllViews();loadProfileUI();loadTargetsUI();renderPhotos();renderProfilePhotoUI();
       if(consolidate){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');setDriveStatus('ok','Dati Drive caricati · consolidamento…');updateManualSyncUI();scheduleDriveSync(250);}else{setDriveStatus('ok','Dati Drive aggiornati');updateManualSyncUI();}return true;
     }
-    async function refreshFromDrive(showToastOnSuccess=false,forceLoad=false){if(!getAccessToken())return false;if(driveDirty&&!forceLoad){scheduleDriveSync(200);return false;}if(driveRefreshRunning)return false;driveRefreshRunning=true;try{await initializeDriveWorkspace();await loadDatabasesFromDrive(forceLoad);if(showToastOnSuccess)showToast('Tutti i database Thalys caricati e consolidati ✓','fa-cloud-check');return true;}catch(e){console.warn('Drive refresh',e);lastSyncError=classifyDriveError(e);setDriveStatus('error',lastSyncError.short);showSyncError(lastSyncError);return false;}finally{driveRefreshRunning=false;}}
+    async function refreshFromDrive(showToastOnSuccess=false,forceLoad=false){if(!getAccessToken())return false;if(window.thalysNetworkRecoveryPending&&!forceLoad)return false;if(driveDirty&&!forceLoad){scheduleDriveSync(200);return false;}if(driveRefreshRunning)return false;driveRefreshRunning=true;try{await initializeDriveWorkspace();await loadDatabasesFromDrive(forceLoad);if(showToastOnSuccess)showToast('Tutti i database Thalys caricati e consolidati ✓','fa-cloud-check');return true;}catch(e){console.warn('Drive refresh',e);lastSyncError=classifyDriveError(e);if(lastSyncError.code==='OFFLINE'||lastSyncError.code==='NETWORK_ERROR'){setDriveStatus('saving','Connessione instabile · modalità locale');updateManualSyncUI();return false;}setDriveStatus('error',lastSyncError.short);showSyncError(lastSyncError);return false;}finally{driveRefreshRunning=false;}}
     async function syncAllDatabasesFromDrive(){return refreshFromDrive(false);}
 
     async function loadFoodDatabaseImmediate(){
@@ -444,6 +445,12 @@ async function findDriveFolder(name,parentId=null){
     // when another device changed Drive while this device was offline: local pending
     // changes are merged with the newest Drive databases before anything is uploaded.
     let networkRecoveryRunning=false;
+    let networkRecoveryRetryTimer=null;
+    function scheduleNetworkRecoveryRetry(delay=1800){
+      if(networkRecoveryRetryTimer)clearTimeout(networkRecoveryRetryTimer);
+      if(!navigator.onLine||!getAccessToken())return;
+      networkRecoveryRetryTimer=setTimeout(()=>{networkRecoveryRetryTimer=null;syncAfterNetworkRestore();},delay);
+    }
     async function syncAfterNetworkRestore(){
       if(networkRecoveryRunning||!navigator.onLine)return false;
       if(!getAccessToken()){
@@ -453,6 +460,7 @@ async function findDriveFolder(name,parentId=null){
         return false;
       }
       networkRecoveryRunning=true;
+      window.thalysNetworkRecoveryPending=true;
       try{
         if(driveSyncTimer){clearTimeout(driveSyncTimer);driveSyncTimer=null;}
         await waitForDriveSyncIdle();
@@ -467,6 +475,7 @@ async function findDriveFolder(name,parentId=null){
         if(ok){
           lastSeenWaterDriveVersion=null;
           window.thalysNeedsDriveReconnectSync=false;
+          window.thalysNetworkRecoveryPending=false;
           try{renderAllViews();}catch(_){}
           window.dispatchEvent(new CustomEvent('thalys:network-resync-complete'));
         }
@@ -474,7 +483,18 @@ async function findDriveFolder(name,parentId=null){
       }catch(e){
         console.warn('Network recovery sync',e);
         driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');
-        lastSyncError=classifyDriveError(e);setDriveStatus('error',lastSyncError.short||'Sync non riuscito');updateManualSyncUI();
+        lastSyncError=classifyDriveError(e);
+        // v0.36.2: connectivity during recovery is non-blocking. Keep local mode,
+        // preserve pending changes and retry silently instead of opening an error modal.
+        if(lastSyncError.code==='OFFLINE'||lastSyncError.code==='NETWORK_ERROR'){
+          setDriveStatus('saving','Connessione instabile · dati locali protetti');
+          updateManualSyncUI();
+          window.thalysNetworkRecoveryPending=true;
+          scheduleNetworkRecoveryRetry();
+          return false;
+        }
+        setDriveStatus('error',lastSyncError.short||'Sync non riuscito');updateManualSyncUI();
+        window.thalysNetworkRecoveryPending=false;
         return false;
       }finally{networkRecoveryRunning=false;}
     }
