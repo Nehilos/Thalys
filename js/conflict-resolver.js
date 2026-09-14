@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.35';
-  const PROTOCOL_VERSION = 3;
+  const APP_VERSION = '0.35.1';
+  const PROTOCOL_VERSION = 4;
 
   function clone(value) {
     try { return structuredClone(value); }
@@ -13,6 +13,32 @@
   function recordTime(record) { return ts(record?.updatedAt || record?.completedAt || record?.createdAt); }
   function sortOps(ops) { return [...(ops || [])].sort((a,b) => opTime(a) - opTime(b) || String(a.id||'').localeCompare(String(b.id||''))); }
 
+
+  function payloadAfter(op) {
+    const p = op?.payload;
+    if (p && typeof p === 'object' && Object.prototype.hasOwnProperty.call(p, 'after')) return clone(p.after);
+    return clone(p);
+  }
+  function payloadBefore(op) {
+    const p = op?.payload;
+    if (p && typeof p === 'object' && Object.prototype.hasOwnProperty.call(p, 'before')) return clone(p.before);
+    return null;
+  }
+  function same(a,b){ try{return JSON.stringify(a)===JSON.stringify(b);}catch(_){return a===b;} }
+  function isPlainObject(v){ return !!v && typeof v==='object' && !Array.isArray(v); }
+  function patchChangedFields(remote, before, after) {
+    if (!isPlainObject(before) || !isPlainObject(after)) return clone(after);
+    const out = {...(isPlainObject(remote) ? remote : {})};
+    const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+    for (const key of keys) {
+      if (same(before[key], after[key])) continue;
+      if (!Object.prototype.hasOwnProperty.call(after, key)) { delete out[key]; continue; }
+      if (isPlainObject(before[key]) && isPlainObject(after[key])) out[key]=patchChangedFields(out[key],before[key],after[key]);
+      else out[key] = clone(after[key]);
+    }
+    return out;
+  }
+
   function keyOf(entity, item, index) {
     if (!item) return String(index);
     if (item.id != null) return String(item.id);
@@ -21,36 +47,47 @@
     if (entity === 'workoutPlan') return String(item.name || index);
     if (entity === 'workoutHistory') return `${item.date||''}|${item.planId||''}`;
     if (entity === 'meditation') return `${item.date||''}|${item.completedAt||item.minutes||''}`;
+    if (entity === 'foodPreset') return String(item.name || index).trim().toLowerCase();
     return String(item.date || index);
   }
 
   function arrayField(entity) {
     return ({
       nutrition: 'nutrition', bodyMetric: 'bodyMetrics', workoutPlan: 'workoutPlans',
-      workoutHistory: 'workoutHistory', meditation: 'meditation'
+      workoutHistory: 'workoutHistory', meditation: 'meditation', foodPreset: 'presets'
     })[entity] || null;
   }
 
   function applyArrayOperation(state, op, decisions) {
     const field = arrayField(op.entity); if (!field) return false;
     const arr = Array.isArray(state[field]) ? [...state[field]] : [];
-    const id = String(op.entityId ?? op.payload?.id ?? '');
+    const id = String(op.entityId ?? op.payload?.id ?? op.payload?.after?.id ?? '');
     let idx = arr.findIndex((item,i) => keyOf(op.entity,item,i) === id);
     if (op.action === 'delete') {
       if (idx >= 0) arr.splice(idx,1);
       state[field] = arr; decisions.push({opId:op.id,entity:op.entity,entityId:id,resolution:'local-delete'}); return true;
     }
-    const incoming = clone(op.payload);
+    const incoming = payloadAfter(op);
+    const before = payloadBefore(op);
     if (idx < 0) {
-      arr.push(incoming); state[field] = arr; decisions.push({opId:op.id,entity:op.entity,entityId:id,resolution:'local-add'}); return true;
+      if (incoming != null) arr.push(incoming);
+      state[field] = arr; decisions.push({opId:op.id,entity:op.entity,entityId:id,resolution:'local-add'}); return true;
     }
     const remote = arr[idx];
-    // Pending local edits win unless the remote record carries a strictly newer explicit timestamp.
+    // For v0.35.1+ operations, merge only fields actually changed locally.
+    // This preserves concurrent remote edits to other fields of the same record.
+    if (before != null && incoming != null) {
+      arr[idx] = patchChangedFields(remote, before, incoming);
+      state[field] = arr;
+      decisions.push({opId:op.id,entity:op.entity,entityId:id,resolution:'field-merge'}); return true;
+    }
+    // Compatibility with old pending operations: local pending wins unless remote has
+    // a strictly newer explicit timestamp.
     if (recordTime(remote) > opTime(op)) {
       decisions.push({opId:op.id,entity:op.entity,entityId:id,resolution:'remote-newer'}); return true;
     }
-    arr[idx] = {...remote, ...incoming}; state[field] = arr;
-    decisions.push({opId:op.id,entity:op.entity,entityId:id,resolution:'local-update'}); return true;
+    arr[idx] = {...remote, ...(incoming || {})}; state[field] = arr;
+    decisions.push({opId:op.id,entity:op.entity,entityId:id,resolution:'local-update-legacy'}); return true;
   }
 
   function applyOperation(state, op, touched, decisions) {
@@ -73,11 +110,21 @@
     if (entity === 'workoutCompletion') {
       const date=String(op.date||op.entityId||''); if(!date)return;
       state.workoutCompletions={...(state.workoutCompletions||{})};
-      if(op.action==='delete') delete state.workoutCompletions[date]; else state.workoutCompletions[date]=clone(op.payload);
+      if(op.action==='delete') delete state.workoutCompletions[date];
+      else {
+        const before=payloadBefore(op), after=payloadAfter(op), remote=state.workoutCompletions[date];
+        state.workoutCompletions[date]=before!=null?patchChangedFields(remote,before,after):clone(after);
+      }
       touched.fields.add('workoutCompletions'); decisions.push({opId:op.id,entity,date,resolution:'local-operation'}); return;
     }
     const simple = {settings:'settings',targets:'targets',profile:'profile',foodPresets:'presets'};
-    const field=simple[entity]; if(field){ state[field]=clone(op.payload); touched.fields.add(field); decisions.push({opId:op.id,entity,resolution:'local-pending'}); }
+    const field=simple[entity];
+    if(field){
+      const before=payloadBefore(op), after=payloadAfter(op);
+      if (before != null && after != null && !Array.isArray(after)) state[field]=patchChangedFields(state[field],before,after);
+      else state[field]=clone(after);
+      touched.fields.add(field); decisions.push({opId:op.id,entity,resolution:before!=null?'field-merge':'local-pending'});
+    }
   }
 
   async function resolve(cloudState, localState, pendingOperations) {

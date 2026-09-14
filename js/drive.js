@@ -163,7 +163,11 @@ async function findDriveFolder(name,parentId=null){
         if(window.ThalysSyncQueue?.markPendingSynced)await window.ThalysSyncQueue.markPendingSynced({driveSyncAt:lastDriveSyncAt});
         lastSyncError=null;setDriveStatus('ok','Sincronizzato');updateManualSyncUI();return true;
       }catch(e){
-        console.error('Drive save',e);driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');if(window.ThalysSyncQueue?.noteSyncFailure)window.ThalysSyncQueue.noteSyncFailure(e);lastSyncError=classifyDriveError(e);setDriveStatus('error',lastSyncError.short||'Sync non riuscito');updateManualSyncUI();showSyncError(lastSyncError);return false;
+        console.error('Drive save',e);driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');if(window.ThalysSyncQueue?.noteSyncFailure)window.ThalysSyncQueue.noteSyncFailure(e);lastSyncError=classifyDriveError(e);
+        if(lastSyncError.code==='OFFLINE'||lastSyncError.code==='NETWORK_ERROR'){
+          setDriveStatus('error','Offline · modifiche in attesa');updateManualSyncUI();return false;
+        }
+        setDriveStatus('error',lastSyncError.short||'Sync non riuscito');updateManualSyncUI();showSyncError(lastSyncError);return false;
       }finally{driveSyncRunning=false;if(driveSyncQueued){driveSyncQueued=false;scheduleDriveSync(300);}}
     }
     function scheduleDriveSync(delay=350){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');if(!getAccessToken()||!navigator.onLine){updateManualSyncUI();return;}if(driveSyncTimer)clearTimeout(driveSyncTimer);driveSyncTimer=setTimeout(()=>{if(!navigator.onLine){updateManualSyncUI();return;}if(driveSyncRunning){driveSyncQueued=true;return;}saveAllDatabasesToDrive(false);},delay);}
@@ -213,7 +217,7 @@ async function findDriveFolder(name,parentId=null){
       setDriveStatus('saving','Lettura di tutti i database…');
       const files=await listDatabaseFiles(driveFolders.databaseFolderId);if(!files.length){throw Object.assign(new Error('FOLDER_MISSING'),{code:'FOLDER_MISSING'});}
       const byName=new Set(files.map(f=>f.name));
-      const cloud={};
+      let cloud={};
       const reads=[];
       const load=(name,key)=>{if(byName.has(name))reads.push(readDriveJSON(name,driveFolders.databaseFolderId).then(d=>{cloud[key]=d;}));};
       load('app_state.json','appState');load('workouts.json','workouts');load('workout_history.json','workoutHistory');load('meal_history.json','mealHistory');load('active_plan_history.json','activeWorkoutPlanHistory');load('nutrition.json','nutrition');load('alim_database.json','presets');load('body_metrics.json','bodyMetrics');load('wellness_data.json','wellness');load('water.json','water');load('meditation.json','meditation');load('workout_plans.json','plansPayload');load('foto_index.json','photoIndex');load('foto_profilo.json','profilePhoto');load('messages.json','messages');load('consultations.json','consultations');load('ai_consults.json','aiConsults');
@@ -222,11 +226,18 @@ async function findDriveFolder(name,parentId=null){
         try{await uploadDriveFile('foto_profilo.json',JSON.stringify(appState.profilePhoto||null),'application/json',driveFolders.databaseFolderId,true);}
         catch(e){console.warn('Creazione foto_profilo.json',e);}
       }
-      const dedicatedConsultations=cloud.consultations, dedicatedAIConsults=cloud.aiConsults, dedicatedWorkoutHistory=cloud.workoutHistory, dedicatedMealHistory=cloud.mealHistory, dedicatedActivePlanHistory=cloud.activeWorkoutPlanHistory, dedicatedProfilePhoto=cloud.profilePhoto;
+      const dedicated={
+        workouts:cloud.workouts, workoutHistory:cloud.workoutHistory, mealHistory:cloud.mealHistory,
+        activeWorkoutPlanHistory:cloud.activeWorkoutPlanHistory, nutrition:cloud.nutrition, presets:cloud.presets,
+        bodyMetrics:cloud.bodyMetrics, wellness:cloud.wellness, water:cloud.water, meditation:cloud.meditation,
+        plansPayload:cloud.plansPayload, photoIndex:cloud.photoIndex, profilePhoto:cloud.profilePhoto,
+        messages:cloud.messages, consultations:cloud.consultations, aiConsults:cloud.aiConsults
+      };
       if(cloud.appState&&typeof cloud.appState==='object')Object.assign(cloud,cloud.appState);
-      if(dedicatedProfilePhoto!==undefined)cloud.profilePhoto=dedicatedProfilePhoto;
-      if(dedicatedConsultations!==undefined)cloud.consultations=dedicatedConsultations;
-      if(dedicatedAIConsults!==undefined)cloud.aiConsults=dedicatedAIConsults;if(dedicatedWorkoutHistory!==undefined)cloud.workoutHistory=dedicatedWorkoutHistory;if(dedicatedActivePlanHistory!==undefined)cloud.activeWorkoutPlanHistory=dedicatedActivePlanHistory;if(Array.isArray(dedicatedMealHistory))cloud.nutrition=mergeByKey(cloud.nutrition||[],dedicatedMealHistory,x=>x.id||`${x.date}|${x.meal}|${x.name}|${x.grams}`);
+      // Dedicated database files are canonical for their domain and must win over
+      // duplicated copies inside app_state.json.
+      for(const [key,value] of Object.entries(dedicated)) if(value!==undefined) cloud[key]=value;
+      if(Array.isArray(dedicated.mealHistory)) cloud.nutrition=mergeByKey(cloud.nutrition||[],dedicated.mealHistory,x=>x.id||`${x.date}|${x.meal}|${x.name}|${x.grams}`);
       if(cloud.plansPayload){cloud.workoutPlans=cloud.plansPayload.plans||[];cloud.activeWorkoutPlanId=cloud.plansPayload.activePlanId||cloud.activeWorkoutPlanId||null;cloud.workoutAssignments=cloud.plansPayload.assignments||{};cloud.workoutCompletions=cloud.plansPayload.completions||cloud.workoutCompletions||{};}
       if(cloud.photoIndex&&typeof cloud.photoIndex==='object')localStorage.setItem('photo_index',JSON.stringify({...cloud.photoIndex,...JSON.parse(localStorage.getItem('photo_index')||'{}')}));
       let conflictResolution=null;
@@ -279,7 +290,9 @@ async function findDriveFolder(name,parentId=null){
       try{await loadFoodDatabaseImmediate();renderPresets();}catch(e){console.warn(e);if(list&&old)list.innerHTML=old;showToast('Database locale disponibile; Drive non raggiungibile','fa-triangle-exclamation');}
     }
     function classifyDriveError(e){
-      const code=e?.code || (e?.status===401?'AUTH_EXPIRED':e?.status===403?'PERMISSION_DENIED':e?.status===404?'NOT_FOUND':e?.status===429?'RATE_LIMIT':e?.status>=500?'GOOGLE_SERVER':'UNKNOWN');
+      const raw=String(e?.message||e||'');
+      const networkLike=!navigator.onLine || e?.name==='TypeError' || /failed to fetch|networkerror|network request failed|load failed/i.test(raw);
+      const code=e?.code || (networkLike?(navigator.onLine?'NETWORK_ERROR':'OFFLINE'):(e?.status===401?'AUTH_EXPIRED':e?.status===403?'PERMISSION_DENIED':e?.status===404?'NOT_FOUND':e?.status===429?'RATE_LIMIT':e?.status>=500?'GOOGLE_SERVER':'UNKNOWN'));
       const map={
         OFFLINE:['Nessuna connessione','Sei offline. I dati restano salvati sul dispositivo e verranno sincronizzati appena torni online.'],
         NETWORK_ERROR:['Connessione instabile','Non riesco a raggiungere Google Drive. Controlla rete/VPN e riprova.'],

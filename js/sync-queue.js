@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.35';
+  const APP_VERSION = '0.35.1';
   const STORE = 'sync_queue';
   const GLOBAL_STATE_ID_PREFIX = 'state:';
   let writeChain = Promise.resolve();
@@ -73,10 +73,24 @@
     const out=[];
     c.forEach((value,id)=>{
       const old=p.get(id);
-      if(!old) out.push(baseRecord({entity,entityId:id,date:value?.date||null,action:'add',payload:value,source}));
-      else if(!same(old,value)) out.push(baseRecord({entity,entityId:id,date:value?.date||null,action:'update',payload:value,source}));
+      if(!old) out.push(baseRecord({entity,entityId:id,date:value?.date||null,action:'add',payload:{after:value},source}));
+      else if(!same(old,value)) out.push(baseRecord({entity,entityId:id,date:value?.date||null,action:'update',payload:{before:old,after:value},source}));
     });
-    p.forEach((value,id)=>{ if(!c.has(id)) out.push(baseRecord({entity,entityId:id,date:value?.date||null,action:'delete',payload:{id,date:value?.date||null},source})); });
+    p.forEach((value,id)=>{ if(!c.has(id)) out.push(baseRecord({entity,entityId:id,date:value?.date||null,action:'delete',payload:{before:value,id,date:value?.date||null},source})); });
+    return out;
+  }
+
+  function diffNamedArray(previous, current, entity, source) {
+    const makeKey = x => String(x?.id || x?.name || '').trim().toLowerCase();
+    const p = new Map((Array.isArray(previous)?previous:[]).filter(Boolean).map(x=>[makeKey(x),x]).filter(([k])=>k));
+    const c = new Map((Array.isArray(current)?current:[]).filter(Boolean).map(x=>[makeKey(x),x]).filter(([k])=>k));
+    const out=[];
+    c.forEach((value,id)=>{
+      const old=p.get(id);
+      if(!old) out.push(baseRecord({entity,entityId:id,action:'add',payload:{after:value},source}));
+      else if(!same(old,value)) out.push(baseRecord({entity,entityId:id,action:'update',payload:{before:old,after:value},source}));
+    });
+    p.forEach((value,id)=>{ if(!c.has(id)) out.push(baseRecord({entity,entityId:id,action:'delete',payload:{before:value,id},source})); });
     return out;
   }
 
@@ -104,13 +118,13 @@
     completionDates.forEach(date=>{
       const before=previousState.workoutCompletions?.[date]; const after=currentState.workoutCompletions?.[date];
       if(same(before,after))return;
-      ops.push(baseRecord({entity:'workoutCompletion',entityId:date,date,action:after==null?'delete':before==null?'add':'update',payload:after==null?{date}:after,source}));
+      ops.push(baseRecord({entity:'workoutCompletion',entityId:date,date,action:after==null?'delete':before==null?'add':'update',payload:after==null?{before,date}:before==null?{after}:{before,after},source}));
     });
 
-    if(!same(previousState.settings,currentState.settings)) ops.push(baseRecord({entity:'settings',entityId:'settings',action:'update',payload:currentState.settings||{},source}));
-    if(!same(previousState.targets,currentState.targets)) ops.push(baseRecord({entity:'targets',entityId:'nutrition-targets',action:'update',payload:currentState.targets||{},source}));
-    if(!same(previousState.profile,currentState.profile)) ops.push(baseRecord({entity:'profile',entityId:'profile',action:'update',payload:currentState.profile||{},source}));
-    if(!same(previousState.presets,currentState.presets)) ops.push(baseRecord({entity:'foodPresets',entityId:'presets',action:'update',payload:currentState.presets||[],source}));
+    if(!same(previousState.settings,currentState.settings)) ops.push(baseRecord({entity:'settings',entityId:'settings',action:'update',payload:{before:previousState.settings||{},after:currentState.settings||{}},source}));
+    if(!same(previousState.targets,currentState.targets)) ops.push(baseRecord({entity:'targets',entityId:'nutrition-targets',action:'update',payload:{before:previousState.targets||{},after:currentState.targets||{}},source}));
+    if(!same(previousState.profile,currentState.profile)) ops.push(baseRecord({entity:'profile',entityId:'profile',action:'update',payload:{before:previousState.profile||{},after:currentState.profile||{}},source}));
+    ops.push(...diffNamedArray(previousState.presets,currentState.presets,'foodPreset',source));
 
     return ops;
   }
