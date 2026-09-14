@@ -15,7 +15,7 @@
     }
 
 
-    // v0.37.2: app-core starts with the compact localStorage mirror, where the heavy
+    // v0.37.3: app-core starts with the compact localStorage mirror, where the heavy
     // custom photo is intentionally omitted. Re-render as soon as IndexedDB restores
     // the full state so offline startup never stays on an empty profile image.
     window.addEventListener('thalys:primary-state-ready',()=>{
@@ -23,8 +23,21 @@
     });
 
     function openProfilePhotoMenu(){
+      const nameInput=document.getElementById('profile-photo-preferred-name');
+      if(nameInput)nameInput.value=String(appState?.profile?.preferredName||'');
       openModal('profile-photo-modal');
       renderProfilePhotoUI();
+    }
+
+    function savePreferredNameFromProfilePhoto(){
+      const input=document.getElementById('profile-photo-preferred-name');
+      const preferredName=String(input?.value||'').trim().slice(0,40);
+      appState.profile={...(appState.profile||{}),preferredName,updatedAt:new Date().toISOString()};
+      saveStateToLocal();
+      if(typeof renderHomeAvatar==='function')renderHomeAvatar();
+      if(typeof renderHomeDashboard==='function')renderHomeDashboard();
+      if(typeof updateAuthUI==='function')updateAuthUI(typeof savedGoogleProfile==='function'?savedGoogleProfile():null);
+      showToast(preferredName?'Nome Thalys aggiornato':'Nome Thalys reimpostato sul profilo Google','fa-user-pen');
     }
 
     function openProfilePhotoSettings(){
@@ -78,7 +91,7 @@
       e.preventDefault();
       appState.profile = {
         ...(appState.profile || {}),
-        preferredName: String(document.getElementById('prof-input-preferred-name')?.value || '').trim().slice(0,40),
+        preferredName: String(document.getElementById('prof-input-preferred-name')?.value ?? appState.profile?.preferredName ?? '').trim().slice(0,40),
         gender: normalizeProfileGenderValue(document.getElementById('prof-input-gender').value),
         age: parseInt(document.getElementById('prof-input-age').value) || 25,
         height: parseInt(document.getElementById('prof-input-height').value) || 175,

@@ -36,3 +36,10 @@ Correzioni di coerenza multi-device e avatar.
 - Tutti i percorsi avatar usano query versionata `?v=037`.
 - Cache PWA/manuale aggiornata per forzare il refresh degli SVG.
 - Nessuna modifica funzionale a Dieta, sync o Workout rispetto alla v0.36.4.
+
+
+## v0.37.3
+- Sessione persistente sulla stessa versione software: refresh/riapertura entra direttamente nell app.
+- Una nuova versione software richiede una riconnessione una tantum.
+- Nome usato da Thalys spostato nel pannello Foto profilo.
+- male.svg e female.svg restano asset esterni nel repository e non sono inclusi nello ZIP.

@@ -163,11 +163,11 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/storage-manager.js?v=0372"></script>
-  <script src="./js/sync-queue.js?v=0372"></script>
-  <script src="./js/conflict-resolver.js?v=0372"></script>
-  <script src="./js/local-db.js?v=0372"></script>
-  <script src="./js/ui-foundation.js?v=0372"></script>
+  <script src="./js/storage-manager.js?v=0373"></script>
+  <script src="./js/sync-queue.js?v=0373"></script>
+  <script src="./js/conflict-resolver.js?v=0373"></script>
+  <script src="./js/local-db.js?v=0373"></script>
+  <script src="./js/ui-foundation.js?v=0373"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -1251,7 +1251,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.37.2
+        Thalys · Software v0.37.3
       </div>
 
     </section>
@@ -2140,6 +2140,14 @@
           <button type="button" onclick="document.getElementById('profile-photo-input').click()" class="min-h-11 rounded-xl bg-cyan-500 px-3 text-xs font-black text-slate-950">Cambia foto</button>
           <button type="button" onclick="removeProfilePhoto();closeModal('profile-photo-modal')" class="min-h-11 rounded-xl bg-slate-800 px-3 text-xs font-bold text-slate-300"><i class="fa-brands fa-google mr-1"></i>Usa Google</button>
         </div>
+        <div class="mt-4 w-full rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
+          <label class="text-xs font-bold text-slate-300 block mb-1">Nome usato da Thalys</label>
+          <div class="flex gap-2">
+            <input type="text" id="profile-photo-preferred-name" maxlength="40" placeholder="Es. Dece" class="min-w-0 flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+            <button type="button" onclick="savePreferredNameFromProfilePhoto()" class="rounded-xl bg-purple-500 px-3 text-xs font-black text-slate-950">Salva</button>
+          </div>
+          <p class="mt-1 text-[9px] text-slate-500">Usato nelle frasi dell’avatar e nella personalizzazione. Se vuoto, Thalys usa il nome Google.</p>
+        </div>
       </div>
       <div class="profile-photo-source-note-v16">La foto Thalys che scegli ha sempre la precedenza e viene sincronizzata sui tuoi dispositivi. Google viene usato solo se non hai impostato una foto personale.</div>
       <input id="profile-photo-input" type="file" accept="image/*" class="hidden" onchange="handleProfilePhotoChange(event)">
@@ -2251,11 +2259,6 @@
 
       <form onsubmit="saveProfile(event)" class="space-y-3">
         <div>
-          <label class="text-xs text-slate-400 block mb-1">Nome usato da Thalys</label>
-          <input type="text" id="prof-input-preferred-name" maxlength="40" placeholder="Es. Dece" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
-          <p class="mt-1 text-[9px] text-slate-500">Usato nelle frasi dell’avatar e nella personalizzazione dell’app. Se vuoto, viene usato il nome Google.</p>
-        </div>
-        <div>
           <label class="text-xs text-slate-400 block mb-1">Sesso Bio</label>
           <select id="prof-input-gender" onchange="setProfileGender(this.value,{sync:false})" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
             <option value="male">Uomo</option>
@@ -2357,19 +2360,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0372"></script>
+  <script src="./js/language.js?v=0373"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0372"></script>
-  <script src="./js/body.js?v=0372"></script>
-  <script src="./js/meditation.js?v=0372"></script>
-  <script src="./js/nutrition.js?v=0372"></script>
-  <script src="./js/workout.js?v=0372"></script>
-  <script src="./js/home.js?v=0372"></script>
-  <script src="./js/analytics.js?v=0372"></script>
+  <script src="./js/app-core.js?v=0373"></script>
+  <script src="./js/body.js?v=0373"></script>
+  <script src="./js/meditation.js?v=0373"></script>
+  <script src="./js/nutrition.js?v=0373"></script>
+  <script src="./js/workout.js?v=0373"></script>
+  <script src="./js/home.js?v=0373"></script>
+  <script src="./js/analytics.js?v=0373"></script>
 
-  <script src="./js/drive.js?v=0372"></script>
-  <script src="./js/auth.js?v=0372"></script>
+  <script src="./js/drive.js?v=0373"></script>
+  <script src="./js/auth.js?v=0373"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2396,7 +2399,7 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0372"></script>
+<script src="./js/app-enhancements.js?v=0373"></script>
 
 </body>
 </html>

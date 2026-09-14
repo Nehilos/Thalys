@@ -1,4 +1,4 @@
-// Thalys v0.28.4 - Authentication and session module
+// Thalys v0.37.3 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -8,6 +8,8 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const GYM_SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
+    const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
+    const THALYS_SOFTWARE_VERSION = '0.37.3';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -30,6 +32,11 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       }catch(_){clearCachedDriveAccessToken();return false;}
     }
     function savedGoogleProfile(){try{return JSON.parse(localStorage.getItem(AUTH_PROFILE_STORAGE_KEY)||sessionStorage.getItem('gymbro_google_profile')||'null')||null;}catch(_){return null;}}
+
+    function rememberedSessionVersion(){try{return localStorage.getItem(AUTH_SESSION_VERSION_KEY)||'';}catch(_){return '';}}
+    function sessionAuthorizedForCurrentVersion(){return localStorage.getItem('thalys_app_session_v1')==='1' && rememberedSessionVersion()===THALYS_SOFTWARE_VERSION;}
+    function needsSoftwareVersionReconnect(){return hasRememberedGoogleSession() && !sessionAuthorizedForCurrentVersion();}
+    function markCurrentVersionAuthorized(){try{localStorage.setItem('thalys_app_session_v1','1');localStorage.setItem(AUTH_SESSION_VERSION_KEY,THALYS_SOFTWARE_VERSION);}catch(_){}}
 
     function updateAuthUI(profile){
       profile=profile||savedGoogleProfile();
@@ -57,7 +64,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     }
 
     function gapiLoaded(){ if(window.gapi) gapi.load('client',initializeGapiClient); }
-    async function initializeGapiClient(){ try{await gapi.client.init({discoveryDocs:[GYM_DISCOVERY_DOC,GYM_DISCOVERY_DOC_OAUTH2]});gapiInited=true;const restored=restoreCachedDriveAccessToken();maybeEnableButtons();if(restored){setTimeout(()=>connectDriveAfterToken(true),50);}else{requestGoogleAccessOnStartup();}}catch(e){console.error(e);showToast('Google non disponibile al momento','fa-triangle-exclamation');} }
+    async function initializeGapiClient(){ try{await gapi.client.init({discoveryDocs:[GYM_DISCOVERY_DOC,GYM_DISCOVERY_DOC_OAUTH2]});gapiInited=true;const restored=restoreCachedDriveAccessToken();maybeEnableButtons();if(needsSoftwareVersionReconnect()){updateAuthUI(savedGoogleProfile());updateWelcomeConnectionUI?.();return;}if(restored){setTimeout(()=>connectDriveAfterToken(true),50);}else{requestGoogleAccessOnStartup();}}catch(e){console.error(e);showToast('Google non disponibile al momento','fa-triangle-exclamation');} }
     function rebuildTokenClient(useRememberedHint=true){
       if(!window.google?.accounts?.oauth2)return false;
       const remembered=useRememberedHint?savedGoogleProfile():null;
@@ -73,6 +80,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     function maybeEnableButtons(){const b=document.getElementById('google-login-btn');if(b)b.style.visibility=(gapiInited&&gisInited)?'visible':'visible';}
     function requestGoogleAccessOnStartup(){
       if(startupAccessRequested || !navigator.onLine || !gapiInited || !gisInited)return;
+      if(needsSoftwareVersionReconnect())return;
       if(getAccessToken()){setTimeout(()=>connectDriveAfterToken(true),100);return;}
       const returningUser=localStorage.getItem('thalys_app_session_v1')==='1' || !!localStorage.getItem(AUTH_PROFILE_STORAGE_KEY);
       if(!returningUser)return;
@@ -98,7 +106,8 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         if(window.thalysNeedsDriveReconnectSync&&typeof syncAfterNetworkRestore==='function')await syncAfterNetworkRestore();
         else await refreshFromDrive(false,true);
         if(typeof runWhenThalysCoreReady==='function')runWhenThalysCoreReady(()=>{if(typeof renderAllViews==='function')renderAllViews();});
-        unlockApp();
+        markCurrentVersionAuthorized();
+        unlockApp(false);
         window.thalysRefreshAfterGoogleReconnect=false;
         if(typeof resetAppDatesToToday==='function')resetAppDatesToToday(true);
         updateAuthUI(profile);
@@ -205,6 +214,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       try{window.google?.accounts?.id?.disableAutoSelect?.();}catch(_){}
       sessionStorage.removeItem('gymbro_google_profile');
       localStorage.removeItem(AUTH_PROFILE_STORAGE_KEY);
+      localStorage.removeItem(AUTH_SESSION_VERSION_KEY);
       localStorage.removeItem('google_id_token');
       sessionStorage.removeItem('google_id_token');
       driveFolders=null;
@@ -261,8 +271,19 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         if (typeof maybeShowOfflineSetup === 'function') maybeShowOfflineSetup();
       }
 
+      function showReconnectGateForVersion() {
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const appShell = document.getElementById('app-shell');
+        if (appShell) appShell.classList.add('hidden');
+        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+        const note=document.getElementById('welcome-connection-note');
+        if(note)note.textContent='Nuova versione Thalys rilevata. Riconnetti Google una volta per confermare la sessione su questa versione.';
+        updateWelcomeConnectionUI();
+      }
+
       function lockApp() {
         localStorage.removeItem(THALYS_APP_SESSION_KEY);
+        localStorage.removeItem(AUTH_SESSION_VERSION_KEY);
         const welcomeScreen = document.getElementById('welcome-screen');
         const appShell = document.getElementById('app-shell');
         if (appShell) appShell.classList.add('hidden');
@@ -408,29 +429,27 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
           try { localStorage.setItem(THALYS_PROFILE_KEY, JSON.stringify(p)); } catch (_) {}
         }
 
-        // Offline-first: a previously authenticated installation may still open locally
-        // when there is no network. Online, however, we do NOT unlock the app until
-        // Google Drive has a valid access token and the databases have been connected.
-        if (!navigator.onLine) {
-          if (hasRememberedGoogleSession()) {
-            unlockApp(false);
-            if (typeof updateAuthUI === 'function') updateAuthUI(p || null);
-            if (typeof setDriveStatus === 'function') setDriveStatus('error', 'Offline · dati locali');
-            if (typeof updateSyncStatus === 'function') updateSyncStatus(false);
-          } else {
-            lockApp();
-          }
+        const remembered=hasRememberedGoogleSession();
+        if(!remembered){lockApp();return;}
+
+        // A software update is the only normal case where an already authenticated
+        // installation is intentionally returned to the reconnect screen.
+        if(needsSoftwareVersionReconnect()){
+          showReconnectGateForVersion();
+          if (typeof updateAuthUI === 'function') updateAuthUI(p || savedGoogleProfile());
           return;
         }
 
-        // Online startup: keep/show the initial access screen until auth.js
-        // restores a still-valid Drive token or completes Google authorization.
-        const welcomeScreen = document.getElementById('welcome-screen');
-        const appShell = document.getElementById('app-shell');
-        if (appShell) appShell.classList.add('hidden');
-        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
-        if (typeof updateAuthUI === 'function') updateAuthUI(p || null);
-        updateWelcomeConnectionUI();
+        // Same software version: open the app immediately from the remembered local
+        // session. Drive token restoration/renewal happens in the background and must
+        // never force a Google popup or welcome screen just because the page refreshed.
+        unlockApp(false);
+        if (typeof updateAuthUI === 'function') updateAuthUI(p || savedGoogleProfile());
+        if(!navigator.onLine){
+          if (typeof setDriveStatus === 'function') setDriveStatus('error', 'Offline · dati locali');
+          if (typeof updateSyncStatus === 'function') updateSyncStatus(false);
+          return;
+        }
         if (typeof requestGoogleAccessOnStartup === 'function') requestGoogleAccessOnStartup();
       }
 
