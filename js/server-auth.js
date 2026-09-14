@@ -1,0 +1,105 @@
+(function(){
+  'use strict';
+  const SESSION_ID_KEY='thalys_server_auth_session_id_v1';
+  const SESSION_SECRET_KEY='thalys_server_auth_session_secret_v1';
+  let codeClient=null;
+
+  function backendCfg(){return window.ThalysConfig?.backend||{};}
+  function enabled(){const c=backendCfg();return !!(window.ThalysBackend?.configured?.()&&c.googleCodeFlowEnabled===true&&c.googleCodeExchangePath);}
+  function randomBytes(n=32){const b=new Uint8Array(n);crypto.getRandomValues(b);return b;}
+  function b64url(bytes){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+  function ensureSession(){
+    let id=localStorage.getItem(SESSION_ID_KEY)||'';
+    let secret=localStorage.getItem(SESSION_SECRET_KEY)||'';
+    if(!id){id=(crypto.randomUUID?crypto.randomUUID():b64url(randomBytes(18)));localStorage.setItem(SESSION_ID_KEY,id);}
+    if(!secret){secret=b64url(randomBytes(32));localStorage.setItem(SESSION_SECRET_KEY,secret);}
+    return {sessionId:id,sessionSecret:secret};
+  }
+  function session(){return {sessionId:localStorage.getItem(SESSION_ID_KEY)||'',sessionSecret:localStorage.getItem(SESSION_SECRET_KEY)||''};}
+  function canRefresh(){const s=session();return enabled()&&!!(s.sessionId&&s.sessionSecret);}
+  async function installAccessToken(data,silent=true){
+    const token=String(data?.access_token||'');
+    if(!token)return false;
+    const expiresIn=Math.max(60,Number(data?.expires_in||3600));
+    if(typeof window.installThalysDriveAccessToken==='function')window.installThalysDriveAccessToken(token,expiresIn);
+    else if(window.gapi?.client){window.gapi.client.setToken({access_token:token});try{localStorage.setItem('thalys_drive_access_v1',JSON.stringify({access_token:token,expiresAt:Date.now()+expiresIn*1000}));}catch(_){}}
+    if(typeof window.syncThalysDriveAfterServerToken==='function')return !!(await window.syncThalysDriveAfterServerToken(silent));
+    return true;
+  }
+  async function refresh(silent=true){
+    if(!canRefresh())return false;
+    try{
+      const s=session();
+      const data=await window.ThalysBackend.refreshGoogleSession({sessionId:s.sessionId,sessionSecret:s.sessionSecret});
+      return await installAccessToken(data,silent);
+    }catch(err){
+      const code=String(err?.data?.error||err?.message||'');
+      if(['SERVER_SESSION_NOT_FOUND','SERVER_SESSION_UNAUTHORIZED','REFRESH_TOKEN_INVALID'].includes(code))clearSession(false);
+      if(!silent)window.showToast?.('Sessione server non disponibile: uso accesso Google normale');
+      return false;
+    }
+  }
+  function buildCodeClient(){
+    if(!enabled()||!window.google?.accounts?.oauth2?.initCodeClient)return null;
+    const c=backendCfg();
+    const scopes=String(c.googleScopes||window.THALYS_GOOGLE_SCOPES||'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email');
+    codeClient=window.google.accounts.oauth2.initCodeClient({
+      client_id:String(c.googleClientId||window.THALYS_GOOGLE_CLIENT_ID||''),
+      scope:scopes,
+      ux_mode:'popup',
+      include_granted_scopes:true,
+      callback:async response=>{
+        if(response?.error||!response?.code){window.showToast?.('Autorizzazione server Google non completata');return;}
+        try{
+          const s=ensureSession();
+          const data=await window.ThalysBackend.exchangeGoogleCode({
+            code:response.code,
+            redirectUri:location.origin,
+            sessionId:s.sessionId,
+            sessionSecret:s.sessionSecret,
+            deviceId:window.ThalysStorage?.deviceId?.()||''
+          });
+          const ok=await installAccessToken(data,false);
+          window.showToast?.(data?.refreshStored?'Sessione Google persistente attivata':'Accesso Google attivato · refresh token non ancora emesso',data?.refreshStored?'fa-shield-halved':'fa-circle-info');
+          await refreshUI();
+          return ok;
+        }catch(err){console.error('Server auth code exchange',err);window.showToast?.('Impossibile attivare la sessione server');}
+      },
+      error_callback:()=>window.showToast?.('Finestra Google chiusa o non disponibile')
+    });
+    return codeClient;
+  }
+  async function authorize(){
+    if(!enabled()){window.showToast?.('Backend gratuito non ancora configurato');return false;}
+    ensureSession();
+    const client=codeClient||buildCodeClient();
+    if(!client){window.showToast?.('Google non pronto: riprova tra poco');return false;}
+    client.requestCode();
+    return true;
+  }
+  async function status(){
+    if(!enabled())return {enabled:false,active:false};
+    const s=session();if(!s.sessionId||!s.sessionSecret)return {enabled:true,active:false};
+    try{return await window.ThalysBackend.googleSessionStatus({sessionId:s.sessionId,sessionSecret:s.sessionSecret});}catch(_){return {enabled:true,active:false,error:true};}
+  }
+  async function clearSession(removeRemote=true){
+    const s=session();
+    if(removeRemote&&enabled()&&s.sessionId&&s.sessionSecret){try{await window.ThalysBackend.deleteGoogleSession({sessionId:s.sessionId,sessionSecret:s.sessionSecret});}catch(_){}}
+    localStorage.removeItem(SESSION_ID_KEY);localStorage.removeItem(SESSION_SECRET_KEY);codeClient=null;await refreshUI();
+  }
+  async function refreshUI(){
+    const el=document.getElementById('device-server-session-status');
+    const btn=document.getElementById('device-server-session-btn');
+    const c=backendCfg();
+    if(btn)btn.classList.toggle('hidden',!enabled());
+    if(!el)return;
+    if(!c.enabled){el.textContent='Disattivata';return;}
+    if(!c.googleCodeFlowEnabled){el.textContent='Pronta · non attiva';return;}
+    const st=await status();
+    el.textContent=st?.active?'Attiva':st?.enabled?'Da attivare':'Non disponibile';
+  }
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(refreshUI,0));
+  window.addEventListener('load',()=>{if(enabled())buildCodeClient();},{once:true});
+  window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,status,clearSession,refreshUI});
+  window.enableThalysServerSession=authorize;
+})();

@@ -13,6 +13,7 @@
       deviceMedia:!!window.ThalysDeviceMedia,
       notifications:!!window.ThalysNotifications,
       backend:window.ThalysBackend?.snapshot?.()||null,
+      serverAuth:window.ThalysServerAuth?{enabled:window.ThalysServerAuth.enabled?.()||false,canRefresh:window.ThalysServerAuth.canRefresh?.()||false}:null,
       costPolicy:cfg.costPolicy||null,
       warnings:[]
     };
@@ -20,6 +21,7 @@
     if(cfg.features?.deviceMediaLayer&&!window.ThalysDeviceMedia)report.warnings.push('device-media-unavailable');
     if(cfg.features?.notificationLayer&&!window.ThalysNotifications)report.warnings.push('notification-layer-unavailable');
     if(cfg.features?.backendBridge&&!window.ThalysBackend)report.warnings.push('backend-bridge-unavailable');
+    if(cfg.features?.googleServerAuthBridge&&!window.ThalysServerAuth)report.warnings.push('server-auth-unavailable');
     if(cfg.costPolicy?.mode==='free-only'&&cfg.backend?.requiresBilling===true)report.warnings.push('paid-backend-blocked-by-policy');
     if(cfg.costPolicy?.progressPhotos!=='google-drive-only')report.warnings.push('photo-storage-policy-changed');
     if(window.ThalysStorage?.CONFIG?.syncProtocolVersion!==cfg.syncProtocolVersion)report.warnings.push('sync-protocol-version-mismatch');

@@ -1,4 +1,4 @@
-// Thalys v0.42.0 - Authentication and persistent session module
+// Thalys v0.43.0 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -6,10 +6,12 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const GYM_DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
     const GYM_DISCOVERY_DOC_OAUTH2 = 'https://www.googleapis.com/discovery/v1/apis/oauth2/v2/rest';
     const GYM_SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
+    window.THALYS_GOOGLE_CLIENT_ID=GYM_CLIENT_ID;
+    window.THALYS_GOOGLE_SCOPES=GYM_SCOPES;
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.42.0';
+    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.43.0';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -21,6 +23,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       try{localStorage.setItem(AUTH_DRIVE_TOKEN_STORAGE_KEY,JSON.stringify(payload));}catch(_){}
       if(window.gapi?.client)gapi.client.setToken({access_token:resp.access_token});
     }
+    window.installThalysDriveAccessToken=function(accessToken,expiresIn=3600){cacheDriveAccessToken({access_token:accessToken,expires_in:expiresIn});};
     function clearCachedDriveAccessToken(){try{localStorage.removeItem(AUTH_DRIVE_TOKEN_STORAGE_KEY);}catch(_){}}
     function restoreCachedDriveAccessToken(){
       if(!window.gapi?.client)return false;
@@ -157,6 +160,8 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       }
     }
 
+    window.syncThalysDriveAfterServerToken=async function(silent=true){return connectDriveAfterToken(silent);};
+
     async function handleAuthClick(silentStartup=false, forceInteractive=false){
       const silent = silentStartup === true;
       if(!tokenClient||!gapiInited){if(!silent)showToast('Google non pronto: riprova tra poco');return false;}
@@ -225,6 +230,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       // Normal Thalys logout is a LOCAL sign-out, not an OAuth grant revocation.
       // Revoking here is asynchronous and can race with an immediate re-login,
       // producing permission_denied even though the new token was already issued.
+      try{window.ThalysServerAuth?.clearSession?.(true);}catch(_){}
       authRequestSerial++;
       authRequestInFlight=false;
       startupAccessRequested=false;
@@ -269,6 +275,12 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       if(getAccessToken()){
         const ok=await connectDriveAfterToken(true);
         if(ok){reconnectRetryCount=0;updateAuthUI(savedGoogleProfile());return true;}
+      }
+
+      // v0.43: if the optional free backend has a secure refresh session, try it first.
+      // This path is disabled by default and never changes the stable browser OAuth flow unless explicitly configured.
+      if(window.ThalysServerAuth?.canRefresh?.()){
+        try{const serverOk=await window.ThalysServerAuth.refresh(true);if(serverOk){reconnectRetryCount=0;updateAuthUI(savedGoogleProfile());return true;}}catch(_){}
       }
 
       // A genuinely expired OAuth access token cannot always be renewed by Google GIS

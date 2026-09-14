@@ -1,4 +1,4 @@
-# Thalys v0.42.0 — Free-First Architecture
+# Thalys v0.43.0 — Free-First Architecture
 
 Questa release prepara il punto 14 senza migrare i dati che oggi funzionano.
 
@@ -27,3 +27,11 @@ Il backend NON contiene endpoint per foto o database Thalys. Non va usato per sp
 4. Opzioni: Costi = Solo gratuito, Foto progressi = Solo Google Drive, Backend = Non configurato;
 5. Notifica test, camera e microfono;
 6. consulti AI esistenti: se il free tier e disponibile devono continuare a funzionare; se la quota e esaurita deve comparire errore senza fallback a pagamento.
+
+
+## v0.43.0 - Server Auth bridge
+- Optional Google Authorization Code flow prepared for Cloudflare Worker Free.
+- Refresh tokens stay encrypted server-side in D1 and are never stored in the browser.
+- Existing browser OAuth remains the default and fallback until backend is explicitly enabled.
+- Progress photos remain Google Drive only.
+- Manual offline cache list aligned with the current application version.

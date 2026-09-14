@@ -163,16 +163,17 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0420"></script>
-  <script src="./js/capabilities.js?v=0420"></script>
-  <script src="./js/device-media.js?v=0420"></script>
-  <script src="./js/backend-bridge.js?v=0420"></script>
-  <script src="./js/notifications.js?v=0420"></script>
-  <script src="./js/storage-manager.js?v=0420"></script>
-  <script src="./js/sync-queue.js?v=0420"></script>
-  <script src="./js/conflict-resolver.js?v=0420"></script>
-  <script src="./js/local-db.js?v=0420"></script>
-  <script src="./js/ui-foundation.js?v=0420"></script>
+  <script src="./js/config.js?v=0430"></script>
+  <script src="./js/capabilities.js?v=0430"></script>
+  <script src="./js/device-media.js?v=0430"></script>
+  <script src="./js/backend-bridge.js?v=0430"></script>
+  <script src="./js/server-auth.js?v=0430"></script>
+  <script src="./js/notifications.js?v=0430"></script>
+  <script src="./js/storage-manager.js?v=0430"></script>
+  <script src="./js/sync-queue.js?v=0430"></script>
+  <script src="./js/conflict-resolver.js?v=0430"></script>
+  <script src="./js/local-db.js?v=0430"></script>
+  <script src="./js/ui-foundation.js?v=0430"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -1236,6 +1237,7 @@
           <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Push</div><div id="device-push-status" class="mt-1 font-black text-white">—</div></div>
           <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Notifiche</div><div id="device-notification-status" class="mt-1 font-black text-white">—</div></div>
           <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Backend</div><div id="device-backend-status" class="mt-1 font-black text-white">—</div></div>
+          <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Sessione server Google</div><div id="device-server-session-status" class="mt-1 font-black text-white">Disattivata</div></div>
           <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Costi</div><div id="device-cost-status" class="mt-1 font-black text-emerald-300">Solo gratuito</div></div>
           <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Foto progressi</div><div id="device-photo-storage-status" class="mt-1 font-black text-cyan-300">Solo Google Drive</div></div>
         </div>
@@ -1246,6 +1248,7 @@
           <button type="button" onclick="testThalysNotification()" class="min-h-10 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-emerald-300"><i class="fa-solid fa-paper-plane mr-1"></i>Notifica test</button>
           <button type="button" onclick="enableThalysRemotePush()" class="min-h-10 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-violet-300"><i class="fa-solid fa-satellite-dish mr-1"></i>Prepara push</button>
           <button type="button" onclick="disableThalysRemotePush()" class="min-h-10 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-slate-300"><i class="fa-solid fa-bell-slash mr-1"></i>Disattiva push</button>
+          <button id="device-server-session-btn" type="button" onclick="enableThalysServerSession()" class="hidden min-h-10 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-amber-300"><i class="fa-brands fa-google mr-1"></i>Attiva sessione server</button>
         </div>
       </div>
 
@@ -1286,7 +1289,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.42.0
+        Thalys · Software v0.43.0
       </div>
 
     </section>
@@ -2398,19 +2401,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0420"></script>
+  <script src="./js/language.js?v=0430"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0420"></script>
-  <script src="./js/body.js?v=0420"></script>
-  <script src="./js/meditation.js?v=0420"></script>
-  <script src="./js/nutrition.js?v=0420"></script>
-  <script src="./js/workout.js?v=0420"></script>
-  <script src="./js/home.js?v=0420"></script>
-  <script src="./js/analytics.js?v=0420"></script>
+  <script src="./js/app-core.js?v=0430"></script>
+  <script src="./js/body.js?v=0430"></script>
+  <script src="./js/meditation.js?v=0430"></script>
+  <script src="./js/nutrition.js?v=0430"></script>
+  <script src="./js/workout.js?v=0430"></script>
+  <script src="./js/home.js?v=0430"></script>
+  <script src="./js/analytics.js?v=0430"></script>
 
-  <script src="./js/drive.js?v=0420"></script>
-  <script src="./js/auth.js?v=0420"></script>
+  <script src="./js/drive.js?v=0430"></script>
+  <script src="./js/auth.js?v=0430"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2437,8 +2440,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0420"></script>
-<script src="./js/runtime-health.js?v=0420"></script>
+<script src="./js/app-enhancements.js?v=0430"></script>
+<script src="./js/runtime-health.js?v=0430"></script>
 
 </body>
 </html>

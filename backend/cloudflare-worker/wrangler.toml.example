@@ -4,9 +4,15 @@ compatibility_date = "2026-09-01"
 
 [vars]
 ALLOWED_ORIGIN = "https://YOUR-THALYS-DOMAIN.example"
+GOOGLE_CLIENT_ID = "YOUR_WEB_OAUTH_CLIENT_ID.apps.googleusercontent.com"
 
-# After creating a D1 database, add its binding here:
+# Create a D1 database and bind it as DB.
 # [[d1_databases]]
 # binding = "DB"
 # database_name = "thalys-free"
 # database_id = "YOUR_D1_DATABASE_ID"
+
+# Add secrets with Wrangler; DO NOT put them in this file:
+# npx wrangler secret put GOOGLE_CLIENT_SECRET
+# npx wrangler secret put AUTH_ENCRYPTION_KEY
+# AUTH_ENCRYPTION_KEY must be a random 32-byte base64/base64url value.

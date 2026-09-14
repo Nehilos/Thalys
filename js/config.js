@@ -2,8 +2,8 @@
   'use strict';
   const CONFIG=Object.freeze({
     appName:'Thalys',
-    appVersion:'0.42.0',
-    cacheBust:'0420',
+    appVersion:'0.43.0',
+    cacheBust:'0430',
     sessionSchema:'v1',
     storageSchemaVersion:4,
     syncProtocolVersion:7,
@@ -19,7 +19,8 @@
       backendBridge:true,
       pushClient:true,
       freeTierPolicy:true,
-      backendFreeScaffold:true
+      backendFreeScaffold:true,
+      googleServerAuthBridge:true
     }),
     costPolicy:Object.freeze({
       mode:'free-only',
@@ -41,7 +42,13 @@
       healthPath:'/health',
       pushSubscribePath:'/push/subscriptions',
       pushUnsubscribePath:'/push/subscriptions/remove',
-      googleRefreshPath:'/auth/google/refresh'
+      googleCodeFlowEnabled:false,
+      googleClientId:'530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.googleusercontent.com',
+      googleScopes:'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+      googleCodeExchangePath:'/auth/google/code',
+      googleRefreshPath:'/auth/google/refresh',
+      googleStatusPath:'/auth/google/status',
+      googleLogoutPath:'/auth/google/logout'
     })
   });
   window.ThalysConfig=CONFIG;

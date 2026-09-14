@@ -49,6 +49,7 @@
     if(costEl)costEl.textContent=window.ThalysConfig?.costPolicy?.mode==='free-only'?'Solo gratuito':'Configurabile';
     const photoEl=document.getElementById('device-photo-storage-status');
     if(photoEl)photoEl.textContent=window.ThalysConfig?.costPolicy?.progressPhotos==='google-drive-only'?'Solo Google Drive':'Configurabile';
+    try{await window.ThalysServerAuth?.refreshUI?.();}catch(_){}
     return p;
   }
   async function requestPermission(){
