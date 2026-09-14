@@ -20,7 +20,7 @@ let chartMacroV7=null,chartMicroV7=null;
 async function loadExternalAvatarArtwork(force=false){
   if(window._thalysExternalAvatarLoaded&&!force)return true;
   try{
-    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0373',{cache:'reload'}),fetch('./female.svg?v=0373',{cache:'reload'})]);
+    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0375',{cache:'reload'}),fetch('./female.svg?v=0375',{cache:'reload'})]);
     if(!mr.ok||!fr.ok)throw new Error('SVG_NOT_FOUND');
     const parser=new DOMParser();
     async function install(res,id){const doc=parser.parseFromString(await res.text(),'image/svg+xml'),svg=doc.documentElement,s=document.getElementById(id);if(!s)return;const vb=svg.getAttribute('viewBox');if(vb)s.setAttribute('viewBox',vb);s.replaceChildren(...Array.from(svg.children).filter(n=>n.tagName.toLowerCase()!=='script').map(n=>document.importNode(n,true)));}
@@ -97,17 +97,18 @@ function avatarSetArtworkV8(gender,{force=false}={}){
   if(!group)return false;
   const file=female?'female.svg':'male.svg';
   const ns='http://www.w3.org/2000/svg';
-  const href=`./${file}?v=0373${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
+  const href=`./${file}?v=0375${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
   const image=document.createElementNS(ns,'image');
   image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','768');image.setAttribute('height','1536');
   image.setAttribute('preserveAspectRatio','xMidYMid meet');image.setAttribute('href',href);
   image.setAttributeNS('http://www.w3.org/1999/xlink','href',href);
   image.dataset.externalAvatar='1';
-  const fallbackId=female?'avatar-female-art':'avatar-male-art';
   image.addEventListener('error',()=>{
-    const symbol=document.getElementById(fallbackId);if(!symbol)return;
-    group.replaceChildren(...Array.from(symbol.children).map(n=>n.cloneNode(true)));
-    group.removeAttribute('transform');group.dataset.gender=female?'female':'male';
+    // v0.37.5: never fall back to the legacy embedded artwork, which may differ
+    // from the repository SVG selected by the user. Keep a neutral empty artwork
+    // until the cached/repository SVG becomes available again.
+    group.replaceChildren();
+    group.dataset.gender=female?'female':'male';
   },{once:true});
   group.replaceChildren(image);
   group.removeAttribute('transform');group.style.display='inline';group.dataset.gender=female?'female':'male';
@@ -522,7 +523,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 /* ==========================================================
    THALYS V10 — iOS/WebKit robustness + full PDF export
    ========================================================== */
-const THALYS_APP_VERSION_V10='0.37.4';
+const THALYS_APP_VERSION_V10='0.37.5';
 const THALYS_VERSION_KEY_V10='thalys_app_version';
 const THALYS_RELOAD_KEY_V10='thalys_version_reload_guard';
 
@@ -2109,29 +2110,40 @@ databasePayloads=function(){
 
 /* Rebuild photos from Drive while applying metadata from foto_index.json when present. */
 loadPhotosFromDriveFolder=async function(){
-  if(!getAccessToken()||!driveFolders?.appFolderId)return 0;
-  const folder=await findDriveFolder('foto',driveFolders.appFolderId);if(!folder)return 0;driveFolders.photoFolderId=folder.id;
+  if(!getAccessToken()||!navigator.onLine||!driveFolders?.appFolderId)return 0;
+  const folder=await findDriveFolder('foto',driveFolders.appFolderId);
+  if(!folder){appState.photos=[];updatePhotoCounterV19?.();return 0;}
+  driveFolders.photoFolderId=folder.id;
   const files=await listDriveImageFiles(folder.id,100);
   const idx=JSON.parse(localStorage.getItem('photo_index')||'{}');
-  const byDrive=new Map((appState.photos||[]).filter(x=>x.driveFileId).map(x=>[x.driveFileId,x]));
-  let added=0;
+  const cachedByDrive=new Map((appState.photos||[]).filter(x=>x.driveFileId).map(x=>[x.driveFileId,x]));
+  const canonical=[];
+  let downloaded=0;
   for(const f of files){
     const meta=idx[f.id]||{};
-    if(byDrive.has(f.id)){
-      Object.assign(byDrive.get(f.id),normalizePhotoV19({...meta,driveFileId:f.id,driveName:f.name}));
-      continue;
+    const cached=cachedByDrive.get(f.id)||null;
+    const parsed=String(f.name||'').replace(/\.[^.]+$/,'').split('_');
+    const fallback={date:parsed[0]||String(f.createdTime||f.modifiedTime||'').slice(0,10),view:parsed[1]||'Fronte',part:parsed.slice(2).join('_')||'Full'};
+    let base64='';
+    // Local/IndexedDB media is only an offline cache. Reuse it only for the exact
+    // same Drive file; Drive remains the canonical list and identity source.
+    if(cached?.base64)base64=cached.base64;
+    if(!base64){
+      try{const blob=await downloadDriveFileBlob(f.id);base64=await blobToDataURL(blob);downloaded++;}
+      catch(e){console.warn('photo download v0.37.5',f.name,e);continue;}
     }
-    try{
-      const blob=await downloadDriveFileBlob(f.id),base64=await blobToDataURL(blob);
-      const parsed=String(f.name||'').replace(/\.[^.]+$/,'').split('_');
-      const fallback={date:parsed[0]||String(f.createdTime||f.modifiedTime||'').slice(0,10),view:parsed[1]||'Fronte',part:parsed.slice(2).join('_')||'Full'};
-      appState.photos=Array.isArray(appState.photos)?appState.photos:[];
-      appState.photos.push(normalizePhotoV19({id:'drive_'+f.id,driveFileId:f.id,driveName:f.name,filename:f.name,base64,updatedAt:f.modifiedTime||f.createdTime,...fallback,...meta}));
-      added++;
-    }catch(e){console.warn('photo restore V20',f.name,e)}
+    canonical.push(normalizePhotoV19({
+      ...(cached||{}),...fallback,...meta,
+      id:cached?.id||('drive_'+f.id),driveFileId:f.id,driveName:f.name,filename:meta.filename||f.name,
+      base64,updatedAt:f.modifiedTime||f.createdTime||cached?.updatedAt||null
+    }));
   }
+  // Drive is the ONLY online source of truth for progress photos. Anything not
+  // present in the Drive /foto folder is removed from the online state. IndexedDB
+  // will receive this canonical list as the offline cache in loadDatabasesFromDrive.
+  appState.photos=canonical;
   updatePhotoCounterV19?.();
-  return added;
+  return downloaded;
 };
 
 /* Consult saved response close: immediately restore scroll on the same tab. */

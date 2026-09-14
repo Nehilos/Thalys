@@ -9,14 +9,17 @@ const DRIVE_DB_NAMES = ['thalys_manifest.json','app_state.json','nutrition_targe
 
 function escapeDriveQuery(v){ return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function setDriveStatus(mode='idle', text){
+  // v0.37.5: physical network state is authoritative for the visible source label.
+  // A cached Google token while offline does NOT mean Drive is currently active.
+  if(!navigator.onLine){ mode='idle'; text='Locale'; }
   const icon=document.getElementById('sync-icon'), label=document.getElementById('sync-text');
   if(mode==='saving'){ if(icon) icon.className='fa-solid fa-cloud-arrow-up text-amber-400'; if(label) label.textContent=text||'Salvataggio…'; }
   else if(mode==='error'){ if(icon) icon.className='fa-solid fa-cloud-exclamation text-rose-400'; if(label) label.textContent=text||'Sync errore'; }
   else if(mode==='ok'){ if(icon) icon.className='fa-solid fa-cloud-check text-emerald-400'; if(label) label.textContent=text||'Sincronizzato'; }
   else { if(icon) icon.className='fa-solid fa-cloud text-slate-500'; if(label) label.textContent=text||'Locale'; }
-  if(typeof updateSyncStatus==='function') updateSyncStatus(mode==='ok' || (typeof getAccessToken==='function' && !!getAccessToken()));
+  if(typeof updateSyncStatus==='function') updateSyncStatus(navigator.onLine && (mode==='ok' || (typeof getAccessToken==='function' && !!getAccessToken())));
   const detail=document.getElementById('cloud-user-status');
-  if(detail && typeof getAccessToken==='function' && getAccessToken()) detail.textContent=text || (lastDriveSyncAt ? `Drive sincronizzato ${new Date(lastDriveSyncAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` : 'Google Drive · Thalys App attivo');
+  if(detail){ if(!navigator.onLine) detail.textContent='Locale · dati sul dispositivo'; else if(typeof getAccessToken==='function' && getAccessToken()) detail.textContent=text || (lastDriveSyncAt ? `Drive sincronizzato ${new Date(lastDriveSyncAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}` : 'Google Drive · Thalys App attivo'); }
 }
 
 async function findDriveFolder(name,parentId=null){
@@ -258,7 +261,7 @@ async function findDriveFolder(name,parentId=null){
       for(const [key,value] of Object.entries(dedicated)) if(value!==undefined) cloud[key]=value;
       if(Array.isArray(dedicated.mealHistory)) cloud.nutrition=mergeByKey(cloud.nutrition||[],dedicated.mealHistory,x=>x.id||`${x.date}|${x.meal}|${x.name}|${x.grams}`);
       if(cloud.plansPayload){cloud.workoutPlans=cloud.plansPayload.plans||[];cloud.activeWorkoutPlanId=cloud.plansPayload.activePlanId||cloud.activeWorkoutPlanId||null;cloud.workoutAssignments=cloud.plansPayload.assignments||{};cloud.workoutCompletions=cloud.plansPayload.completions||cloud.workoutCompletions||{};}
-      if(cloud.photoIndex&&typeof cloud.photoIndex==='object')localStorage.setItem('photo_index',JSON.stringify({...cloud.photoIndex,...JSON.parse(localStorage.getItem('photo_index')||'{}')}));
+      if(cloud.photoIndex&&typeof cloud.photoIndex==='object')localStorage.setItem('photo_index',JSON.stringify(cloud.photoIndex));
       let conflictResolution=null;
       try{
         if(window.ThalysSyncQueue?.flushWrites)await window.ThalysSyncQueue.flushWrites();
@@ -508,7 +511,11 @@ async function findDriveFolder(name,parentId=null){
     }
     window.syncAfterNetworkRestore=syncAfterNetworkRestore;
 
-    window.addEventListener('online',()=>{syncAfterNetworkRestore();});
+    window.addEventListener('online',()=>{
+      // Auth owns token restoration and then invokes the Drive recovery cycle.
+      // Do not start a second recovery here or iOS can race two read/merge/write passes.
+      setDriveStatus('saving','Riconnessione…');
+    },{passive:true});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden&&getAccessToken()&&navigator.onLine){if(window.thalysNeedsDriveReconnectSync)syncAfterNetworkRestore();else refreshFromDrive(false);}});
     window.addEventListener('focus',()=>{if(getAccessToken())refreshFromDrive(false);});
     setInterval(()=>{if(!document.hidden&&getAccessToken())refreshFromDrive(false);},30000);

@@ -1,4 +1,4 @@
-// Thalys v0.37.4 - Authentication and persistent session module
+// Thalys v0.37.5 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -9,7 +9,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = '0.37.4';
+    const THALYS_SOFTWARE_VERSION = '0.37.5';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -40,8 +40,8 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
 
     function updateAuthUI(profile){
       profile=profile||savedGoogleProfile();
-      const connected=!!getAccessToken();
-      const reconnecting=!connected&&navigator.onLine&&!!profile;
+      const connected=navigator.onLine&&!!getAccessToken();
+      const reconnecting=navigator.onLine&&!connected&&!!profile;
       const appPreferredName=String(window.appState?.profile?.preferredName||'').trim();
       document.querySelectorAll('#cloud-user-name').forEach(el=>el.textContent=(connected||reconnecting)?(appPreferredName||profile?.name||profile?.displayName||profile?.email||'Utente Google'):'Utente Ospite');
       document.querySelectorAll('#cloud-user-email').forEach(el=>el.textContent=(connected||reconnecting)?(profile?.email||''):'' );
@@ -241,7 +241,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       if(!navigator.onLine)return false;
       startupAccessRequested=false;
 
-      // v0.37.4: on iOS/PWA the in-memory gapi token can disappear while the app is
+      // v0.37.5: on iOS/PWA the in-memory gapi token can disappear while the app is
       // backgrounded/offline even though the cached OAuth token is still valid.
       // Restore that token first and only consider it unusable when it is actually
       // expired (5s safety margin), not one minute early.
@@ -264,8 +264,22 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       return !!getAccessToken();
     }
     window.autoReconnectGoogleAfterNetwork=autoReconnectGoogleAfterNetwork;
-    window.addEventListener('offline',()=>{if(reconnectRetryTimer){clearTimeout(reconnectRetryTimer);reconnectRetryTimer=null;}},{passive:true});
-    window.addEventListener('online',()=>{reconnectRetryCount=0;setTimeout(()=>autoReconnectGoogleAfterNetwork().then(ok=>{if(!ok)scheduleAutomaticReconnect();}),250);},{passive:true});
+    window.addEventListener('offline',()=>{
+      if(reconnectRetryTimer){clearTimeout(reconnectRetryTimer);reconnectRetryTimer=null;}
+      window.thalysNeedsDriveReconnectSync=true;
+      if(typeof setDriveStatus==='function')setDriveStatus('idle','Locale');
+      updateAuthUI(savedGoogleProfile());
+    },{passive:true});
+    window.addEventListener('online',()=>{
+      reconnectRetryCount=0;
+      if(typeof setDriveStatus==='function')setDriveStatus('saving','Riconnessione…');
+      setTimeout(()=>autoReconnectGoogleAfterNetwork().then(ok=>{
+        // autoReconnectGoogleAfterNetwork -> connectDriveAfterToken already performs
+        // syncAfterNetworkRestore when this device was offline. Avoid a duplicate pass.
+        if(ok)updateAuthUI(savedGoogleProfile());
+        else scheduleAutomaticReconnect(900);
+      }),250);
+    },{passive:true});
     window.addEventListener('pageshow',()=>{if(navigator.onLine&&hasRememberedGoogleSession()&&!getAccessToken())setTimeout(()=>autoReconnectGoogleAfterNetwork(),200);},{passive:true});
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navigator.onLine&&hasRememberedGoogleSession()&&!getAccessToken())setTimeout(()=>autoReconnectGoogleAfterNetwork(),150);},{passive:true});
 
