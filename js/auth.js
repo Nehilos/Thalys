@@ -1,4 +1,4 @@
-// Thalys v0.37.5 - Authentication and persistent session module
+// Thalys v0.37.6 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -9,7 +9,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = '0.37.5';
+    const THALYS_SOFTWARE_VERSION = '0.37.6';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -241,7 +241,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       if(!navigator.onLine)return false;
       startupAccessRequested=false;
 
-      // v0.37.5: on iOS/PWA the in-memory gapi token can disappear while the app is
+      // v0.37.6: on iOS/PWA the in-memory gapi token can disappear while the app is
       // backgrounded/offline even though the cached OAuth token is still valid.
       // Restore that token first and only consider it unusable when it is actually
       // expired (5s safety margin), not one minute early.
@@ -501,3 +501,37 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
 
 // Canonical public UI bridge after legacy compatibility helpers.
 function setCloudUserUI(profile){ updateAuthUI(profile); }
+
+// ===== v0.37.6: robust reconnect after an app was STARTED offline =====
+let thalysReconnectSupervisorV0376=null;
+let thalysReconnectBusyV0376=false;
+function stopReconnectSupervisorV0376(){if(thalysReconnectSupervisorV0376){clearInterval(thalysReconnectSupervisorV0376);thalysReconnectSupervisorV0376=null;}}
+async function reconnectTickV0376(){
+  if(thalysReconnectBusyV0376||!navigator.onLine||!hasRememberedGoogleSession())return false;
+  thalysReconnectBusyV0376=true;
+  try{
+    if(!getAccessToken()&&gapiInited)restoreCachedDriveAccessToken();
+    if(getAccessToken()){
+      const ok=await connectDriveAfterToken(true);
+      if(ok){stopReconnectSupervisorV0376();updateAuthUI(savedGoogleProfile());return true;}
+    }
+    if(gapiInited&&gisInited&&!authRequestInFlight){startupAccessRequested=false;await handleAuthClick(true,false);}
+    return !!getAccessToken();
+  }catch(e){console.warn('Reconnect supervisor v0.37.6',e);return false;}
+  finally{thalysReconnectBusyV0376=false;}
+}
+function startReconnectSupervisorV0376(){
+  if(!navigator.onLine||!hasRememberedGoogleSession())return;
+  stopReconnectSupervisorV0376();
+  reconnectTickV0376();
+  let ticks=0;
+  thalysReconnectSupervisorV0376=setInterval(()=>{
+    ticks++;
+    if(!navigator.onLine||!hasRememberedGoogleSession()||getAccessToken()&&window.thalysNeedsDriveReconnectSync===false||ticks>30){stopReconnectSupervisorV0376();return;}
+    reconnectTickV0376();
+  },1000);
+}
+window.addEventListener('offline',()=>{stopReconnectSupervisorV0376();window.thalysNeedsDriveReconnectSync=true;updateAuthUI(savedGoogleProfile());},{passive:true});
+window.addEventListener('online',()=>{setTimeout(startReconnectSupervisorV0376,100);},{passive:true});
+window.addEventListener('pageshow',()=>{if(navigator.onLine&&hasRememberedGoogleSession())setTimeout(startReconnectSupervisorV0376,250);},{passive:true});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navigator.onLine&&hasRememberedGoogleSession())setTimeout(startReconnectSupervisorV0376,200);});

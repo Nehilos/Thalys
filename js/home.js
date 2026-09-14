@@ -328,11 +328,21 @@ function setHomeDate(date){
               ? `${g.exerciseDone}/${g.exerciseTotal} ${tr('esercizi')} · ${Math.max(0,g.exerciseTotal-g.exerciseDone)} ${tr('Da fare')}`
               : tr('Nessuna scheda assegnata per questa data.'));
       }
-      const sb=document.getElementById('home-sync-badge');if(sb){sb.textContent=getAccessToken()?'Drive':'Locale';sb.className=`rounded-full px-2.5 py-1 text-[9px] ${getAccessToken()?'bg-emerald-500/10 text-emerald-300':'bg-slate-900/70 text-slate-400'}`;}
+      const sb=document.getElementById('home-sync-badge');if(sb){const driveLive=navigator.onLine&&!!getAccessToken();sb.textContent=driveLive?'Drive':'Locale';sb.className=`rounded-full px-2.5 py-1 text-[9px] ${driveLive?'bg-emerald-500/10 text-emerald-300':'bg-slate-900/70 text-slate-400'}`;}
       renderHomeAvatar();
       renderPremiumCoach(d);
     }
     function renderTodayDashboard(){ renderHomeDashboard(); }
 
 
-    function renderTodayDashboard(){const d=new Date().toISOString().split('T')[0];const workouts=(appState.workouts||[]).filter(x=>x.date===d);const kcal=(appState.nutrition||[]).filter(x=>x.date===d).reduce((s,x)=>s+Number(x.kcal||0),0);const water=Number((appState.water||{})[d]||0);const w=(appState.wellness||[]).find(x=>x.date===d);document.getElementById('dash-workout')?.replaceChildren(document.createTextNode(`${workouts.length} ${workouts.length===1?'sessione':'esercizi'}`));document.getElementById('dash-kcal')?.replaceChildren(document.createTextNode(`${Math.round(kcal)} kcal`));document.getElementById('dash-water')?.replaceChildren(document.createTextNode(`${water} ml`));document.getElementById('dash-readiness')?.replaceChildren(document.createTextNode(w?`${w.readiness} / 10`:'— / 10'));const b=document.getElementById('today-sync-badge');if(b){b.textContent=getAccessToken()?'Drive':'Locale';b.className=`text-[9px] px-2 py-1 rounded-full ${getAccessToken()?'bg-emerald-500/10 text-emerald-300':'bg-slate-800 text-slate-400'}`;} renderHomeDashboard();}
+    function renderTodayDashboard(){const d=new Date().toISOString().split('T')[0];const workouts=(appState.workouts||[]).filter(x=>x.date===d);const kcal=(appState.nutrition||[]).filter(x=>x.date===d).reduce((s,x)=>s+Number(x.kcal||0),0);const water=Number((appState.water||{})[d]||0);const w=(appState.wellness||[]).find(x=>x.date===d);document.getElementById('dash-workout')?.replaceChildren(document.createTextNode(`${workouts.length} ${workouts.length===1?'sessione':'esercizi'}`));document.getElementById('dash-kcal')?.replaceChildren(document.createTextNode(`${Math.round(kcal)} kcal`));document.getElementById('dash-water')?.replaceChildren(document.createTextNode(`${water} ml`));document.getElementById('dash-readiness')?.replaceChildren(document.createTextNode(w?`${w.readiness} / 10`:'— / 10'));const b=document.getElementById('today-sync-badge');if(b){const driveLive=navigator.onLine&&!!getAccessToken();b.textContent=driveLive?'Drive':'Locale';b.className=`text-[9px] px-2 py-1 rounded-full ${driveLive?'bg-emerald-500/10 text-emerald-300':'bg-slate-800 text-slate-400'}`;} renderHomeDashboard();}
+
+// v0.37.6: keep Home source badges aligned with the physical network immediately.
+function updateHomeSourceBadgesV0376(){
+  const driveLive=navigator.onLine&&typeof getAccessToken==='function'&&!!getAccessToken();
+  const sb=document.getElementById('home-sync-badge');if(sb){sb.textContent=driveLive?'Drive':'Locale';sb.className=`rounded-full px-2.5 py-1 text-[9px] ${driveLive?'bg-emerald-500/10 text-emerald-300':'bg-slate-900/70 text-slate-400'}`;}
+  const tb=document.getElementById('today-sync-badge');if(tb){tb.textContent=driveLive?'Drive':'Locale';tb.className=`text-[9px] px-2 py-1 rounded-full ${driveLive?'bg-emerald-500/10 text-emerald-300':'bg-slate-800 text-slate-400'}`;}
+}
+window.addEventListener('offline',updateHomeSourceBadgesV0376,{passive:true});
+window.addEventListener('online',()=>setTimeout(updateHomeSourceBadgesV0376,100),{passive:true});
+window.addEventListener('thalys:network-resync-complete',updateHomeSourceBadgesV0376);

@@ -93,7 +93,7 @@
 
   async function warmOfflineAppShell() {
     if (!window.caches || !window.isSecureContext) return 0;
-    const urls = ['./', './index.html', './manifest.json', './male.svg?v=0375', './female.svg?v=0375', './css/thalys.css?v=016', './js/storage-manager.js?v=0375', './js/sync-queue.js?v=0375', './js/conflict-resolver.js?v=0375', './js/local-db.js?v=0375', './js/ui-foundation.js?v=0375', './js/language.js?v=0375', './js/drive.js?v=0375', './js/auth.js?v=0375', './js/app-core.js?v=0375', './js/body.js?v=0375', './js/meditation.js?v=0375', './js/nutrition.js?v=0375', './js/workout.js?v=0375', './js/home.js?v=0375', './js/analytics.js?v=0375', './js/app-enhancements.js?v=0375'];
+    const urls = ['./', './index.html', './manifest.json', './male.svg?v=0376', './female.svg?v=0376', './css/thalys.css?v=016', './js/storage-manager.js?v=0376', './js/sync-queue.js?v=0376', './js/conflict-resolver.js?v=0376', './js/local-db.js?v=0376', './js/ui-foundation.js?v=0376', './js/language.js?v=0376', './js/drive.js?v=0376', './js/auth.js?v=0376', './js/app-core.js?v=0376', './js/body.js?v=0376', './js/meditation.js?v=0376', './js/nutrition.js?v=0376', './js/workout.js?v=0376', './js/home.js?v=0376', './js/analytics.js?v=0376', './js/app-enhancements.js?v=0376'];
     try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.37.5').map(k=>caches.delete(k)));}catch(_){}
     const cache = await caches.open('thalys-manual-offline-v0.37.5');
     let saved = 0;

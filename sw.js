@@ -1,34 +1,34 @@
-const CACHE_NAME = 'thalys-shell-v0.37.5';
+const CACHE_NAME = 'thalys-shell-v0.37.6';
 
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
-  './male.svg?v=0375',
-  './female.svg?v=0375',
+  './male.svg?v=0376',
+  './female.svg?v=0376',
   './assets/icons/thalys-app-icon-black.png',
   './css/thalys.css?v=024',
   './js/tailwind-config.js?v=015',
   './js/theme-bootstrap.js?v=015',
-  './js/storage-manager.js?v=0375',
-  './js/sync-queue.js?v=0375',
-  './js/conflict-resolver.js?v=0375',
-  './js/local-db.js?v=0375',
-  './js/ui-foundation.js?v=0375',
-  './js/language.js?v=0375',
-  './js/drive.js?v=0375',
-  './js/auth.js?v=0375',
-  './js/app-core.js?v=0375',
-  './js/body.js?v=0375',
-  './js/meditation.js?v=0375',
-  './js/nutrition.js?v=0375',
-  './js/workout.js?v=0375',
-  './js/home.js?v=0375',
-  './js/analytics.js?v=0375',
+  './js/storage-manager.js?v=0376',
+  './js/sync-queue.js?v=0376',
+  './js/conflict-resolver.js?v=0376',
+  './js/local-db.js?v=0376',
+  './js/ui-foundation.js?v=0376',
+  './js/language.js?v=0376',
+  './js/drive.js?v=0376',
+  './js/auth.js?v=0376',
+  './js/app-core.js?v=0376',
+  './js/body.js?v=0376',
+  './js/meditation.js?v=0376',
+  './js/nutrition.js?v=0376',
+  './js/workout.js?v=0376',
+  './js/home.js?v=0376',
+  './js/analytics.js?v=0376',
   './js/oauth-ui.js?v=015',
   './js/media-tools.js?v=025',
   './js/pwa-register.js?v=015',
-  './js/app-enhancements.js?v=0375',
+  './js/app-enhancements.js?v=0376',
   './lang/lang_it.json?v=23',
   './lang/lang_en.json?v=23',
   './lang/lang_es.json?v=23',
@@ -92,7 +92,7 @@ self.addEventListener('fetch', event => {
       })
       .catch(async () => {
         let cached = await caches.match(request);
-        // v0.37.5: local visual assets may have a version query that changed while the
+        // v0.37.6: local visual assets may have a version query that changed while the
         // device was offline. Fall back to the cached same-path asset instead of
         // rendering a broken/empty image.
         if (!cached && isLocal) cached = await caches.match(request, { ignoreSearch: true });

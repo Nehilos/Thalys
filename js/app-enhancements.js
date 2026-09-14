@@ -20,7 +20,7 @@ let chartMacroV7=null,chartMicroV7=null;
 async function loadExternalAvatarArtwork(force=false){
   if(window._thalysExternalAvatarLoaded&&!force)return true;
   try{
-    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0375',{cache:'reload'}),fetch('./female.svg?v=0375',{cache:'reload'})]);
+    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0376',{cache:'reload'}),fetch('./female.svg?v=0376',{cache:'reload'})]);
     if(!mr.ok||!fr.ok)throw new Error('SVG_NOT_FOUND');
     const parser=new DOMParser();
     async function install(res,id){const doc=parser.parseFromString(await res.text(),'image/svg+xml'),svg=doc.documentElement,s=document.getElementById(id);if(!s)return;const vb=svg.getAttribute('viewBox');if(vb)s.setAttribute('viewBox',vb);s.replaceChildren(...Array.from(svg.children).filter(n=>n.tagName.toLowerCase()!=='script').map(n=>document.importNode(n,true)));}
@@ -97,7 +97,7 @@ function avatarSetArtworkV8(gender,{force=false}={}){
   if(!group)return false;
   const file=female?'female.svg':'male.svg';
   const ns='http://www.w3.org/2000/svg';
-  const href=`./${file}?v=0375${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
+  const href=`./${file}?v=0376${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
   const image=document.createElementNS(ns,'image');
   image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','768');image.setAttribute('height','1536');
   image.setAttribute('preserveAspectRatio','xMidYMid meet');image.setAttribute('href',href);
@@ -2990,3 +2990,149 @@ document.addEventListener('DOMContentLoaded',()=>{
     const d=targetAutoDataV22();setTargetAutoUIV22(d);
   },350);
 });
+
+/* ==========================================================
+   THALYS v0.37.6 — Drive-only progress photos
+   Progress photos are NEVER available offline. Drive /foto is the
+   canonical source; local state stores metadata only (no base64).
+   ========================================================== */
+const thalysPhotoObjectUrlsV0376=new Map();
+function revokeThalysPhotoUrlsV0376(){
+  for(const url of thalysPhotoObjectUrlsV0376.values())try{URL.revokeObjectURL(url)}catch(_){}
+  thalysPhotoObjectUrlsV0376.clear();
+}
+function photoOfflineMessageV0376(){
+  return 'Per vedere le foto bisogna collegarsi a Internet';
+}
+function photoDriveMetaV0376(p){
+  if(!p)return null;
+  const {base64:_base64,blob:_blob,objectUrl:_objectUrl,...meta}=p;
+  return normalizePhotoV19(meta);
+}
+function updatePhotoCounterV0376(){
+  const n=(navigator.onLine&&getAccessToken())?(Array.isArray(appState.photos)?appState.photos.length:0):0;
+  const c=document.getElementById('photo-count-v19');if(c)c.textContent=n;
+  const m=document.getElementById('photo-manager-count-v19');if(m)m.textContent=navigator.onLine?`${n} ${tr('foto')}`:photoOfflineMessageV0376();
+}
+updatePhotoCounterV19=updatePhotoCounterV0376;
+
+loadPhotosFromDriveFolder=async function(){
+  if(!navigator.onLine||!getAccessToken()||!driveFolders?.appFolderId){
+    appState.photos=[];
+    updatePhotoCounterV0376();
+    return 0;
+  }
+  const folder=await findDriveFolder('foto',driveFolders.appFolderId);
+  if(!folder){appState.photos=[];updatePhotoCounterV0376();return 0;}
+  driveFolders.photoFolderId=folder.id;
+  const files=await listDriveImageFiles(folder.id,100);
+  let idx={};
+  try{idx=JSON.parse(localStorage.getItem('photo_index')||'{}')||{};}catch(_){}
+  appState.photos=files.map(f=>{
+    const meta=idx[f.id]||{};
+    const parsed=String(f.name||'').replace(/\.[^.]+$/,'').split('_');
+    const fallback={date:parsed[0]||String(f.createdTime||f.modifiedTime||'').slice(0,10),view:parsed[1]||'Fronte',part:parsed.slice(2).join('_')||'Full'};
+    return normalizePhotoV19({...fallback,...meta,id:'drive_'+f.id,driveFileId:f.id,driveName:f.name,filename:meta.filename||f.name,updatedAt:f.modifiedTime||f.createdTime||null});
+  });
+  updatePhotoCounterV0376();
+  return appState.photos.length;
+};
+
+async function drivePhotoObjectUrlV0376(photo){
+  if(!navigator.onLine||!getAccessToken()||!photo?.driveFileId)return '';
+  if(thalysPhotoObjectUrlsV0376.has(photo.driveFileId))return thalysPhotoObjectUrlsV0376.get(photo.driveFileId);
+  const blob=await downloadDriveFileBlob(photo.driveFileId);
+  const url=URL.createObjectURL(blob);
+  thalysPhotoObjectUrlsV0376.set(photo.driveFileId,url);
+  return url;
+}
+
+renderPhotos=function(){
+  const gallery=document.getElementById('photo-gallery');if(!gallery)return;
+  if(!navigator.onLine||!getAccessToken()){
+    revokeThalysPhotoUrlsV0376();
+    gallery.innerHTML=`<div class="col-span-2 rounded-2xl border border-dashed border-amber-500/30 bg-amber-500/5 p-7 text-center text-[11px] font-bold text-amber-200"><i class="fa-solid fa-wifi mr-2"></i>${photoOfflineMessageV0376()}</div>`;
+    updatePhotoCounterV0376();
+    return;
+  }
+  normalizeAllPhotosV19();
+  const photos=visiblePhotosV19();
+  gallery.innerHTML=photos.length?photos.map(photo=>`
+    <button type="button" onclick="openPhotoViewerV19('${photo.id}')" class="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-left">
+      <div id="photo-thumb-${photo.driveFileId}" class="absolute inset-0 flex items-center justify-center text-slate-500"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      <img id="photo-img-${photo.driveFileId}" alt="${escapeHTML(photo.filename||'Foto progresso')}" class="hidden h-full w-full object-cover">
+      <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-transparent px-2.5 pb-2 pt-7">
+        <div class="flex items-end justify-between gap-2"><div class="min-w-0"><div class="truncate text-[10px] font-black text-white">${escapeHTML(photo.view)} · ${escapeHTML(photo.part)}</div><div class="mt-0.5 text-[8px] text-slate-300">${photo.date}</div></div>${photo.favorite?'<i class="fa-solid fa-star text-amber-300"></i>':''}</div>
+      </div>
+    </button>`).join(''):`<div class="col-span-2 rounded-2xl border border-dashed border-slate-700 p-6 text-center text-[10px] text-slate-500">${tr('Nessuna foto per i filtri selezionati.')}</div>`;
+  updatePhotoCounterV0376();
+  for(const photo of photos){
+    drivePhotoObjectUrlV0376(photo).then(url=>{
+      if(!url)return;
+      const img=document.getElementById(`photo-img-${photo.driveFileId}`),loader=document.getElementById(`photo-thumb-${photo.driveFileId}`);
+      if(img){img.src=url;img.classList.remove('hidden');}if(loader)loader.classList.add('hidden');
+    }).catch(()=>{const loader=document.getElementById(`photo-thumb-${photo.driveFileId}`);if(loader)loader.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i>';});
+  }
+};
+
+openPhotoManagerV19=async function(){
+  forceHideModalV20('add-photo-modal-v19');forceHideModalV20('photo-viewer-modal-v19');
+  updatePhotoFilterUIV19();
+  if(navigator.onLine&&getAccessToken()){
+    try{await initializeDriveWorkspace();await loadPhotosFromDriveFolder();}catch(e){console.warn('Drive photo list',e);}
+  }
+  renderPhotos();forceShowModalV20('photo-manager-modal');
+};
+
+openAddPhotoModalV20=function(){
+  if(!navigator.onLine||!getAccessToken()){showToast(photoOfflineMessageV0376(),'fa-wifi');return;}
+  forceHideModalV20('photo-manager-modal');
+  const d=document.getElementById('photo-add-date-v19');if(d)d.value=currentLocalDateStr();
+  forceShowModalV20('add-photo-modal-v19');
+};
+
+handlePhotoUploadV19=async function(event){
+  const file=event.target.files?.[0];if(!file)return;
+  try{
+    if(!navigator.onLine||!getAccessToken()){showToast(photoOfflineMessageV0376(),'fa-wifi');return;}
+    if(!file.type.startsWith('image/')){showToast(tr('Seleziona un’immagine valida'));return;}
+    const date=document.getElementById('photo-add-date-v19')?.value||currentLocalDateStr();
+    const view=document.getElementById('photo-add-view-v19')?.value||'Fronte';
+    const part=document.getElementById('photo-add-part-v19')?.value||'Full';
+    const filename=photoFilenameV19(date,view,part,photoExtV19(file));
+    await initializeDriveWorkspace();
+    const folder=driveFolders?.photoFolderId||(await ensureFolderAfterConsent('foto',driveFolders.appFolderId,'La cartella foto non esiste. Vuoi crearla in Thalys App?'))?.id;
+    if(!folder)throw new Error('PHOTO_FOLDER_MISSING');
+    driveFolders.photoFolderId=folder;
+    const uploadFile=new File([file],filename,{type:file.type||'image/jpeg'});
+    const uploaded=await uploadDriveFile(filename,uploadFile,uploadFile.type,folder,true);
+    appState.photos=Array.isArray(appState.photos)?appState.photos:[];
+    appState.photos.unshift(normalizePhotoV19({id:'drive_'+uploaded.id,driveFileId:uploaded.id,driveName:filename,filename,date,view,part,favorite:false,updatedAt:new Date().toISOString()}));
+    saveStateToLocal({source:'photo-drive-upload'});
+    closeModal('add-photo-modal-v19');
+    await loadPhotosFromDriveFolder();
+    renderPhotos();
+    showToast('Foto caricata su Drive ✓','fa-cloud-arrow-up');
+  }catch(e){console.error('Photo Drive upload',e);showToast('Impossibile caricare la foto su Drive','fa-triangle-exclamation');}
+  finally{event.target.value='';}
+};
+handlePhotoUpload=handlePhotoUploadV19;
+
+openPhotoViewerV19=async function(id){
+  if(!navigator.onLine||!getAccessToken()){showToast(photoOfflineMessageV0376(),'fa-wifi');return;}
+  const p=photoByIdV19(id);if(!p)return;
+  forceHideModalV20('photo-manager-modal');
+  const img=document.getElementById('photo-viewer-img-v19');if(img){img.removeAttribute('src');}
+  try{const url=await drivePhotoObjectUrlV0376(p);if(img)img.src=url;}catch(e){showToast('Impossibile leggere la foto da Drive');return;}
+  const title=document.getElementById('photo-viewer-title-v19');if(title)title.textContent=p.filename||tr('Foto progresso');
+  const meta=document.getElementById('photo-viewer-meta-v19');if(meta)meta.textContent=`${p.date} · ${p.view} · ${p.part}`;
+  const fav=document.getElementById('photo-viewer-fav-v19');if(fav){fav.innerHTML=p.favorite?'<i class="fa-solid fa-star mr-1"></i>Preferito':'<i class="fa-regular fa-star mr-1"></i>Preferito';fav.onclick=()=>togglePhotoFavoriteV19(id)}
+  const share=document.getElementById('photo-viewer-share-v19');if(share)share.onclick=()=>sharePhotoV0376(id);
+  const save=document.getElementById('photo-viewer-save-v19');if(save)save.onclick=()=>savePhotoToDeviceV0376(id);
+  forceShowModalV20('photo-viewer-modal-v19');
+};
+async function savePhotoToDeviceV0376(id){const p=photoByIdV19(id);if(!p||!navigator.onLine)return;const url=await drivePhotoObjectUrlV0376(p);const a=document.createElement('a');a.href=url;a.download=p.filename||'thalys-photo.jpg';document.body.appendChild(a);a.click();a.remove();}
+async function sharePhotoV0376(id){const p=photoByIdV19(id);if(!p||!navigator.onLine)return;const blob=await downloadDriveFileBlob(p.driveFileId);const file=new File([blob],p.filename||'thalys-photo.jpg',{type:blob.type||'image/jpeg'});try{if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({files:[file],title:'Thalys',text:`${p.date} · ${p.view} · ${p.part}`});return;}}catch(e){if(e?.name==='AbortError')return;}savePhotoToDeviceV0376(id);}
+
+window.addEventListener('offline',()=>{revokeThalysPhotoUrlsV0376();if(!document.getElementById('photo-manager-modal')?.classList.contains('hidden'))renderPhotos();},{passive:true});
+window.addEventListener('online',()=>{if(!document.getElementById('photo-manager-modal')?.classList.contains('hidden'))setTimeout(()=>openPhotoManagerV19(),600);},{passive:true});
