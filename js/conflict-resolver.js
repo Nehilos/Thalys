@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.36.2';
-  const PROTOCOL_VERSION = 6;
+  const APP_VERSION = '0.36.3';
+  const PROTOCOL_VERSION = 7;
 
   function clone(value) {
     try { return structuredClone(value); }
@@ -130,6 +130,17 @@
       return;
     }
     if (applyArrayOperation(state,op,decisions)) { touched.fields.add(arrayField(entity)); return; }
+    if (entity === 'activeWorkoutPlan') {
+      state.activeWorkoutPlanId = clone(op.payload?.after ?? null);
+      touched.fields.add('activeWorkoutPlanId');
+      decisions.push({opId:op.id,entity,resolution:'local-pending'}); return;
+    }
+    if (entity === 'workoutAssignments') {
+      const before=payloadBefore(op)||{}, after=payloadAfter(op)||{};
+      state.workoutAssignments=patchChangedFields(state.workoutAssignments||{},before,after);
+      touched.fields.add('workoutAssignments');
+      decisions.push({opId:op.id,entity,resolution:'field-merge'}); return;
+    }
     if (entity === 'workoutCompletion') {
       const date=String(op.date||op.entityId||''); if(!date)return;
       state.workoutCompletions={...(state.workoutCompletions||{})};

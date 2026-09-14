@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.36.2';
+  const APP_VERSION = '0.36.3';
   const STORE = 'sync_queue';
   const GLOBAL_STATE_ID_PREFIX = 'state:';
   let writeChain = Promise.resolve();
@@ -174,6 +174,13 @@
     ops.push(...diffMapArray(previousState.workoutPlans,currentState.workoutPlans,'workoutPlan',source));
     ops.push(...diffMapArray(previousState.workoutHistory,currentState.workoutHistory,'workoutHistory',source));
     ops.push(...diffMapArray(previousState.meditation,currentState.meditation,'meditation',source));
+
+    if(!same(previousState.activeWorkoutPlanId,currentState.activeWorkoutPlanId)) {
+      ops.push(baseRecord({entity:'activeWorkoutPlan',entityId:'active',action:'update',payload:{before:previousState.activeWorkoutPlanId||null,after:currentState.activeWorkoutPlanId||null},source}));
+    }
+    if(!same(previousState.workoutAssignments,currentState.workoutAssignments)) {
+      ops.push(baseRecord({entity:'workoutAssignments',entityId:'assignments',action:'update',payload:{before:previousState.workoutAssignments||{},after:currentState.workoutAssignments||{}},source}));
+    }
 
     const completionDates = new Set([...Object.keys(previousState.workoutCompletions||{}),...Object.keys(currentState.workoutCompletions||{})]);
     completionDates.forEach(date=>{
