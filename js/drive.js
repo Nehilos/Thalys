@@ -124,7 +124,8 @@ async function findDriveFolder(name,parentId=null){
     function databasePayloads(){
       const {consultations:_consultations,aiConsults:_aiConsults,...appCore}=appState||{};
       return {
-        'thalys_manifest.json':{app:'Thalys',schemaVersion:7,updatedAt:new Date().toISOString(),databaseVersion:5},
+        'thalys_manifest.json':{app:'Thalys',schemaVersion:8,updatedAt:new Date().toISOString(),databaseVersion:6,syncProtocolVersion:5},
+        'sync_meta.json':window.ThalysSyncQueue?.getSyncMetadata?window.ThalysSyncQueue.getSyncMetadata():{version:1,protocolVersion:5,records:{},tombstones:{}},
         'app_state.json':{...appCore,photos:[],profilePhoto:null},
         'workouts.json':appState.workouts||[],
         'workout_plans.json':{plans:appState.workoutPlans||[],activePlanId:appState.activeWorkoutPlanId||null,assignments:appState.workoutAssignments||{},completions:appState.workoutCompletions||{}},
@@ -220,7 +221,7 @@ async function findDriveFolder(name,parentId=null){
       let cloud={};
       const reads=[];
       const load=(name,key)=>{if(byName.has(name))reads.push(readDriveJSON(name,driveFolders.databaseFolderId).then(d=>{cloud[key]=d;}));};
-      load('app_state.json','appState');load('workouts.json','workouts');load('workout_history.json','workoutHistory');load('meal_history.json','mealHistory');load('active_plan_history.json','activeWorkoutPlanHistory');load('nutrition.json','nutrition');load('alim_database.json','presets');load('body_metrics.json','bodyMetrics');load('wellness_data.json','wellness');load('water.json','water');load('meditation.json','meditation');load('workout_plans.json','plansPayload');load('foto_index.json','photoIndex');load('foto_profilo.json','profilePhoto');load('messages.json','messages');load('consultations.json','consultations');load('ai_consults.json','aiConsults');
+      load('app_state.json','appState');load('sync_meta.json','syncMeta');load('workouts.json','workouts');load('workout_history.json','workoutHistory');load('meal_history.json','mealHistory');load('active_plan_history.json','activeWorkoutPlanHistory');load('nutrition.json','nutrition');load('alim_database.json','presets');load('body_metrics.json','bodyMetrics');load('wellness_data.json','wellness');load('water.json','water');load('meditation.json','meditation');load('workout_plans.json','plansPayload');load('foto_index.json','photoIndex');load('foto_profilo.json','profilePhoto');load('messages.json','messages');load('consultations.json','consultations');load('ai_consults.json','aiConsults');
       await Promise.all(reads);
       if(!byName.has('foto_profilo.json')){
         try{await uploadDriveFile('foto_profilo.json',JSON.stringify(appState.profilePhoto||null),'application/json',driveFolders.databaseFolderId,true);}
@@ -244,8 +245,9 @@ async function findDriveFolder(name,parentId=null){
       try{
         if(window.ThalysSyncQueue?.flushWrites)await window.ThalysSyncQueue.flushWrites();
         const pendingOps=window.ThalysSyncQueue?.listPendingOperations?await window.ThalysSyncQueue.listPendingOperations():[];
-        if(pendingOps.length&&window.ThalysConflictResolver?.resolve){
-          conflictResolution=await window.ThalysConflictResolver.resolve(cloud,appState,pendingOps);
+        const syncMeta=window.ThalysSyncQueue?.mergeSyncMetadata?window.ThalysSyncQueue.mergeSyncMetadata(cloud.syncMeta):cloud.syncMeta;
+        if((pendingOps.length||Object.keys(syncMeta?.tombstones||{}).length)&&window.ThalysConflictResolver?.resolve){
+          conflictResolution=await window.ThalysConflictResolver.resolve(cloud,appState,pendingOps,syncMeta);
           cloud=conflictResolution.state||cloud;
         }
       }catch(e){console.warn('Conflict resolver fallback',e);conflictResolution=null;}

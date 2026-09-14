@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.35.1';
-  const PROTOCOL_VERSION = 4;
+  const APP_VERSION = '0.36';
+  const PROTOCOL_VERSION = 5;
 
   function clone(value) {
     try { return structuredClone(value); }
@@ -90,6 +90,20 @@
     decisions.push({opId:op.id,entity:op.entity,entityId:id,resolution:'local-update-legacy'}); return true;
   }
 
+
+  function applyTombstones(state, syncMeta, touched, decisions){
+    const tombstones=syncMeta?.tombstones||{};
+    for(const [key,tomb] of Object.entries(tombstones)){
+      const field=arrayField(tomb?.entity); if(!field)continue;
+      const arr=Array.isArray(state[field])?[...state[field]]:[];
+      const id=String(tomb?.entityId??'');
+      const idx=arr.findIndex((item,i)=>keyOf(tomb.entity,item,i)===id);
+      if(idx>=0){arr.splice(idx,1);state[field]=arr;}
+      touched.fields.add(field);
+      decisions.push({entity:tomb.entity,entityId:id,resolution:'tombstone',deletedAt:tomb.deletedAt,revision:tomb.revision,key});
+    }
+  }
+
   function applyOperation(state, op, touched, decisions) {
     if (!op || op.kind !== 'operation') return;
     const entity = op.entity;
@@ -127,11 +141,12 @@
     }
   }
 
-  async function resolve(cloudState, localState, pendingOperations) {
+  async function resolve(cloudState, localState, pendingOperations, syncMeta = null) {
     const ops = sortOps((pendingOperations || []).filter(x => x?.kind === 'operation' && x?.status === 'pending'));
     const state = clone(cloudState || {});
     const touched = {fields:new Set(), waterDates:new Set()};
     const decisions=[];
+    applyTombstones(state,syncMeta,touched,decisions);
     for (const op of ops) applyOperation(state,op,touched,decisions);
     const result={
       state,

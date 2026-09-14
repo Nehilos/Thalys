@@ -1,11 +1,62 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.35.1';
+  const APP_VERSION = '0.36';
   const STORE = 'sync_queue';
   const GLOBAL_STATE_ID_PREFIX = 'state:';
   let writeChain = Promise.resolve();
   let sequence = 0;
+
+
+  const SYNC_META_KEY = 'thalys_sync_metadata';
+  function emptySyncMetadata(){ return {version:1,protocolVersion:5,updatedAt:isoNow(),records:{},tombstones:{}}; }
+  function getSyncMetadata(){
+    try { const raw=JSON.parse(localStorage.getItem(SYNC_META_KEY)||'null'); return raw&&typeof raw==='object'?{...emptySyncMetadata(),...raw,records:{...(raw.records||{})},tombstones:{...(raw.tombstones||{})}}:emptySyncMetadata(); }
+    catch(_){ return emptySyncMetadata(); }
+  }
+  function saveSyncMetadata(meta){
+    const clean={...emptySyncMetadata(),...(meta||{}),updatedAt:isoNow(),records:{...(meta?.records||{})},tombstones:{...(meta?.tombstones||{})}};
+    try{localStorage.setItem(SYNC_META_KEY,JSON.stringify(clean));}catch(_){}
+    return clean;
+  }
+  function recordKey(op){ return `${String(op?.entity||'')}::${String(op?.entityId ?? op?.date ?? '')}`; }
+  function noteRecordMetadata(records){
+    if(!records?.length)return getSyncMetadata();
+    const meta=getSyncMetadata();
+    for(const op of records){
+      if(op?.kind!=='operation')continue;
+      const key=recordKey(op); if(!key||key==='::')continue;
+      const prev=meta.records[key]||{}; const revision=(Number(prev.revision)||0)+1;
+      if(op.action==='delete'){
+        delete meta.records[key];
+        meta.tombstones[key]={entity:op.entity,entityId:op.entityId,date:op.date||null,deletedAt:op.updatedAt||op.createdAt||isoNow(),deviceId:op.deviceId||deviceId(),revision,protocolVersion:5};
+      }else{
+        meta.records[key]={entity:op.entity,entityId:op.entityId,date:op.date||null,updatedAt:op.updatedAt||op.createdAt||isoNow(),deviceId:op.deviceId||deviceId(),revision,protocolVersion:5};
+        const tomb=meta.tombstones[key];
+        if(tomb && Date.parse(meta.records[key].updatedAt||0)>=Date.parse(tomb.deletedAt||0)) delete meta.tombstones[key];
+      }
+    }
+    return saveSyncMetadata(meta);
+  }
+  function newerMeta(a,b,timeField){
+    const ar=Number(a?.revision)||0, br=Number(b?.revision)||0;
+    const at=Date.parse(a?.[timeField]||a?.updatedAt||0)||0, bt=Date.parse(b?.[timeField]||b?.updatedAt||0)||0;
+    if(at!==bt)return at>bt?a:b; if(ar!==br)return ar>br?a:b;
+    return String(a?.deviceId||'')>=String(b?.deviceId||'')?a:b;
+  }
+  function mergeSyncMetadata(remote){
+    const local=getSyncMetadata(), r=remote&&typeof remote==='object'?remote:emptySyncMetadata();
+    const out=emptySyncMetadata();
+    for(const key of new Set([...Object.keys(r.records||{}),...Object.keys(local.records||{})])) out.records[key]=newerMeta(local.records?.[key],r.records?.[key],'updatedAt');
+    for(const key of new Set([...Object.keys(r.tombstones||{}),...Object.keys(local.tombstones||{})])) out.tombstones[key]=newerMeta(local.tombstones?.[key],r.tombstones?.[key],'deletedAt');
+    // A later live revision resurrects a record; a later/equal tombstone keeps it deleted.
+    for(const key of new Set([...Object.keys(out.records),...Object.keys(out.tombstones)])){
+      const rec=out.records[key], tomb=out.tombstones[key]; if(!rec||!tomb)continue;
+      const rt=Date.parse(rec.updatedAt||0)||0, dt=Date.parse(tomb.deletedAt||0)||0;
+      if(rt>dt) delete out.tombstones[key]; else delete out.records[key];
+    }
+    return saveSyncMetadata(out);
+  }
 
   function storage() { return window.ThalysStorage || null; }
   function deviceId() { return window.THALYS_DEVICE_ID || storage()?.getDeviceId?.() || 'unknown-device'; }
@@ -59,6 +110,7 @@
         localStorage.setItem('thalys_drive_dirty', '1');
         localStorage.setItem('thalys_sync_queue_pending', '1');
       } catch (_) {}
+      noteRecordMetadata(records);
       window.dispatchEvent(new CustomEvent('thalys:sync-queue-change', { detail: { pending: true, records } }));
       return records;
     } catch (error) {
@@ -67,9 +119,18 @@
     }
   }
 
+  function entityKey(entity,x,index){
+    if(x?.id!=null)return String(x.id);
+    if(entity==='nutrition')return `${x?.date||''}|${x?.meal||''}|${x?.name||''}|${x?.grams||''}`;
+    if(entity==='bodyMetric')return String(x?.date||index);
+    if(entity==='workoutPlan')return String(x?.name||index);
+    if(entity==='workoutHistory')return `${x?.date||''}|${x?.planId||''}`;
+    if(entity==='meditation')return `${x?.date||''}|${x?.completedAt||x?.minutes||''}`;
+    return String(x?.date||index);
+  }
   function diffMapArray(previous, current, entity, source) {
-    const p = new Map((Array.isArray(previous)?previous:[]).filter(Boolean).map((x,i)=>[String(x.id ?? `${x.date||''}|${i}`),x]));
-    const c = new Map((Array.isArray(current)?current:[]).filter(Boolean).map((x,i)=>[String(x.id ?? `${x.date||''}|${i}`),x]));
+    const p = new Map((Array.isArray(previous)?previous:[]).filter(Boolean).map((x,i)=>[entityKey(entity,x,i),x]));
+    const c = new Map((Array.isArray(current)?current:[]).filter(Boolean).map((x,i)=>[entityKey(entity,x,i),x]));
     const out=[];
     c.forEach((value,id)=>{
       const old=p.get(id);
@@ -209,6 +270,6 @@
     }catch(error){console.warn('Thalys Sync Queue init',error);return {available:false,pending:0,error};}
   }
 
-  window.ThalysSyncQueue=Object.freeze({enqueueStateChange,enqueueGranularChanges,buildGranularOperations,flushWrites,listByStatus,listPendingOperations,countPending,hasPending,markPendingSynced,noteSyncFailure,pruneSynced,initialize});
+  window.ThalysSyncQueue=Object.freeze({enqueueStateChange,enqueueGranularChanges,buildGranularOperations,flushWrites,listByStatus,listPendingOperations,countPending,hasPending,markPendingSynced,noteSyncFailure,pruneSynced,initialize,getSyncMetadata,mergeSyncMetadata,recordKey});
   window.thalysSyncQueueReady=initialize();
 })();
