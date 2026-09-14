@@ -1,4 +1,4 @@
-# Thalys v0.35.2
+# Thalys v0.35.3
 
 Bugfix autenticazione/logout Google Drive.
 
@@ -11,7 +11,7 @@ Modifiche principali:
 - Se una callback OAuth tardiva fallisce ma esiste già un token valido, Thalys usa il token valido invece di mostrare un falso errore.
 - Dopo un nuovo token, un 403 Drive transitorio viene ritentato una sola volta con workspace Drive ricaricato.
 - Nessuna modifica alla Sync Queue / Conflict Resolver v0.35.1.
-- Cache PWA/offline e query degli script aggiornate a v0.35.2.
+- Cache PWA/offline e query degli script aggiornate a v0.35.3.
 
 Test consigliato:
 1. Accedi normalmente e verifica pallino verde.

@@ -8,7 +8,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const GYM_SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
-    let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false;
+    let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0;
 
     function getAccessToken(){ return (window.gapi && gapi.client && gapi.client.getToken && gapi.client.getToken())?.access_token || null; }
@@ -119,7 +119,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       }
     }
 
-    async function handleAuthClick(silentStartup=false){
+    async function handleAuthClick(silentStartup=false, forceInteractive=false){
       const silent = silentStartup === true;
       if(!tokenClient||!gapiInited){if(!silent)showToast('Google non pronto: riprova tra poco');return false;}
       // v0.35.2: never allow two Google token popups/callbacks to overlap.
@@ -142,18 +142,32 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
             await connectDriveAfterToken(silent);
             return;
           }
+          // v0.35.3 desktop reconnect: after a normal local logout the OAuth grant still
+          // exists. First try to reuse it without forcing account selection. Only when
+          // Google explicitly requires interaction do one controlled select_account retry.
+          const oauthErr=String(resp.error||'').toLowerCase();
+          if(!silent && !manualAuthFallbackUsed && ['interaction_required','consent_required','login_required','account_selection_required'].includes(oauthErr)){
+            manualAuthFallbackUsed=true;
+            authRequestInFlight=false;
+            setTimeout(()=>handleAuthClick(false,true),0);
+            return;
+          }
+          manualAuthFallbackUsed=false;
           updateAuthUI(savedGoogleProfile());
           if(!silent)showOAuthBlockedInfo(resp);
           return;
         }
+        manualAuthFallbackUsed=false;
         cacheDriveAccessToken(resp);
         const ok=await connectDriveAfterToken(silent);
         if(!ok&&!silent)showToast('Accesso riuscito, ma Drive non è stato sincronizzato','fa-triangle-exclamation');
       };
       try{
-        // Silent startup may reuse an already granted session. Manual login deliberately
-        // shows account selection, but does not force a fresh consent/revocation cycle.
-        tokenClient.requestAccessToken(silent?{prompt:''}:{prompt:'select_account'});
+        // v0.35.3: normal reconnect first reuses the existing OAuth grant. This is more
+        // reliable on desktop Chrome after a local Thalys logout and avoids unnecessary
+        // popup/account-selection cycles. If Google requires interaction, callback above
+        // retries exactly once with select_account.
+        tokenClient.requestAccessToken((silent || !forceInteractive)?{prompt:''}:{prompt:'select_account'});
         return true;
       }catch(e){
         authRequestInFlight=false;
@@ -170,6 +184,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       authRequestSerial++;
       authRequestInFlight=false;
       startupAccessRequested=false;
+      manualAuthFallbackUsed=false;
       if(window.gapi?.client) gapi.client.setToken('');
       clearCachedDriveAccessToken();
       try{window.google?.accounts?.id?.disableAutoSelect?.();}catch(_){}
