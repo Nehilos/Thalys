@@ -1,4 +1,4 @@
-// Thalys v0.47.1 - Authentication and persistent session module
+// Thalys v0.47.2 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -11,7 +11,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.47.1';
+    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.47.2';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -127,6 +127,20 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
           if(!recovered)throw Object.assign(new Error('NETWORK_RECOVERY_PENDING'),{code:'NETWORK_ERROR'});
         } else {
           await refreshFromDrive(false,true);
+        }
+        // v0.47.2: never declare reconnect complete while a persisted dirty flag or
+        // pending queue still exists. A concurrent module may have restored the token
+        // first; this final gate guarantees the actual Drive flush has finished.
+        let stillPending = localStorage.getItem('thalys_drive_dirty') === '1'
+          || localStorage.getItem('thalys_sync_queue_pending') === '1'
+          || window.thalysNeedsDriveReconnectSync === true;
+        if(!stillPending && window.ThalysSyncQueue?.countPending){
+          try{ stillPending = (await window.ThalysSyncQueue.countPending()) > 0; }catch(_){}
+        }
+        if(stillPending && typeof syncAfterNetworkRestore==='function'){
+          window.thalysNeedsDriveReconnectSync=true;
+          const flushed=await syncAfterNetworkRestore();
+          if(!flushed)throw Object.assign(new Error('NETWORK_RECOVERY_PENDING'),{code:'NETWORK_ERROR'});
         }
         if(typeof runWhenThalysCoreReady==='function')runWhenThalysCoreReady(()=>{if(typeof renderAllViews==='function')renderAllViews();});
         markCurrentVersionAuthorized();

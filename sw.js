@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thalys-shell-v0.47.1';
+const CACHE_NAME = 'thalys-shell-v0.47.2';
 
 const APP_SHELL = [
   './',
@@ -116,7 +116,7 @@ self.addEventListener('fetch', event => {
 });
 
 
-// v0.47.1 - notification/push client foundation. Remote push delivery requires a server subscription endpoint.
+// v0.47.2 - notification/push client foundation. Remote push delivery requires a server subscription endpoint.
 self.addEventListener('push', event => {
   let payload={};
   try{payload=event.data?event.data.json():{};}catch(_){payload={body:event.data?event.data.text():''};}

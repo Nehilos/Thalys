@@ -456,6 +456,7 @@ async function findDriveFolder(name,parentId=null){
     // when another device changed Drive while this device was offline: local pending
     // changes are merged with the newest Drive databases before anything is uploaded.
     let networkRecoveryRunning=false;
+    let networkRecoveryPromise=null;
     let networkRecoveryRetryTimer=null;
     function scheduleNetworkRecoveryRetry(delay=1800){
       if(networkRecoveryRetryTimer)clearTimeout(networkRecoveryRetryTimer);
@@ -463,51 +464,62 @@ async function findDriveFolder(name,parentId=null){
       networkRecoveryRetryTimer=setTimeout(()=>{networkRecoveryRetryTimer=null;syncAfterNetworkRestore();},delay);
     }
     async function syncAfterNetworkRestore(){
-      if(networkRecoveryRunning||!navigator.onLine)return false;
+      if(!navigator.onLine)return false;
+      // v0.47.2: single-flight recovery. Auth, server-auth and the iOS reconnect
+      // supervisor can all wake up on the same 'online' event. They must await the
+      // same recovery instead of racing and treating 'already running' as failure.
+      if(networkRecoveryPromise)return networkRecoveryPromise;
       if(!getAccessToken()){
         window.thalysNeedsDriveReconnectSync=true;
         setDriveStatus('error','Online · riconnessione Drive necessaria');
         updateManualSyncUI();
         return false;
       }
-      networkRecoveryRunning=true;
-      window.thalysNetworkRecoveryPending=true;
-      try{
-        if(driveSyncTimer){clearTimeout(driveSyncTimer);driveSyncTimer=null;}
-        await waitForDriveSyncIdle();
-        setDriveStatus('saving','Connessione ripristinata · consolidamento…');
-        await initializeDriveWorkspace();
-        // Keep driveDirty as-is while reading: mergeCloudIntoLocal then preserves
-        // offline edits while also importing newer/new remote records.
-        await loadDatabasesFromDrive(false);
-        driveDirty=true;
-        localStorage.setItem('thalys_drive_dirty','1');
-        const ok=await saveAllDatabasesToDrive(true);
-        if(ok){
-          lastSeenWaterDriveVersion=null;
-          window.thalysNeedsDriveReconnectSync=false;
+      networkRecoveryPromise=(async()=>{
+        networkRecoveryRunning=true;
+        window.thalysNetworkRecoveryPending=true;
+        try{
+          if(driveSyncTimer){clearTimeout(driveSyncTimer);driveSyncTimer=null;}
+          await waitForDriveSyncIdle();
+          setDriveStatus('saving','Connessione ripristinata · consolidamento…');
+          await initializeDriveWorkspace();
+          // Keep driveDirty as-is while reading: mergeCloudIntoLocal then preserves
+          // offline edits while also importing newer/new remote records.
+          await loadDatabasesFromDrive(false);
+          driveDirty=true;
+          localStorage.setItem('thalys_drive_dirty','1');
+          const ok=await saveAllDatabasesToDrive(true);
+          if(ok){
+            lastSeenWaterDriveVersion=null;
+            window.thalysNeedsDriveReconnectSync=false;
+            window.thalysNetworkRecoveryPending=false;
+            try{renderAllViews();}catch(_){}
+            updateManualSyncUI();
+            window.dispatchEvent(new CustomEvent('thalys:network-resync-complete'));
+          }
+          return !!ok;
+        }catch(e){
+          console.warn('Network recovery sync',e);
+          driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');
+          lastSyncError=classifyDriveError(e);
+          // v0.36.4: connectivity during recovery is non-blocking. Keep local mode,
+          // preserve pending changes and retry silently instead of opening an error modal.
+          if(lastSyncError.code==='OFFLINE'||lastSyncError.code==='NETWORK_ERROR'){
+            setDriveStatus('saving','Connessione instabile · dati locali protetti');
+            updateManualSyncUI();
+            window.thalysNetworkRecoveryPending=true;
+            scheduleNetworkRecoveryRetry();
+            return false;
+          }
+          setDriveStatus('error',lastSyncError.short||'Sync non riuscito');updateManualSyncUI();
           window.thalysNetworkRecoveryPending=false;
-          try{renderAllViews();}catch(_){}
-          window.dispatchEvent(new CustomEvent('thalys:network-resync-complete'));
-        }
-        return !!ok;
-      }catch(e){
-        console.warn('Network recovery sync',e);
-        driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');
-        lastSyncError=classifyDriveError(e);
-        // v0.36.4: connectivity during recovery is non-blocking. Keep local mode,
-        // preserve pending changes and retry silently instead of opening an error modal.
-        if(lastSyncError.code==='OFFLINE'||lastSyncError.code==='NETWORK_ERROR'){
-          setDriveStatus('saving','Connessione instabile · dati locali protetti');
-          updateManualSyncUI();
-          window.thalysNetworkRecoveryPending=true;
-          scheduleNetworkRecoveryRetry();
           return false;
+        }finally{
+          networkRecoveryRunning=false;
         }
-        setDriveStatus('error',lastSyncError.short||'Sync non riuscito');updateManualSyncUI();
-        window.thalysNetworkRecoveryPending=false;
-        return false;
-      }finally{networkRecoveryRunning=false;}
+      })();
+      try{return await networkRecoveryPromise;}
+      finally{networkRecoveryPromise=null;}
     }
     window.syncAfterNetworkRestore=syncAfterNetworkRestore;
 
