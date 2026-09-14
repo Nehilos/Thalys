@@ -2,8 +2,8 @@
   'use strict';
   const CONFIG=Object.freeze({
     appName:'Thalys',
-    appVersion:'0.41.0',
-    cacheBust:'0410',
+    appVersion:'0.42.0',
+    cacheBust:'0420',
     sessionSchema:'v1',
     storageSchemaVersion:4,
     syncProtocolVersion:7,
@@ -17,11 +17,25 @@
       notificationLayer:true,
       pushFoundation:true,
       backendBridge:true,
-      pushClient:true
+      pushClient:true,
+      freeTierPolicy:true,
+      backendFreeScaffold:true
+    }),
+    costPolicy:Object.freeze({
+      mode:'free-only',
+      allowPaidServices:false,
+      allowAutomaticUpgrade:false,
+      aiFreeTierOnly:true,
+      aiPaidFallback:false,
+      progressPhotos:'google-drive-only',
+      appData:'google-drive-plus-indexeddb',
+      backendPreference:'cloudflare-workers-free'
     }),
     backend:Object.freeze({
       enabled:false,
-      provider:'none',
+      provider:'cloudflare-workers-free',
+      freeTierOnly:true,
+      requiresBilling:false,
       baseUrl:'',
       vapidPublicKey:'',
       healthPath:'/health',

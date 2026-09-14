@@ -1,0 +1,12 @@
+name = "thalys-free-backend"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://YOUR-THALYS-DOMAIN.example"
+
+# After creating a D1 database, add its binding here:
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "thalys-free"
+# database_id = "YOUR_D1_DATABASE_ID"

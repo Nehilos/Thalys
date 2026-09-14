@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 /* ==========================================================
    THALYS V10 — iOS/WebKit robustness + full PDF export
    ========================================================== */
-const THALYS_APP_VERSION_V10=window.ThalysConfig?.appVersion||'0.41.0';
+const THALYS_APP_VERSION_V10=window.ThalysConfig?.appVersion||'0.42.0';
 const THALYS_VERSION_KEY_V10='thalys_app_version';
 const THALYS_RELOAD_KEY_V10='thalys_version_reload_guard';
 

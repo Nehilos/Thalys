@@ -775,7 +775,7 @@
           result.innerHTML=`<div class="flex items-center justify-between gap-2"><div class="text-xs font-black text-white">${tr('Risposta IA')}</div><span class="text-[8px] text-slate-500">${escapeHTML(response.model||'')}</span></div><div class="mt-3 space-y-2">${aiResultHTML(response)}</div>${type==='workout'?`<button onclick="generateAIWorkoutPlan('${record.id}')" class="mt-3 w-full min-h-10 rounded-xl bg-emerald-500 text-[10px] font-black text-slate-950"><i class="fa-solid fa-thumbs-up mr-1"></i>${tr('Mi piace · genera scheda')}</button>`:''}`;
         }
       }catch(e){
-        console.error('AI consult',e);if(result){result.classList.remove('hidden');const msg=(e.message==='AUTH_REQUIRED'||e.message==='AUTH_EXPIRED')?tr('Riconnetti Google Drive e riprova.'):e.message;result.innerHTML=`<div class="text-[10px] text-rose-300">${tr('Consulto IA non riuscito')}: ${escapeHTML(msg)}</div>`}
+        console.error('AI consult',e);if(result){result.classList.remove('hidden');const msg=(e.message==='AUTH_REQUIRED'||e.message==='AUTH_EXPIRED')?tr('Riconnetti Google Drive e riprova.'):(e.message==='AI_FREE_TIER_LIMIT'?tr('Limite gratuito IA raggiunto. Riprova quando la quota gratuita si rinnova.'):e.message);result.innerHTML=`<div class="text-[10px] text-rose-300">${tr('Consulto IA non riuscito')}: ${escapeHTML(msg)}</div>`}
       }finally{loading?.classList.add('hidden');if(btn)btn.disabled=false}
     }
     async function generateAIWorkoutPlan(aiRecordId){
@@ -838,7 +838,7 @@
         const response=await callThalysAI({action:'food_lookup',locale:currentLocale(),foodName:name});
         fillFoodPresetFromAI(response.data||{});
         if(status)status.innerHTML=`<i class="fa-solid fa-wand-magic-sparkles mr-1"></i>${tr('Valori proposti dall’IA. Controlla o modifica i campi prima di salvare.')} ${response.data?.source?`<span class="text-slate-400">· ${escapeHTML(response.data.source)}</span>`:''}`;
-      }catch(e){if(status){const msg=(e.message==='AUTH_REQUIRED'||e.message==='AUTH_EXPIRED')?tr('Riconnetti Google Drive e riprova.'):e.message;status.textContent=`${tr('Ricerca IA non riuscita')}: ${msg}`}}
+      }catch(e){if(status){const msg=(e.message==='AUTH_REQUIRED'||e.message==='AUTH_EXPIRED')?tr('Riconnetti Google Drive e riprova.'):(e.message==='AI_FREE_TIER_LIMIT'?tr('Limite gratuito IA raggiunto. Riprova quando la quota gratuita si rinnova.'):e.message);status.textContent=`${tr('Ricerca IA non riuscita')}: ${msg}`}}
       finally{if(btn)btn.disabled=false}
     }
     function fillFoodPresetFromAI(d){

@@ -1,4 +1,5 @@
 const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+const FREE_TIER_ONLY = process.env.THALYS_AI_FREE_ONLY !== "false";
 const GOOGLE_CLIENT_ID =
   process.env.GOOGLE_CLIENT_ID ||
   "530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.googleusercontent.com";
@@ -274,6 +275,7 @@ async function callGemini(systemText, userText) {
     try {
       detail = JSON.parse(raw)?.error?.message || raw;
     } catch {}
+    if (r.status === 429 && FREE_TIER_ONLY) throw new Error("AI_FREE_TIER_LIMIT");
     throw new Error(`GEMINI_${r.status}: ${detail.slice(0, 500)}`);
   }
 
@@ -334,6 +336,7 @@ module.exports = async function handler(req, res) {
       model: DEFAULT_MODEL,
       data: result,
       source: body.action === "food_lookup" ? "Open Food Facts + Gemini" : "Gemini",
+      costMode: FREE_TIER_ONLY ? "free-tier-only" : "configured",
     });
   } catch (err) {
     console.error("Thalys AI error:", err);

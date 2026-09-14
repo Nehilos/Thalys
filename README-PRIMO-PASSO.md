@@ -1,32 +1,29 @@
-# Thalys v0.39.0 — Device Media & Permissions
+# Thalys v0.42.0 — Free-First Architecture
 
-Questa release prosegue il punto 13 della roadmap in modo controllato.
+Questa release prepara il punto 14 senza migrare i dati che oggi funzionano.
 
-## Novita principali
-- nuovo `js/device-media.js`: gestione centralizzata di fotocamera, microfono e dettatura;
-- scanner barcode collegato al gestore camera centralizzato;
-- dettatura vocale nei campi Gratitudine, Note benessere e Richiesta specifica del Consulto AI;
-- nuova sezione Opzioni > Permessi dispositivo con stato Camera/Microfono/Dettatura/Push;
-- nessun permesso viene richiesto automaticamente all'avvio;
-- i permessi Camera/Microfono vengono chiesti solo in seguito ad una azione esplicita dell'utente;
-- Push resta solo rilevato, non viene ancora attivato in questa versione.
+## Regole architetturali bloccate
+- costi: solo servizi gratuiti; nessun fallback automatico a servizi a pagamento;
+- foto progressi: Google Drive soltanto;
+- dati app: Google Drive + IndexedDB + Sync Queue;
+- AI: free tier only; se la quota gratuita termina, la richiesta fallisce invece di passare a un servizio a pagamento;
+- backend preferito: Cloudflare Workers Free, disabilitato finché non viene configurato manualmente.
+
+## Backend incluso ma non attivo
+La cartella `backend/cloudflare-worker/` contiene uno scaffold gratuito con:
+- `/health`;
+- registrazione/rimozione subscription Push in D1;
+- schema D1;
+- configurazione Wrangler di esempio;
+- endpoint refresh Google volutamente non ancora attivo (501) finché non migriamo in sicurezza al code flow.
+
+## Importante
+Il backend NON contiene endpoint per foto o database Thalys. Non va usato per spostarli da Drive.
 
 ## Test consigliati
-1. accesso e sync come v0.38;
-2. Opzioni > Permessi dispositivo > Verifica camera/microfono;
-3. dettatura su Gratitudine e Note benessere;
-4. scanner barcode camera;
-5. foto progresso e profilo;
-6. offline -> online con sync automatico;
-7. PC e iPhone/PWA.
-
-## v0.41.0 - Notification foundation
-- Permissione notifiche richiesta solo dopo azione utente.
-- Notifica locale di test tramite Service Worker.
-- Service Worker pronto a ricevere eventi Push e gestire il click sulla notifica.
-- Push remoto non viene simulato: richiede endpoint backend + VAPID/subscription e verra collegato nella fase backend della roadmap.
-- Sync Queue usa ora la versione centralizzata ThalysConfig invece del vecchio valore legacy 0.36.4.
-
-
-## v0.41.0
-Client Push completato con backend bridge neutro. Il backend resta disabilitato finche non vengono configurati baseUrl e VAPID public key in js/config.js. Nessuna chiamata esterna viene effettuata nello stato predefinito.
+1. accesso, refresh e riapertura;
+2. offline -> modifica -> online -> sync automatico;
+3. foto online da Drive, aggiunta/eliminazione/refresh;
+4. Opzioni: Costi = Solo gratuito, Foto progressi = Solo Google Drive, Backend = Non configurato;
+5. Notifica test, camera e microfono;
+6. consulti AI esistenti: se il free tier e disponibile devono continuare a funzionare; se la quota e esaurita deve comparire errore senza fallback a pagamento.

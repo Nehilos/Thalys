@@ -45,6 +45,10 @@
     }
     const backendEl=document.getElementById('device-backend-status');
     if(backendEl){const b=window.ThalysBackend?.snapshot?.()||{configured:false,provider:'none'};backendEl.textContent=b.configured?('Configurato · '+b.provider):'Non configurato';}
+    const costEl=document.getElementById('device-cost-status');
+    if(costEl)costEl.textContent=window.ThalysConfig?.costPolicy?.mode==='free-only'?'Solo gratuito':'Configurabile';
+    const photoEl=document.getElementById('device-photo-storage-status');
+    if(photoEl)photoEl.textContent=window.ThalysConfig?.costPolicy?.progressPhotos==='google-drive-only'?'Solo Google Drive':'Configurabile';
     return p;
   }
   async function requestPermission(){
