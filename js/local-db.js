@@ -23,7 +23,6 @@
     const { consultations, aiConsults, photos, profilePhoto, ...appCore } = s;
     return {
       'app_state.json': appCore,
-      'photos.json': s.photos || [],
       'profile_photo.json': s.profilePhoto || null,
       'nutrition_targets.json': s.targets || {},
       'workouts.json': s.workouts || [],
@@ -65,6 +64,16 @@
     });
   }
 
+  function deleteLocalFile(db, name) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).delete(name);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error || new Error(`Eliminazione di ${name} non riuscita`));
+      tx.onabort = () => reject(tx.error || new Error(`Eliminazione di ${name} annullata`));
+    });
+  }
+
   async function offlineStorageAlreadyExists() {
     if (localStorage.getItem(READY_KEY) === '1') return true;
     if (!window.indexedDB) return false;
@@ -93,9 +102,9 @@
 
   async function warmOfflineAppShell() {
     if (!window.caches || !window.isSecureContext) return 0;
-    const urls = ['./', './index.html', './manifest.json', './Thalys Logo Dark.png?v=22', './Thalys Logo Light.png?v=22', './Loto.png?v=22', './male.svg?v=0378', './female.svg?v=0378', './css/thalys.css?v=016', './js/storage-manager.js?v=0378', './js/sync-queue.js?v=0378', './js/conflict-resolver.js?v=0378', './js/local-db.js?v=0378', './js/ui-foundation.js?v=0378', './js/language.js?v=0378', './js/drive.js?v=0378', './js/auth.js?v=0378', './js/app-core.js?v=0378', './js/body.js?v=0378', './js/meditation.js?v=0378', './js/nutrition.js?v=0378', './js/workout.js?v=0378', './js/home.js?v=0378', './js/analytics.js?v=0378', './js/app-enhancements.js?v=0378'];
-    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.37.8').map(k=>caches.delete(k)));}catch(_){}
-    const cache = await caches.open('thalys-manual-offline-v0.37.8');
+    const urls = ['./', './index.html', './manifest.json', './Thalys Logo Dark.png?v=22', './Thalys Logo Light.png?v=22', './Loto.png?v=22', './male.svg?v=0380', './female.svg?v=0380', './css/thalys.css?v=016', './js/config.js?v=0380', './js/capabilities.js?v=0380', './js/storage-manager.js?v=0380', './js/sync-queue.js?v=0380', './js/conflict-resolver.js?v=0380', './js/local-db.js?v=0380', './js/ui-foundation.js?v=0380', './js/language.js?v=0380', './js/drive.js?v=0380', './js/auth.js?v=0380', './js/app-core.js?v=0380', './js/body.js?v=0380', './js/meditation.js?v=0380', './js/nutrition.js?v=0380', './js/workout.js?v=0380', './js/home.js?v=0380', './js/analytics.js?v=0380', './js/app-enhancements.js?v=0380', './js/runtime-health.js?v=0380'];
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.38.0').map(k=>caches.delete(k)));}catch(_){}
+    const cache = await caches.open('thalys-manual-offline-v0.38.0');
     let saved = 0;
     for (const url of urls) {
       try { await cache.add(url); saved += 1; } catch (_) {}
@@ -109,19 +118,10 @@
     if (!window.appState) return false;
     const db = await openLocalDatabase();
     try {
-      const photosRecord = await getLocalFile(db, 'photos.json');
       const profileRecord = await getLocalFile(db, 'profile_photo.json');
-      if (Array.isArray(photosRecord?.data)) {
-        const current = Array.isArray(window.appState.photos) ? window.appState.photos : [];
-        const merged = new Map(photosRecord.data.map(photo => [photo.id, photo]));
-        current.forEach(photo => {
-          const stored = merged.get(photo.id) || {};
-          merged.set(photo.id, { ...stored, ...photo, base64: photo.base64 || stored.base64 || '' });
-        });
-        window.appState.photos = [...merged.values()];
-      }
-      if (profileRecord?.data && !window.appState.profilePhoto?.dataUrl) { window.appState.profilePhoto = profileRecord.data; try{await window.ThalysStorage?.writePrimaryState?.(window.appState,{source:'hydrate-local-media'});}catch(_){} }
-      if (typeof renderPhotos === 'function') renderPhotos();
+      // v0.38: progress photos are Drive-only. Never hydrate image content from local IndexedDB.
+      try { await deleteLocalFile(db, 'photos.json'); } catch (_) {}
+      if (profileRecord?.data && !window.appState.profilePhoto?.dataUrl) { window.appState.profilePhoto = profileRecord.data; try{await window.ThalysStorage?.writePrimaryState?.(window.appState,{source:'hydrate-local-profile-photo'});}catch(_){} }
       if (typeof renderProfilePhotoUI === 'function') renderProfilePhotoUI();
       return true;
     } finally {

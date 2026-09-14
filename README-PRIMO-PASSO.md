@@ -1,3 +1,7 @@
+# Thalys v0.38.0 — Architecture Consolidation
+
+Questa release accorpa più passaggi sicuri: versione centralizzata, consolidamento IndexedDB, rimozione della cache locale legacy delle foto progresso, capability layer per il punto 13 e runtime health check.
+
 # Thalys v0.37
 
 Correzione avatar esterni.

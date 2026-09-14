@@ -87,17 +87,30 @@
     }
   }
 
+  function sanitizePrimaryState(state) {
+    if (!state || typeof state !== 'object') return state;
+    const clean = { ...state };
+    if (Array.isArray(clean.photos)) {
+      clean.photos = clean.photos.map(photo => {
+        if (!photo || typeof photo !== 'object') return photo;
+        const { base64, dataUrl, blobUrl, objectUrl, ...meta } = photo;
+        return meta;
+      });
+    }
+    return clean;
+  }
+
   async function writePrimaryState(state, meta = {}) {
     if (!state || typeof state !== 'object') return null;
     const now = new Date().toISOString();
     const record = {
       id: PRIMARY_STATE_ID,
-      state,
+      state: sanitizePrimaryState(state),
       savedAt: now,
       source: String(meta.source || 'app'),
       deviceId: getDeviceId(),
       schemaVersion: CONFIG.schemaVersion,
-      appVersion: '0.37.5'
+      appVersion: (window.ThalysConfig?.appVersion || '0.38.0')
     };
     try {
       await put(CONFIG.stores.snapshots, record);
@@ -115,6 +128,9 @@
     db.close();
     const now = new Date().toISOString();
     const existingPrimary = await readPrimaryState();
+    if (existingPrimary?.state && Array.isArray(existingPrimary.state.photos) && existingPrimary.state.photos.some(photo => photo && typeof photo === 'object' && (photo.base64 || photo.dataUrl || photo.blobUrl || photo.objectUrl))) {
+      await writePrimaryState(existingPrimary.state, { source: 'v0.38-strip-legacy-photo-cache' });
+    }
     if (!existingPrimary) {
       try {
         const raw = localStorage.getItem('thalys_data') || localStorage.getItem('gymbro_data');
@@ -133,12 +149,12 @@
       },
       updatedAt: now
     });
-    await put(CONFIG.stores.meta, { key: 'versions', value: { appVersion: '0.37.5', dbVersion: CONFIG.dbVersion, schemaVersion: CONFIG.schemaVersion, syncProtocolVersion: CONFIG.syncProtocolVersion }, updatedAt: now });
+    await put(CONFIG.stores.meta, { key: 'versions', value: { appVersion: (window.ThalysConfig?.appVersion || '0.38.0'), dbVersion: CONFIG.dbVersion, schemaVersion: CONFIG.schemaVersion, syncProtocolVersion: CONFIG.syncProtocolVersion }, updatedAt: now });
     window.dispatchEvent(new CustomEvent('thalys:storage-ready', { detail: { deviceId, dbVersion: CONFIG.dbVersion } }));
     return { available: true, deviceId, dbVersion: CONFIG.dbVersion };
   }
 
-  window.ThalysStorage = Object.freeze({ CONFIG, open, get, put, getDeviceId, initialize, readPrimaryState, writePrimaryState });
+  window.ThalysStorage = Object.freeze({ CONFIG, open, get, put, getDeviceId, initialize, readPrimaryState, writePrimaryState, sanitizePrimaryState });
   window.THALYS_DEVICE_ID = getDeviceId();
   window.thalysStorageReady = initialize().catch(error => {
     console.warn('Thalys Storage Manager', error);
