@@ -128,7 +128,7 @@ async function findDriveFolder(name,parentId=null){
       const {consultations:_consultations,aiConsults:_aiConsults,...appCore}=appState||{};
       return {
         'thalys_manifest.json':{app:'Thalys',schemaVersion:8,updatedAt:new Date().toISOString(),databaseVersion:6,syncProtocolVersion:7},
-        'sync_meta.json':window.ThalysSyncQueue?.getSyncMetadata?window.ThalysSyncQueue.getSyncMetadata():{version:1,protocolVersion:6,records:{},tombstones:{}},
+        'sync_meta.json':window.ThalysSyncQueue?.getSyncMetadata?window.ThalysSyncQueue.getSyncMetadata():{version:1,protocolVersion:Number(window.ThalysConfig?.syncProtocolVersion||7),records:{},tombstones:{}},
         'app_state.json':{...appCore,photos:[],profilePhoto:null},
         'workouts.json':appState.workouts||[],
         'workout_plans.json':{plans:appState.workoutPlans||[],activePlanId:appState.activeWorkoutPlanId||null,assignments:appState.workoutAssignments||{},completions:appState.workoutCompletions||{}},
@@ -465,7 +465,7 @@ async function findDriveFolder(name,parentId=null){
     }
     async function syncAfterNetworkRestore(){
       if(!navigator.onLine)return false;
-      // v0.47.2: single-flight recovery. Auth, server-auth and the iOS reconnect
+      // v0.48.0: single-flight recovery. Auth, server-auth and the iOS reconnect
       // supervisor can all wake up on the same 'online' event. They must await the
       // same recovery instead of racing and treating 'already running' as failure.
       if(networkRecoveryPromise)return networkRecoveryPromise;

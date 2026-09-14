@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.36.4';
-  const PROTOCOL_VERSION = 7;
+  const APP_VERSION = window.ThalysConfig?.appVersion || '0.48.0';
+  const PROTOCOL_VERSION = Number(window.ThalysConfig?.syncProtocolVersion || 7);
 
   function clone(value) {
     try { return structuredClone(value); }
@@ -199,5 +199,5 @@
     return out;
   }
 
-  window.ThalysConflictResolver = Object.freeze({resolve,overlayResolved,protocolVersion:PROTOCOL_VERSION});
+  window.ThalysConflictResolver = Object.freeze({resolve,overlayResolved,protocolVersion:PROTOCOL_VERSION,appVersion:APP_VERSION});
 })();

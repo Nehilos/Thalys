@@ -2,8 +2,8 @@
   'use strict';
   const CONFIG=Object.freeze({
     appName:'Thalys',
-    appVersion:'0.47.2',
-    cacheBust:'0471',
+    appVersion:'0.48.0',
+    cacheBust:'0480',
     sessionSchema:'v1',
     storageSchemaVersion:4,
     syncProtocolVersion:7,
@@ -21,7 +21,8 @@
       freeTierPolicy:true,
       backendFreeScaffold:true,
       googleServerAuthBridge:true,
-      backendDeploymentGuard:true
+      backendDeploymentGuard:true,
+      finalArchitectureHardening:true
     }),
     costPolicy:Object.freeze({
       mode:'free-only',
@@ -35,7 +36,7 @@
     }),
     backend:Object.freeze({
       enabled:true,
-      deploymentStage:'server-auth-active',
+      deploymentStage:'stable-free-backend',
       contractVersion:'1',
       autoActivate:false,
       provider:'cloudflare-workers-free',

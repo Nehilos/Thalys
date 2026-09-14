@@ -1,7 +1,8 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = window.ThalysConfig?.appVersion || '0.47.2';
+  const APP_VERSION = window.ThalysConfig?.appVersion || '0.48.0';
+  const PROTOCOL_VERSION = Number(window.ThalysConfig?.syncProtocolVersion || 7);
   const STORE = 'sync_queue';
   const GLOBAL_STATE_ID_PREFIX = 'state:';
   let writeChain = Promise.resolve();
@@ -9,7 +10,7 @@
 
 
   const SYNC_META_KEY = 'thalys_sync_metadata';
-  function emptySyncMetadata(){ return {version:1,protocolVersion:6,updatedAt:isoNow(),records:{},tombstones:{}}; }
+  function emptySyncMetadata(){ return {version:1,protocolVersion:PROTOCOL_VERSION,updatedAt:isoNow(),records:{},tombstones:{}}; }
   function getSyncMetadata(){
     try { const raw=JSON.parse(localStorage.getItem(SYNC_META_KEY)||'null'); return raw&&typeof raw==='object'?{...emptySyncMetadata(),...raw,records:{...(raw.records||{})},tombstones:{...(raw.tombstones||{})}}:emptySyncMetadata(); }
     catch(_){ return emptySyncMetadata(); }
@@ -29,9 +30,9 @@
       const prev=meta.records[key]||{}; const revision=(Number(prev.revision)||0)+1;
       if(op.action==='delete'){
         delete meta.records[key];
-        meta.tombstones[key]={entity:op.entity,entityId:op.entityId,date:op.date||null,deletedAt:op.updatedAt||op.createdAt||isoNow(),deviceId:op.deviceId||deviceId(),revision,protocolVersion:6};
+        meta.tombstones[key]={entity:op.entity,entityId:op.entityId,date:op.date||null,deletedAt:op.updatedAt||op.createdAt||isoNow(),deviceId:op.deviceId||deviceId(),revision,protocolVersion:PROTOCOL_VERSION};
       }else{
-        meta.records[key]={entity:op.entity,entityId:op.entityId,date:op.date||null,updatedAt:op.updatedAt||op.createdAt||isoNow(),deviceId:op.deviceId||deviceId(),revision,protocolVersion:6};
+        meta.records[key]={entity:op.entity,entityId:op.entityId,date:op.date||null,updatedAt:op.updatedAt||op.createdAt||isoNow(),deviceId:op.deviceId||deviceId(),revision,protocolVersion:PROTOCOL_VERSION};
         const tomb=meta.tombstones[key];
         if(tomb && Date.parse(meta.records[key].updatedAt||0)>=Date.parse(tomb.deletedAt||0)) delete meta.tombstones[key];
       }
