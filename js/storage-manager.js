@@ -73,12 +73,55 @@
     }));
   }
 
+
+
+  const PRIMARY_STATE_ID = 'primary-state';
+
+  async function readPrimaryState() {
+    try {
+      const record = await get(CONFIG.stores.snapshots, PRIMARY_STATE_ID);
+      return record?.state && typeof record.state === 'object' ? record : null;
+    } catch (error) {
+      console.warn('Thalys IndexedDB primary state read', error);
+      return null;
+    }
+  }
+
+  async function writePrimaryState(state, meta = {}) {
+    if (!state || typeof state !== 'object') return null;
+    const now = new Date().toISOString();
+    const record = {
+      id: PRIMARY_STATE_ID,
+      state,
+      savedAt: now,
+      source: String(meta.source || 'app'),
+      deviceId: getDeviceId(),
+      schemaVersion: CONFIG.schemaVersion,
+      appVersion: '0.37'
+    };
+    try {
+      await put(CONFIG.stores.snapshots, record);
+      return record;
+    } catch (error) {
+      console.warn('Thalys IndexedDB primary state write', error);
+      return null;
+    }
+  }
+
   async function initialize() {
     if (!window.indexedDB) return { available: false, deviceId: getDeviceId() };
     const deviceId = getDeviceId();
     const db = await open();
     db.close();
     const now = new Date().toISOString();
+    const existingPrimary = await readPrimaryState();
+    if (!existingPrimary) {
+      try {
+        const raw = localStorage.getItem('thalys_data') || localStorage.getItem('gymbro_data');
+        const legacyState = raw ? JSON.parse(raw) : null;
+        if (legacyState && typeof legacyState === 'object') await writePrimaryState(legacyState, { source: 'migration-localStorage' });
+      } catch (error) { console.warn('Migrazione stato locale verso IndexedDB', error); }
+    }
     const existing = await get(CONFIG.stores.meta, 'device');
     await put(CONFIG.stores.meta, {
       key: 'device',
@@ -90,12 +133,12 @@
       },
       updatedAt: now
     });
-    await put(CONFIG.stores.meta, { key: 'versions', value: { appVersion: '0.36.4', dbVersion: CONFIG.dbVersion, schemaVersion: CONFIG.schemaVersion, syncProtocolVersion: CONFIG.syncProtocolVersion }, updatedAt: now });
+    await put(CONFIG.stores.meta, { key: 'versions', value: { appVersion: '0.37', dbVersion: CONFIG.dbVersion, schemaVersion: CONFIG.schemaVersion, syncProtocolVersion: CONFIG.syncProtocolVersion }, updatedAt: now });
     window.dispatchEvent(new CustomEvent('thalys:storage-ready', { detail: { deviceId, dbVersion: CONFIG.dbVersion } }));
     return { available: true, deviceId, dbVersion: CONFIG.dbVersion };
   }
 
-  window.ThalysStorage = Object.freeze({ CONFIG, open, get, put, getDeviceId, initialize });
+  window.ThalysStorage = Object.freeze({ CONFIG, open, get, put, getDeviceId, initialize, readPrimaryState, writePrimaryState });
   window.THALYS_DEVICE_ID = getDeviceId();
   window.thalysStorageReady = initialize().catch(error => {
     console.warn('Thalys Storage Manager', error);

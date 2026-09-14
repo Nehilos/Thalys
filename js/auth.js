@@ -393,12 +393,14 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         if (typeof requestGoogleAccessOnStartup === 'function') requestGoogleAccessOnStartup();
       }
 
-      (function initGoogle() {
+      async function initializeAuthAfterLocalState() {
+        try { await (window.thalysPrimaryStateReady || window.thalysStorageReady || Promise.resolve()); } catch (_) {}
         ensureGoogleIdentityReady();
         refreshAuthUIFromStorage();
-      })();
+      }
+      initializeAuthAfterLocalState();
 
-      window.addEventListener('DOMContentLoaded', refreshAuthUIFromStorage, { once: true });
+      window.addEventListener('DOMContentLoaded', () => initializeAuthAfterLocalState(), { once: true });
 
 // Canonical public UI bridge after legacy compatibility helpers.
 function setCloudUserUI(profile){ updateAuthUI(profile); }

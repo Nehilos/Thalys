@@ -1,14 +1,14 @@
-# Thalys v0.36.6
+# Thalys v0.37
 
 Correzione avatar esterni.
 
 - `male.svg` e `female.svg` nel repository sono ora la sorgente normale dell'avatar.
 - Il vecchio SVG incorporato in `index.html` resta solo come fallback se il file esterno non può essere caricato.
 - Le funzioni legacy non possono più sostituire l'SVG esterno dopo aggiornamento misure/Home.
-- Cache PWA e riferimenti aggiornati a v0.36.6.
+- Cache PWA e riferimenti aggiornati a v0.37.
 - I due file SVG NON sono inclusi nello ZIP: restano asset stabili del repository, come richiesto.
 
-# Thalys v0.36.6
+# Thalys v0.37
 
 Correzioni di coerenza multi-device e avatar.
 
@@ -31,8 +31,8 @@ Correzioni di coerenza multi-device e avatar.
 - Il pulsante Aggiungi inserisce direttamente l'alimento nel pasto selezionato.
 
 
-## v0.36.6 - Avatar cache bust
+## v0.37 - Avatar cache bust
 - `male.svg` e `female.svg` sono gli originali caricati dall'utente, senza modifiche.
-- Tutti i percorsi avatar usano query versionata `?v=0366`.
+- Tutti i percorsi avatar usano query versionata `?v=037`.
 - Cache PWA/manuale aggiornata per forzare il refresh degli SVG.
 - Nessuna modifica funzionale a Dieta, sync o Workout rispetto alla v0.36.4.

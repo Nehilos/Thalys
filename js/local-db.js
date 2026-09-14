@@ -93,9 +93,9 @@
 
   async function warmOfflineAppShell() {
     if (!window.caches || !window.isSecureContext) return 0;
-    const urls = ['./', './index.html', './manifest.json', './male.svg?v=0366', './female.svg?v=0366', './css/thalys.css?v=016', './js/storage-manager.js?v=0366', './js/sync-queue.js?v=0366', './js/conflict-resolver.js?v=0366', './js/local-db.js?v=0366', './js/ui-foundation.js?v=0366', './js/language.js?v=0366', './js/drive.js?v=0366', './js/auth.js?v=0366', './js/app-core.js?v=0366', './js/body.js?v=0366', './js/meditation.js?v=0366', './js/nutrition.js?v=0366', './js/workout.js?v=0366', './js/home.js?v=0366', './js/analytics.js?v=0366', './js/app-enhancements.js?v=0366'];
-    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.36.6').map(k=>caches.delete(k)));}catch(_){}
-    const cache = await caches.open('thalys-manual-offline-v0.36.6');
+    const urls = ['./', './index.html', './manifest.json', './male.svg?v=037', './female.svg?v=037', './css/thalys.css?v=016', './js/storage-manager.js?v=037', './js/sync-queue.js?v=037', './js/conflict-resolver.js?v=037', './js/local-db.js?v=037', './js/ui-foundation.js?v=037', './js/language.js?v=037', './js/drive.js?v=037', './js/auth.js?v=037', './js/app-core.js?v=037', './js/body.js?v=037', './js/meditation.js?v=037', './js/nutrition.js?v=037', './js/workout.js?v=037', './js/home.js?v=037', './js/analytics.js?v=037', './js/app-enhancements.js?v=037'];
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.37').map(k=>caches.delete(k)));}catch(_){}
+    const cache = await caches.open('thalys-manual-offline-v0.37');
     let saved = 0;
     for (const url of urls) {
       try { await cache.add(url); saved += 1; } catch (_) {}
@@ -152,6 +152,17 @@
   }
 
   async function restoreLocalStateIfNeeded() {
+    // v0.37: IndexedDB primary snapshot is authoritative; the old files/app_state.json
+    // path is retained only as a recovery fallback for installations created before v0.37.
+    try {
+      const primary = await window.ThalysStorage?.readPrimaryState?.();
+      if (primary?.state) {
+        if (!localStorage.getItem('thalys_data')) {
+          try { localStorage.setItem('thalys_data', JSON.stringify(primary.state)); } catch (_) {}
+        }
+        return false;
+      }
+    } catch (error) { console.warn('Primary local restore', error); }
     if (localStorage.getItem('thalys_data') || localStorage.getItem('gymbro_data')) return false;
     try {
       const db = await openLocalDatabase();
@@ -163,6 +174,7 @@
       });
       db.close();
       if (!record?.data || localStorage.getItem('thalys_local_restore_running') === '1') return false;
+      await window.ThalysStorage?.writePrimaryState?.(record.data, { source: 'legacy-offline-restore' });
       localStorage.setItem('thalys_data', JSON.stringify(record.data));
       localStorage.setItem('thalys_local_restore_running', '1');
       location.reload();

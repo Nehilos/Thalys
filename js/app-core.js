@@ -69,6 +69,37 @@
       }
     }
     window.appState = appState;
+    window.__THALYS_PRIMARY_STATE_HYDRATED__ = false;
+
+    function normalizeLoadedAppState(raw) {
+      const state = raw && typeof raw === 'object' ? raw : {};
+      const normalized = {...DEFAULT_STATE, ...state, profile:{...DEFAULT_STATE.profile,...(state.profile||{})}, targets:{...DEFAULT_STATE.targets,...(state.targets||{})}, settings:{...DEFAULT_STATE.settings,...(state.settings||{})}, avatar:{...DEFAULT_STATE.avatar,...(state.avatar||{})}};
+      normalized.profile.gender = normalizeProfileGenderValue(normalized.profile.gender);
+      return normalized;
+    }
+
+    // v0.37: IndexedDB is the authoritative local snapshot. localStorage remains an
+    // immediate compatibility/fallback mirror until the next migration step.
+    window.thalysPrimaryStateReady = (async () => {
+      try {
+        await (window.thalysStorageReady || Promise.resolve());
+        const record = await window.ThalysStorage?.readPrimaryState?.();
+        if (record?.state) {
+          appState = normalizeLoadedAppState(record.state);
+          window.appState = appState;
+          window.__THALYS_PRIMARY_STATE_HYDRATED__ = true;
+          try { localStorage.setItem('thalys_data', JSON.stringify(compactStateForLocalStorage(appState))); } catch (_) {}
+          return { source: 'indexeddb', savedAt: record.savedAt || null };
+        }
+        window.__THALYS_PRIMARY_STATE_HYDRATED__ = true;
+        await window.ThalysStorage?.writePrimaryState?.(appState, { source: 'bootstrap-fallback' });
+        return { source: 'localStorage' };
+      } catch (error) {
+        console.warn('Bootstrap stato IndexedDB', error);
+        window.__THALYS_PRIMARY_STATE_HYDRATED__ = true;
+        return { source: 'localStorage', error };
+      }
+    })();
 
     function compactStateForLocalStorage(state) {
       const source = state || {};
@@ -83,14 +114,20 @@
       };
     }
 
-    function persistThalysStateLocally(state = appState) {
+    function persistThalysStateLocally(state = appState, meta = {}) {
+      // Primary write: full state to IndexedDB. Fire-and-forget by design so UI saves
+      // stay synchronous; thalysPrimaryWriteTail can be awaited by sync/recovery paths.
+      if (window.__THALYS_PRIMARY_STATE_HYDRATED__ && window.ThalysStorage?.writePrimaryState) {
+        const write = () => window.ThalysStorage.writePrimaryState(state, { source: meta.source || 'persistThalysStateLocally' });
+        window.thalysPrimaryWriteTail = (window.thalysPrimaryWriteTail || Promise.resolve()).then(write, write).catch(error => { console.warn('Primary state IndexedDB write', error); return null; });
+      }
       try {
         localStorage.setItem('thalys_data', JSON.stringify(compactStateForLocalStorage(state)));
         return true;
       } catch (error) {
         console.error('Salvataggio locale compatto', error);
         if (error?.name === 'QuotaExceededError' || error?.code === 22) {
-          showToast('Spazio locale pieno: i dati pesanti restano nell’archivio offline', 'fa-database');
+          showToast('Spazio locale pieno: i dati completi restano in IndexedDB', 'fa-database');
           return false;
         }
         throw error;
@@ -101,7 +138,7 @@
 
 
     // Save State locally and sync to cloud if available
-    function saveStateToLocal(meta={}){let previousState=null;try{previousState=JSON.parse(localStorage.getItem('thalys_data')||'null');}catch(_){}if(previousState&&window.ThalysSyncQueue?.enqueueGranularChanges)window.ThalysSyncQueue.enqueueGranularChanges(previousState,appState,{source:meta.source||'saveStateToLocal'});persistThalysStateLocally(appState);try{localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));}catch(e){console.warn('Food cache quota',e);localStorage.removeItem('thalys_foods');}if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);if(window.ThalysSyncQueue?.enqueueStateChange)window.ThalysSyncQueue.enqueueStateChange({source:meta.source||'saveStateToLocal'});driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();scheduleDriveSync(350);}
+    function saveStateToLocal(meta={}){let previousState=null;try{previousState=JSON.parse(localStorage.getItem('thalys_data')||'null');}catch(_){}if(previousState&&window.ThalysSyncQueue?.enqueueGranularChanges)window.ThalysSyncQueue.enqueueGranularChanges(previousState,appState,{source:meta.source||'saveStateToLocal'});persistThalysStateLocally(appState,{source:meta.source||'saveStateToLocal'});try{localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));}catch(e){console.warn('Food cache quota',e);localStorage.removeItem('thalys_foods');}if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);if(window.ThalysSyncQueue?.enqueueStateChange)window.ThalysSyncQueue.enqueueStateChange({source:meta.source||'saveStateToLocal'});driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');updateManualSyncUI();scheduleDriveSync(350);}
     window.saveStateToLocal = saveStateToLocal;
 
 
