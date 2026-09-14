@@ -18,7 +18,7 @@
     window.__THALYS_APP_CORE_READY__ = false;
 
     const DEFAULT_STATE = {
-      profile: { gender: 'male', age: 25, height: 175, sleepHours: 7, lifestyle: 'moderato' },
+      profile: { preferredName: '', gender: 'male', age: 25, height: 175, sleepHours: 7, lifestyle: 'moderato' },
       profilePhoto: null,
       messages: [],
       deletedMessageIds: [],
@@ -86,9 +86,23 @@
         const record = await window.ThalysStorage?.readPrimaryState?.();
         if (record?.state) {
           appState = normalizeLoadedAppState(record.state);
+          // v0.37.1: recover the full user-selected profile photo from the local
+          // IndexedDB document if the first v0.37 migration started from the compact
+          // localStorage mirror where dataUrl was intentionally stripped.
+          try {
+            const photoRecord = await window.ThalysStorage?.get?.(window.ThalysStorage.CONFIG.stores.files, 'profile_photo.json');
+            const storedPhoto = photoRecord?.data;
+            if (storedPhoto?.dataUrl) {
+              const currentPhoto = appState.profilePhoto || null;
+              const st = Date.parse(storedPhoto.updatedAt || 0) || 0;
+              const ct = Date.parse(currentPhoto?.updatedAt || 0) || 0;
+              if (!currentPhoto?.dataUrl || st >= ct) appState.profilePhoto = { ...storedPhoto, mode: 'custom' };
+            }
+          } catch (error) { console.warn('Ripristino foto profilo completa', error); }
           window.appState = appState;
           window.__THALYS_PRIMARY_STATE_HYDRATED__ = true;
           try { localStorage.setItem('thalys_data', JSON.stringify(compactStateForLocalStorage(appState))); } catch (_) {}
+          try { await window.ThalysStorage?.writePrimaryState?.(appState, { source: 'v0.37.1-profile-photo-repair' }); } catch (_) {}
           return { source: 'indexeddb', savedAt: record.savedAt || null };
         }
         window.__THALYS_PRIMARY_STATE_HYDRATED__ = true;

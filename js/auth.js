@@ -35,7 +35,8 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       profile=profile||savedGoogleProfile();
       const connected=!!getAccessToken();
       const reconnecting=!connected&&navigator.onLine&&!!profile;
-      document.querySelectorAll('#cloud-user-name').forEach(el=>el.textContent=(connected||reconnecting)?(profile?.name||profile?.email||'Utente Google'):'Utente Ospite');
+      const appPreferredName=String(window.appState?.profile?.preferredName||'').trim();
+      document.querySelectorAll('#cloud-user-name').forEach(el=>el.textContent=(connected||reconnecting)?(appPreferredName||profile?.name||profile?.displayName||profile?.email||'Utente Google'):'Utente Ospite');
       document.querySelectorAll('#cloud-user-email').forEach(el=>el.textContent=(connected||reconnecting)?(profile?.email||''):'' );
       document.querySelectorAll('#cloud-user-status').forEach(el=>{el.textContent=connected?'Google Drive · Thalys App attivo':reconnecting?'Connessione automatica a Google Drive…':'Salvataggio locale sul dispositivo';el.classList.toggle('text-emerald-400',connected);el.classList.toggle('text-amber-300',reconnecting);el.classList.toggle('text-slate-400',!connected&&!reconnecting);});
       const icon=document.getElementById('cloud-status-icon');
@@ -202,7 +203,19 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     }
     function setCloudUserUI(profile){updateAuthUI(profile);}
     function logoutCloud(){handleSignoutClick();}
-    window.addEventListener('online',()=>{startupAccessRequested=false;requestGoogleAccessOnStartup();},{passive:true});
+    async function autoReconnectGoogleAfterNetwork(){
+      if(!navigator.onLine)return false;
+      startupAccessRequested=false;
+      if(!getAccessToken())restoreCachedDriveAccessToken();
+      if(getAccessToken()){
+        const ok=await connectDriveAfterToken(true);
+        if(ok)return true;
+      }
+      startupAccessRequested=false;
+      return requestGoogleAccessOnStartup();
+    }
+    window.autoReconnectGoogleAfterNetwork=autoReconnectGoogleAfterNetwork;
+    window.addEventListener('online',()=>{setTimeout(()=>autoReconnectGoogleAfterNetwork(),80);},{passive:true});
 
 // ===== Session gate / welcome screen =====
 // Set your Google OAuth Client ID here

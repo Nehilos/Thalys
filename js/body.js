@@ -69,6 +69,8 @@
         function saveProfile(e) {
       e.preventDefault();
       appState.profile = {
+        ...(appState.profile || {}),
+        preferredName: String(document.getElementById('prof-input-preferred-name')?.value || '').trim().slice(0,40),
         gender: normalizeProfileGenderValue(document.getElementById('prof-input-gender').value),
         age: parseInt(document.getElementById('prof-input-age').value) || 25,
         height: parseInt(document.getElementById('prof-input-height').value) || 175,
@@ -83,6 +85,7 @@
       renderNutrition();
       renderHomeDashboard();
       updateAnalyticsCharts();
+      if(typeof updateAuthUI==='function')updateAuthUI(typeof savedGoogleProfile==='function'?savedGoogleProfile():null);
       closeModal('profile-modal');
       showToast('Dati anagrafici salvati ✓','fa-circle-check');
     }
@@ -98,6 +101,8 @@
       const profLifestyleEl = document.getElementById('prof-lifestyle');
       if (profLifestyleEl) profLifestyleEl.textContent = p.lifestyle || 'moderato';
 
+      const preferredNameInput=document.getElementById('prof-input-preferred-name');
+      if(preferredNameInput)preferredNameInput.value=p.preferredName||'';
       document.getElementById('prof-input-gender').value = p.gender;
       document.getElementById('prof-input-age').value = p.age;
       document.getElementById('prof-input-height').value = p.height;

@@ -151,6 +151,10 @@ function setHomeDate(date){
 
     function getAvatarUserName(){
       try{
+        const preferred=String(window.appState?.profile?.preferredName||'').trim();
+        if(preferred)return preferred;
+      }catch(_){}
+      try{
         const p=JSON.parse(sessionStorage.getItem('gymbro_google_profile')||'null');
         const raw=p?.given_name||p?.name||'';
         if(raw)return String(raw).trim().split(/\s+/)[0];

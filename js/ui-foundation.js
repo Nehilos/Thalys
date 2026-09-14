@@ -72,6 +72,7 @@ window.runWhenThalysCoreReady=runWhenThalysCoreReady;
         if(returningFromOffline)showToast('modalità online attivata');
         setTimeout(()=>{
           if(typeof getAccessToken==='function'&&getAccessToken()&&typeof syncAfterNetworkRestore==='function')syncAfterNetworkRestore();
+          else if(typeof autoReconnectGoogleAfterNetwork==='function')autoReconnectGoogleAfterNetwork();
           else if(typeof requestGoogleAccessOnStartup==='function')requestGoogleAccessOnStartup();
         },120);
       }, { passive: true });
