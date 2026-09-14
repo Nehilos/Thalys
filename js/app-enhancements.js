@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 /* ==========================================================
    THALYS V10 — iOS/WebKit robustness + full PDF export
    ========================================================== */
-const THALYS_APP_VERSION_V10='0.37.3';
+const THALYS_APP_VERSION_V10='0.37.4';
 const THALYS_VERSION_KEY_V10='thalys_app_version';
 const THALYS_RELOAD_KEY_V10='thalys_version_reload_guard';
 
@@ -905,6 +905,12 @@ function renderProfilePhotoUI(){
 }
 function openProfilePhotoMenu(){
   const modal=document.getElementById('profile-photo-modal');if(!modal)return;
+  const nameInput=document.getElementById('profile-photo-preferred-name');
+  if(nameInput){
+    let used='';
+    try{used=typeof window.currentThalysDisplayName==='function'?window.currentThalysDisplayName():String(appState?.profile?.preferredName||'').trim();}catch(_){used='';}
+    nameInput.value=used;
+  }
   renderProfilePhotoUI();
   modal.classList.remove('hidden');
   modal.style.display='flex';

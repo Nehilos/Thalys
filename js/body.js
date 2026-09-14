@@ -15,16 +15,24 @@
     }
 
 
-    // v0.37.3: app-core starts with the compact localStorage mirror, where the heavy
+    // v0.37.4: app-core starts with the compact localStorage mirror, where the heavy
     // custom photo is intentionally omitted. Re-render as soon as IndexedDB restores
     // the full state so offline startup never stays on an empty profile image.
     window.addEventListener('thalys:primary-state-ready',()=>{
       try{renderProfilePhotoUI();loadProfileUI();}catch(_){try{renderProfilePhotoUI();}catch(__){}}
     });
 
+    function currentThalysDisplayName(){
+      const preferred=String(appState?.profile?.preferredName||'').trim();
+      if(preferred)return preferred;
+      let gp=null;try{gp=typeof savedGoogleProfile==='function'?savedGoogleProfile():JSON.parse(localStorage.getItem('thalys_google_profile')||'null');}catch(_){gp=null;}
+      return String(gp?.name||gp?.displayName||gp?.given_name||gp?.email||'').trim();
+    }
+    window.currentThalysDisplayName=currentThalysDisplayName;
+
     function openProfilePhotoMenu(){
       const nameInput=document.getElementById('profile-photo-preferred-name');
-      if(nameInput)nameInput.value=String(appState?.profile?.preferredName||'');
+      if(nameInput)nameInput.value=currentThalysDisplayName();
       openModal('profile-photo-modal');
       renderProfilePhotoUI();
     }

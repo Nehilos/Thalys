@@ -1,4 +1,4 @@
-// Thalys v0.37.3 - Authentication and persistent session module
+// Thalys v0.37.4 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -9,7 +9,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = '0.37.3';
+    const THALYS_SOFTWARE_VERSION = '0.37.4';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -26,7 +26,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       if(!window.gapi?.client)return false;
       try{
         const raw=JSON.parse(localStorage.getItem(AUTH_DRIVE_TOKEN_STORAGE_KEY)||'null');
-        if(!raw?.access_token||!raw?.expiresAt||Number(raw.expiresAt)<=Date.now()+60000){clearCachedDriveAccessToken();return false;}
+        if(!raw?.access_token||!raw?.expiresAt||Number(raw.expiresAt)<=Date.now()+5000){clearCachedDriveAccessToken();return false;}
         gapi.client.setToken({access_token:raw.access_token});
         return true;
       }catch(_){clearCachedDriveAccessToken();return false;}
@@ -240,20 +240,34 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     async function autoReconnectGoogleAfterNetwork(){
       if(!navigator.onLine)return false;
       startupAccessRequested=false;
+
+      // v0.37.4: on iOS/PWA the in-memory gapi token can disappear while the app is
+      // backgrounded/offline even though the cached OAuth token is still valid.
+      // Restore that token first and only consider it unusable when it is actually
+      // expired (5s safety margin), not one minute early.
       if(!getAccessToken())restoreCachedDriveAccessToken();
       if(getAccessToken()){
         const ok=await connectDriveAfterToken(true);
-        if(ok){reconnectRetryCount=0;return true;}
+        if(ok){reconnectRetryCount=0;updateAuthUI(savedGoogleProfile());return true;}
       }
-      // If the cached token expired, ask GIS to renew the existing grant silently.
-      // This does not block local use; a manual reconnect can always supersede it.
+
+      // A genuinely expired OAuth access token cannot always be renewed by Google GIS
+      // without browser/user interaction (especially iOS PWA). Try the existing grant
+      // silently, but keep the app open/local if the browser refuses the background
+      // request. A manual reconnect remains available without losing local state.
       startupAccessRequested=false;
-      requestGoogleAccessOnStartup();
+      if(gapiInited&&gisInited&&!authRequestInFlight){
+        try{await handleAuthClick(true,false);}catch(_){ }
+      }else{
+        requestGoogleAccessOnStartup();
+      }
       return !!getAccessToken();
     }
     window.autoReconnectGoogleAfterNetwork=autoReconnectGoogleAfterNetwork;
     window.addEventListener('offline',()=>{if(reconnectRetryTimer){clearTimeout(reconnectRetryTimer);reconnectRetryTimer=null;}},{passive:true});
     window.addEventListener('online',()=>{reconnectRetryCount=0;setTimeout(()=>autoReconnectGoogleAfterNetwork().then(ok=>{if(!ok)scheduleAutomaticReconnect();}),250);},{passive:true});
+    window.addEventListener('pageshow',()=>{if(navigator.onLine&&hasRememberedGoogleSession()&&!getAccessToken())setTimeout(()=>autoReconnectGoogleAfterNetwork(),200);},{passive:true});
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navigator.onLine&&hasRememberedGoogleSession()&&!getAccessToken())setTimeout(()=>autoReconnectGoogleAfterNetwork(),150);},{passive:true});
 
 // ===== Session gate / welcome screen =====
 // Set your Google OAuth Client ID here

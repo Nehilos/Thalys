@@ -38,7 +38,7 @@ Correzioni di coerenza multi-device e avatar.
 - Nessuna modifica funzionale a Dieta, sync o Workout rispetto alla v0.36.4.
 
 
-## v0.37.3
+## v0.37.4
 - Sessione persistente sulla stessa versione software: refresh/riapertura entra direttamente nell app.
 - Una nuova versione software richiede una riconnessione una tantum.
 - Nome usato da Thalys spostato nel pannello Foto profilo.

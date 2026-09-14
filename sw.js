@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thalys-shell-v0.37.3';
+const CACHE_NAME = 'thalys-shell-v0.37.4';
 
 const APP_SHELL = [
   './',
@@ -92,7 +92,7 @@ self.addEventListener('fetch', event => {
       })
       .catch(async () => {
         let cached = await caches.match(request);
-        // v0.37.3: local visual assets may have a version query that changed while the
+        // v0.37.4: local visual assets may have a version query that changed while the
         // device was offline. Fall back to the cached same-path asset instead of
         // rendering a broken/empty image.
         if (!cached && isLocal) cached = await caches.match(request, { ignoreSearch: true });
