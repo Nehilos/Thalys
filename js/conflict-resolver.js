@@ -74,7 +74,7 @@
       state[field] = arr; decisions.push({opId:op.id,entity:op.entity,entityId:id,resolution:'local-add'}); return true;
     }
     const remote = arr[idx];
-    // For v0.35.1+ operations, merge only fields actually changed locally.
+    // For v0.35.2+ operations, merge only fields actually changed locally.
     // This preserves concurrent remote edits to other fields of the same record.
     if (before != null && incoming != null) {
       arr[idx] = patchChangedFields(remote, before, incoming);

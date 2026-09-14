@@ -8,7 +8,8 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const GYM_SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
-    let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false;
+    let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false;
+    let authRequestSerial = 0;
 
     function getAccessToken(){ return (window.gapi && gapi.client && gapi.client.getToken && gapi.client.getToken())?.access_token || null; }
     function cacheDriveAccessToken(resp){
@@ -56,7 +57,18 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
 
     function gapiLoaded(){ if(window.gapi) gapi.load('client',initializeGapiClient); }
     async function initializeGapiClient(){ try{await gapi.client.init({discoveryDocs:[GYM_DISCOVERY_DOC,GYM_DISCOVERY_DOC_OAUTH2]});gapiInited=true;const restored=restoreCachedDriveAccessToken();maybeEnableButtons();if(restored){setTimeout(()=>connectDriveAfterToken(true),50);}else{requestGoogleAccessOnStartup();}}catch(e){console.error(e);showToast('Google non disponibile al momento','fa-triangle-exclamation');} }
-    function gisLoaded(){ if(!window.google?.accounts?.oauth2) return; const remembered=savedGoogleProfile();tokenClient=google.accounts.oauth2.initTokenClient({client_id:GYM_CLIENT_ID,scope:GYM_SCOPES,hint:remembered?.email||undefined,callback:()=>{}});gisInited=true;maybeEnableButtons();requestGoogleAccessOnStartup(); }
+    function rebuildTokenClient(useRememberedHint=true){
+      if(!window.google?.accounts?.oauth2)return false;
+      const remembered=useRememberedHint?savedGoogleProfile():null;
+      tokenClient=google.accounts.oauth2.initTokenClient({
+        client_id:GYM_CLIENT_ID,
+        scope:GYM_SCOPES,
+        hint:remembered?.email||undefined,
+        callback:()=>{}
+      });
+      return true;
+    }
+    function gisLoaded(){ if(!rebuildTokenClient(true)) return; gisInited=true;maybeEnableButtons();requestGoogleAccessOnStartup(); }
     function maybeEnableButtons(){const b=document.getElementById('google-login-btn');if(b)b.style.visibility=(gapiInited&&gisInited)?'visible':'visible';}
     function requestGoogleAccessOnStartup(){
       if(startupAccessRequested || !navigator.onLine || !gapiInited || !gisInited)return;
@@ -70,7 +82,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
 
     async function getGoogleProfile(){ try{const r=await gapi.client.oauth2.userinfo.get();return r.result||{};}catch(e){return{};} }
 
-    async function connectDriveAfterToken(silent=false){
+    async function connectDriveAfterToken(silent=false,retryCount=0){
       if(!navigator.onLine||!getAccessToken())return false;
       const profile=savedGoogleProfile()||await getGoogleProfile();
       if(profile&&Object.keys(profile).length){try{sessionStorage.setItem('gymbro_google_profile',JSON.stringify(profile));localStorage.setItem(AUTH_PROFILE_STORAGE_KEY,JSON.stringify(profile));}catch(_){}}
@@ -91,7 +103,15 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       }catch(e){
         console.warn('Auto Drive connect',e);
         const status=e?.status||e?.result?.error?.code;
-        if(status===401){if(window.gapi?.client)gapi.client.setToken('');clearCachedDriveAccessToken();startupAccessRequested=false;}
+        // v0.35.2: after an explicit logout/re-login Google may briefly answer 403 while
+        // the newly issued OAuth token/grant propagates. Retry exactly once with a fresh
+        // Drive workspace lookup before showing a permission error.
+        if(Number(status)===403 && retryCount<1 && navigator.onLine && getAccessToken()){
+          try{driveFolders=null;}catch(_){}
+          await new Promise(r=>setTimeout(r,450));
+          return connectDriveAfterToken(silent,retryCount+1);
+        }
+        if(Number(status)===401){if(window.gapi?.client)gapi.client.setToken('');clearCachedDriveAccessToken();startupAccessRequested=false;}
         setDriveStatus('error',navigator.onLine?'Drive da riconnettere':'Offline · dati locali');
         updateAuthUI(profile);
         if(navigator.onLine&&typeof lockApp==='function')lockApp();
@@ -101,18 +121,69 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
 
     async function handleAuthClick(silentStartup=false){
       const silent = silentStartup === true;
-      if(!tokenClient||!gapiInited){showToast('Google non pronto: riprova tra poco');return;}
+      if(!tokenClient||!gapiInited){if(!silent)showToast('Google non pronto: riprova tra poco');return false;}
+      // v0.35.2: never allow two Google token popups/callbacks to overlap.
+      // A second OAuth request could finish after the first and incorrectly show permission_denied.
+      if(authRequestInFlight){
+        if(!silent)showToast('Accesso Google già in corso…','fa-spinner');
+        return false;
+      }
+      authRequestInFlight=true;
+      const requestSerial=++authRequestSerial;
       tokenClient.callback=async resp=>{
-        if(resp?.error){console.error('OAuth error',resp);startupAccessRequested=false;updateAuthUI(savedGoogleProfile());if(!silent)showOAuthBlockedInfo(resp);return;}
+        if(requestSerial!==authRequestSerial)return;
+        authRequestInFlight=false;
+        if(resp?.error){
+          console.warn('OAuth response',resp);
+          startupAccessRequested=false;
+          // If another Google path already installed a valid token, do not turn a late
+          // popup-close/error callback into a false permission error. Use the valid token.
+          if(getAccessToken()){
+            await connectDriveAfterToken(silent);
+            return;
+          }
+          updateAuthUI(savedGoogleProfile());
+          if(!silent)showOAuthBlockedInfo(resp);
+          return;
+        }
         cacheDriveAccessToken(resp);
         const ok=await connectDriveAfterToken(silent);
         if(!ok&&!silent)showToast('Accesso riuscito, ma Drive non è stato sincronizzato','fa-triangle-exclamation');
       };
-      try{tokenClient.requestAccessToken({prompt:silent?'':(getAccessToken()?'':'consent')});}catch(e){console.error(e);if(!silent)showToast('Errore accesso Google');}
+      try{
+        // Silent startup may reuse an already granted session. Manual login deliberately
+        // shows account selection, but does not force a fresh consent/revocation cycle.
+        tokenClient.requestAccessToken(silent?{prompt:''}:{prompt:'select_account'});
+        return true;
+      }catch(e){
+        authRequestInFlight=false;
+        startupAccessRequested=false;
+        console.error(e);
+        if(!silent)showToast('Errore accesso Google');
+        return false;
+      }
     }
     function handleSignoutClick(){
-      const t=getAccessToken(); if(t&&window.google?.accounts?.oauth2) try{google.accounts.oauth2.revoke(t,()=>{});}catch(e){}
-      if(window.gapi?.client) gapi.client.setToken(''); clearCachedDriveAccessToken(); sessionStorage.removeItem('gymbro_google_profile');localStorage.removeItem(AUTH_PROFILE_STORAGE_KEY);localStorage.removeItem('google_id_token');sessionStorage.removeItem('google_id_token'); driveFolders=null; driveDirty=false; updateAuthUI(null);if(typeof lockApp==='function')lockApp(); showToast('Disconnesso da Google Drive');
+      // Normal Thalys logout is a LOCAL sign-out, not an OAuth grant revocation.
+      // Revoking here is asynchronous and can race with an immediate re-login,
+      // producing permission_denied even though the new token was already issued.
+      authRequestSerial++;
+      authRequestInFlight=false;
+      startupAccessRequested=false;
+      if(window.gapi?.client) gapi.client.setToken('');
+      clearCachedDriveAccessToken();
+      try{window.google?.accounts?.id?.disableAutoSelect?.();}catch(_){}
+      sessionStorage.removeItem('gymbro_google_profile');
+      localStorage.removeItem(AUTH_PROFILE_STORAGE_KEY);
+      localStorage.removeItem('google_id_token');
+      sessionStorage.removeItem('google_id_token');
+      driveFolders=null;
+      driveDirty=false;
+      // Rebuild without the old account hint so the next explicit login is clean.
+      if(gisInited)rebuildTokenClient(false);
+      updateAuthUI(null);
+      if(typeof lockApp==='function')lockApp();
+      showToast('Disconnesso da Google Drive');
     }
     function setCloudUserUI(profile){updateAuthUI(profile);}
     function logoutCloud(){handleSignoutClick();}

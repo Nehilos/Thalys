@@ -1,19 +1,22 @@
-# Thalys v0.35.1
+# Thalys v0.35.2
 
-## Conflict Resolver Fix + Full Conflict Audit
+Bugfix autenticazione/logout Google Drive.
 
-Questa versione corregge il bug che impediva al Conflict Resolver di essere applicato durante il ritorno online.
+Modifiche principali:
+- Il normale pulsante Disconnetti ora esegue un logout locale da Thalys senza revocare il grant OAuth Google.
+- Eliminata la race tra revoke OAuth e nuovo login che poteva generare permission_denied.
+- Una sola richiesta OAuth può essere attiva alla volta.
+- Dopo logout il token client viene ricreato senza hint dell'account precedente.
+- Il login manuale usa selezione account senza forzare inutilmente un nuovo consenso ogni volta.
+- Se una callback OAuth tardiva fallisce ma esiste già un token valido, Thalys usa il token valido invece di mostrare un falso errore.
+- Dopo un nuovo token, un 403 Drive transitorio viene ritentato una sola volta con workspace Drive ricaricato.
+- Nessuna modifica alla Sync Queue / Conflict Resolver v0.35.1.
+- Cache PWA/offline e query degli script aggiornate a v0.35.2.
 
-Correzioni principali:
-- `cloud` nel caricamento Drive e ora riassegnabile: il resolver non cade piu nel fallback con `Assignment to constant variable`.
-- I database dedicati (`water.json`, `nutrition.json`, `body_metrics.json`, ecc.) hanno precedenza sulla copia duplicata in `app_state.json`.
-- Le operazioni granulari update salvano `before` + `after`, permettendo merge per campo senza cancellare modifiche remote indipendenti.
-- L acqua continua a usare il delta locale sul valore remoto piu recente.
-- Le cancellazioni pendenti vengono riapplicate dopo il download remoto.
-- Gli errori di rete/offline durante il sync automatico non aprono piu il popup di errore sincronizzazione; le modifiche restano pending.
-- Sync Protocol aggiornato alla versione 4.
-- Cache PWA/offline aggiornata a v0.35.1.
-
-La v0.34/v0.35 queue resta compatibile: le vecchie operazioni pending vengono gestite con fallback legacy.
-
-Audit conflitti automatico eseguito su: acqua, alimenti, misure corpo, schede, storico workout, completamenti workout, meditazione, impostazioni, target, profilo, preset alimenti e cancellazioni.
+Test consigliato:
+1. Accedi normalmente e verifica pallino verde.
+2. Premi Disconnetti.
+3. Dalla schermata iniziale premi Continua/Riconnetti con Google.
+4. Seleziona l'account: deve entrare e collegare Drive senza permission_denied.
+5. Ripeti logout/login 2-3 volte.
+6. Verifica poi una sincronizzazione acqua e un test offline/online.
