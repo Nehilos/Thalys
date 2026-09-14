@@ -7,6 +7,7 @@
     return Object.freeze({
       camera:!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia),
       microphone:!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia),
+      speechRecognition:!!(window.SpeechRecognition||window.webkitSpeechRecognition),
       notifications:'Notification' in window,
       serviceWorker:'serviceWorker' in navigator,
       push:('PushManager' in window)&&('serviceWorker' in navigator),

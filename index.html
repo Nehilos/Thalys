@@ -163,13 +163,14 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0380"></script>
-  <script src="./js/capabilities.js?v=0380"></script>
-  <script src="./js/storage-manager.js?v=0380"></script>
-  <script src="./js/sync-queue.js?v=0380"></script>
-  <script src="./js/conflict-resolver.js?v=0380"></script>
-  <script src="./js/local-db.js?v=0380"></script>
-  <script src="./js/ui-foundation.js?v=0380"></script>
+  <script src="./js/config.js?v=0390"></script>
+  <script src="./js/capabilities.js?v=0390"></script>
+  <script src="./js/device-media.js?v=0390"></script>
+  <script src="./js/storage-manager.js?v=0390"></script>
+  <script src="./js/sync-queue.js?v=0390"></script>
+  <script src="./js/conflict-resolver.js?v=0390"></script>
+  <script src="./js/local-db.js?v=0390"></script>
+  <script src="./js/ui-foundation.js?v=0390"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -439,6 +440,7 @@
             </div>
           </div>
           <textarea id="gratitude-text" rows="4" placeholder="Oggi sono grato per…" class="mt-3 w-full resize-none rounded-2xl border border-slate-700 bg-slate-900 p-3 text-sm text-white outline-none focus:border-amber-400"></textarea>
+          <button type="button" data-thalys-mic-target="gratitude-text" onclick="startThalysDictation('gratitude-text')" class="mt-2 min-h-10 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-cyan-300"><i class="fa-solid fa-microphone mr-1"></i>Detta</button>
           <button onclick="saveGratitudeEntry()" class="mind-control mt-2 w-full bg-amber-500 text-slate-950 font-bold text-xs"><i class="fa-solid fa-heart mr-1"></i> Salva</button>
           <div class="mt-4 border-t border-slate-800 pt-3">
             <div class="flex items-center justify-between gap-2">
@@ -1080,6 +1082,7 @@
 
         <label id="consult-ai-specific-wrap" class="mt-2 block text-[9px] text-slate-400">Richiesta specifica · facoltativa
           <textarea id="consult-ai-specific" rows="3" class="mt-1 w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white" placeholder="Es. voglio migliorare il recupero senza aumentare troppo il volume"></textarea>
+          <button type="button" data-thalys-mic-target="consult-ai-specific" onclick="startThalysDictation('consult-ai-specific')" class="mt-2 min-h-9 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-cyan-300"><i class="fa-solid fa-microphone mr-1"></i>Detta</button>
         </label>
 
         <button onclick="runAIConsult()" id="consult-ai-run" class="mt-3 w-full min-h-11 rounded-xl bg-violet-500 text-xs font-black text-slate-950">
@@ -1216,6 +1219,26 @@
         <button id="options-disconnect-btn" type="button" onclick="handleSignoutClick()" class="min-h-10 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-rose-300"><i class="fa-solid fa-right-from-bracket mr-1"></i>Disconnetti</button>
       </div>
 
+      <div id="device-permissions-card" class="bg-darkcard border border-darkborder rounded-2xl p-4 shadow-lg">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-shield-halved text-cyan-300 mr-1"></i> Permessi dispositivo</h3>
+            <p class="mt-1 text-[10px] leading-relaxed text-slate-400">Thalys chiede fotocamera o microfono solo quando premi un comando che li usa.</p>
+          </div>
+          <button type="button" onclick="refreshThalysPermissionUI()" class="min-h-9 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-slate-300"><i class="fa-solid fa-rotate mr-1"></i>Aggiorna</button>
+        </div>
+        <div class="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+          <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Fotocamera</div><div id="device-camera-status" class="mt-1 font-black text-white">—</div></div>
+          <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Microfono</div><div id="device-microphone-status" class="mt-1 font-black text-white">—</div></div>
+          <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Dettatura</div><div id="device-speech-status" class="mt-1 font-black text-white">—</div></div>
+          <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-slate-400">Push</div><div id="device-push-status" class="mt-1 font-black text-white">—</div></div>
+        </div>
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          <button type="button" onclick="requestThalysDevicePermission('camera')" class="min-h-10 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-cyan-300"><i class="fa-solid fa-camera mr-1"></i>Verifica camera</button>
+          <button type="button" onclick="requestThalysDevicePermission('microphone')" class="min-h-10 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-cyan-300"><i class="fa-solid fa-microphone mr-1"></i>Verifica microfono</button>
+        </div>
+      </div>
+
       <div class="bg-darkcard border border-darkborder rounded-2xl p-4 shadow-lg">
         <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-circle-question text-cyan-300 mr-1"></i> Guida rapida</h3>
         <p class="mt-1 text-[10px] text-slate-400">Seleziona una sezione e guarda cosa fanno i comandi principali.</p>
@@ -1253,7 +1276,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.38.0
+        Thalys · Software v0.39.0
       </div>
 
     </section>
@@ -2009,6 +2032,7 @@
           <div class="col-span-2">
             <label class="text-xs text-slate-400 block mb-1">Note / osservazioni</label>
             <textarea id="wellness-notes" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" placeholder="Es. riposo buono, allenamento intenso, molto stress..."></textarea>
+            <button type="button" data-thalys-mic-target="wellness-notes" onclick="startThalysDictation('wellness-notes')" class="mt-2 min-h-9 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-cyan-300"><i class="fa-solid fa-microphone mr-1"></i>Detta</button>
           </div>
         </div>
 
@@ -2364,19 +2388,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0380"></script>
+  <script src="./js/language.js?v=0390"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0380"></script>
-  <script src="./js/body.js?v=0380"></script>
-  <script src="./js/meditation.js?v=0380"></script>
-  <script src="./js/nutrition.js?v=0380"></script>
-  <script src="./js/workout.js?v=0380"></script>
-  <script src="./js/home.js?v=0380"></script>
-  <script src="./js/analytics.js?v=0380"></script>
+  <script src="./js/app-core.js?v=0390"></script>
+  <script src="./js/body.js?v=0390"></script>
+  <script src="./js/meditation.js?v=0390"></script>
+  <script src="./js/nutrition.js?v=0390"></script>
+  <script src="./js/workout.js?v=0390"></script>
+  <script src="./js/home.js?v=0390"></script>
+  <script src="./js/analytics.js?v=0390"></script>
 
-  <script src="./js/drive.js?v=0380"></script>
-  <script src="./js/auth.js?v=0380"></script>
+  <script src="./js/drive.js?v=0390"></script>
+  <script src="./js/auth.js?v=0390"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2403,8 +2427,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0380"></script>
-<script src="./js/runtime-health.js?v=0380"></script>
+<script src="./js/app-enhancements.js?v=0390"></script>
+<script src="./js/runtime-health.js?v=0390"></script>
 
 </body>
 </html>

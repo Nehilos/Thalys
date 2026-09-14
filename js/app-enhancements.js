@@ -20,7 +20,7 @@ let chartMacroV7=null,chartMicroV7=null;
 async function loadExternalAvatarArtwork(force=false){
   if(window._thalysExternalAvatarLoaded&&!force)return true;
   try{
-    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0380',{cache:'reload'}),fetch('./female.svg?v=0380',{cache:'reload'})]);
+    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0390',{cache:'reload'}),fetch('./female.svg?v=0390',{cache:'reload'})]);
     if(!mr.ok||!fr.ok)throw new Error('SVG_NOT_FOUND');
     const parser=new DOMParser();
     async function install(res,id){const doc=parser.parseFromString(await res.text(),'image/svg+xml'),svg=doc.documentElement,s=document.getElementById(id);if(!s)return;const vb=svg.getAttribute('viewBox');if(vb)s.setAttribute('viewBox',vb);s.replaceChildren(...Array.from(svg.children).filter(n=>n.tagName.toLowerCase()!=='script').map(n=>document.importNode(n,true)));}
@@ -97,7 +97,7 @@ function avatarSetArtworkV8(gender,{force=false}={}){
   if(!group)return false;
   const file=female?'female.svg':'male.svg';
   const ns='http://www.w3.org/2000/svg';
-  const href=`./${file}?v=0380${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
+  const href=`./${file}?v=0390${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
   const image=document.createElementNS(ns,'image');
   image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','768');image.setAttribute('height','1536');
   image.setAttribute('preserveAspectRatio','xMidYMid meet');image.setAttribute('href',href);
@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 /* ==========================================================
    THALYS V10 — iOS/WebKit robustness + full PDF export
    ========================================================== */
-const THALYS_APP_VERSION_V10=window.ThalysConfig?.appVersion||'0.38.0';
+const THALYS_APP_VERSION_V10=window.ThalysConfig?.appVersion||'0.39.0';
 const THALYS_VERSION_KEY_V10='thalys_app_version';
 const THALYS_RELOAD_KEY_V10='thalys_version_reload_guard';
 
@@ -1659,6 +1659,9 @@ async function startZXingLoopV18(video){
   return false;
 }
 async function requestCameraStreamV18(){
+  if(window.ThalysDeviceMedia?.requestCameraStream){
+    return window.ThalysDeviceMedia.requestCameraStream(true);
+  }
   const attempts=[
     {video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false},
     {video:{facingMode:'environment'},audio:false},
@@ -1738,7 +1741,10 @@ function stopBarcodeCameraV18(){
   if(barcodeCameraReader?.reset){try{barcodeCameraReader.reset()}catch(_){}}
   barcodeCameraReader=null;
   if(barcodeCameraStream){
-    try{barcodeCameraStream.getTracks().forEach(t=>t.stop())}catch(_){}
+    try{
+      if(window.ThalysDeviceMedia?.releaseStream)window.ThalysDeviceMedia.releaseStream(barcodeCameraStream);
+      else barcodeCameraStream.getTracks().forEach(t=>t.stop());
+    }catch(_){}
     barcodeCameraStream=null;
   }
   const video=document.getElementById('barcode-video');

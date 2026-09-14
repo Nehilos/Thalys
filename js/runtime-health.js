@@ -10,9 +10,11 @@
       syncQueue:!!window.ThalysSyncQueue,
       conflictResolver:!!window.ThalysConflictResolver,
       capabilities:window.ThalysCapabilities?.snapshot?.()||null,
+      deviceMedia:!!window.ThalysDeviceMedia,
       warnings:[]
     };
     if(!window.indexedDB)report.warnings.push('indexeddb-unavailable');
+    if(cfg.features?.deviceMediaLayer&&!window.ThalysDeviceMedia)report.warnings.push('device-media-unavailable');
     if(window.ThalysStorage?.CONFIG?.syncProtocolVersion!==cfg.syncProtocolVersion)report.warnings.push('sync-protocol-version-mismatch');
     try{
       const versions=await window.ThalysStorage?.get?.(window.ThalysStorage.CONFIG.stores.meta,'versions');
