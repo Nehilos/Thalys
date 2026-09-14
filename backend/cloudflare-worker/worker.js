@@ -1,4 +1,4 @@
-// Thalys v0.47.0 free-first Cloudflare Worker.
+// Thalys v0.47.1 free-first Cloudflare Worker.
 // Scope: health, push subscription registry and optional Google server-side refresh sessions.
 // Progress photos and Thalys application databases NEVER live here.
 

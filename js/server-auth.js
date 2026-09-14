@@ -2,17 +2,53 @@
   'use strict';
   const SESSION_ID_KEY='thalys_server_auth_session_id_v1';
   const SESSION_SECRET_KEY='thalys_server_auth_session_secret_v1';
+  const SESSION_ACTIVE_KEY='thalys_server_auth_active_v1';
+  const IDB_SESSION_META_KEY='server-auth-session-v1';
   let codeClient=null;
+  let hydratePromise=null;
 
   function backendCfg(){return window.ThalysConfig?.backend||{};}
   function enabled(){const c=backendCfg();return !!(window.ThalysBackend?.configured?.()&&c.googleCodeFlowEnabled===true&&c.googleCodeExchangePath);}
   function randomBytes(n=32){const b=new Uint8Array(n);crypto.getRandomValues(b);return b;}
   function b64url(bytes){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+  async function mirrorSessionToIndexedDb(value){
+    try{
+      if(!window.ThalysStorage?.put)return;
+      await window.ThalysStorage.put(window.ThalysStorage.CONFIG.stores.meta,{key:IDB_SESSION_META_KEY,value,updatedAt:new Date().toISOString()});
+    }catch(err){console.warn('Server auth session mirror',err);}
+  }
+  async function hydrateSessionFromIndexedDb(){
+    if(hydratePromise)return hydratePromise;
+    hydratePromise=(async()=>{
+      let current=session();
+      if(current.sessionId&&current.sessionSecret)return current;
+      try{
+        await Promise.resolve(window.thalysStorageReady);
+        const rec=await window.ThalysStorage?.get?.(window.ThalysStorage.CONFIG.stores.meta,IDB_SESSION_META_KEY);
+        const v=rec?.value||{};
+        if(v.sessionId&&v.sessionSecret){
+          localStorage.setItem(SESSION_ID_KEY,String(v.sessionId));
+          localStorage.setItem(SESSION_SECRET_KEY,String(v.sessionSecret));
+          if(v.active===true)localStorage.setItem(SESSION_ACTIVE_KEY,'1');
+          current=session();
+        }
+      }catch(err){console.warn('Server auth session hydrate',err);}
+      return current;
+    })().finally(()=>{hydratePromise=null;});
+    return hydratePromise;
+  }
+  function markActive(active){
+    try{if(active)localStorage.setItem(SESSION_ACTIVE_KEY,'1');else localStorage.removeItem(SESSION_ACTIVE_KEY);}catch(_){}
+    const s=session();
+    if(s.sessionId&&s.sessionSecret)mirrorSessionToIndexedDb({...s,active:!!active});
+  }
+  function cachedActive(){try{return localStorage.getItem(SESSION_ACTIVE_KEY)==='1';}catch(_){return false;}}
   function ensureSession(){
     let id=localStorage.getItem(SESSION_ID_KEY)||'';
     let secret=localStorage.getItem(SESSION_SECRET_KEY)||'';
     if(!id){id=(crypto.randomUUID?crypto.randomUUID():b64url(randomBytes(18)));localStorage.setItem(SESSION_ID_KEY,id);}
     if(!secret){secret=b64url(randomBytes(32));localStorage.setItem(SESSION_SECRET_KEY,secret);}
+    mirrorSessionToIndexedDb({sessionId:id,sessionSecret:secret,active:cachedActive()});
     return {sessionId:id,sessionSecret:secret};
   }
   function session(){return {sessionId:localStorage.getItem(SESSION_ID_KEY)||'',sessionSecret:localStorage.getItem(SESSION_SECRET_KEY)||''};}
@@ -60,6 +96,7 @@
             deviceId:window.ThalysStorage?.deviceId?.()||''
           });
           const ok=await installAccessToken(data,false);
+          if(data?.refreshStored)markActive(true);
           window.showToast?.(data?.refreshStored?'Sessione Google persistente attivata':'Accesso Google attivato · refresh token non ancora emesso',data?.refreshStored?'fa-shield-halved':'fa-circle-info');
           await refreshUI();
           return ok;
@@ -79,13 +116,24 @@
   }
   async function status(){
     if(!enabled())return {enabled:false,active:false};
-    const s=session();if(!s.sessionId||!s.sessionSecret)return {enabled:true,active:false};
-    try{return await window.ThalysBackend.googleSessionStatus({sessionId:s.sessionId,sessionSecret:s.sessionSecret});}catch(_){return {enabled:true,active:false,error:true};}
+    let s=session();
+    if(!s.sessionId||!s.sessionSecret){s=await hydrateSessionFromIndexedDb();}
+    if(!s.sessionId||!s.sessionSecret)return {enabled:true,active:false,missingLocalSession:true};
+    try{
+      const st=await window.ThalysBackend.googleSessionStatus({sessionId:s.sessionId,sessionSecret:s.sessionSecret});
+      if(st?.active===true)markActive(true);
+      else if(st?.active===false)markActive(false);
+      return st;
+    }catch(_){
+      return {enabled:true,active:cachedActive(),error:true,transient:true};
+    }
   }
   async function clearSession(removeRemote=true){
     const s=session();
     if(removeRemote&&enabled()&&s.sessionId&&s.sessionSecret){try{await window.ThalysBackend.deleteGoogleSession({sessionId:s.sessionId,sessionSecret:s.sessionSecret});}catch(_){}}
-    localStorage.removeItem(SESSION_ID_KEY);localStorage.removeItem(SESSION_SECRET_KEY);codeClient=null;await refreshUI();
+    localStorage.removeItem(SESSION_ID_KEY);localStorage.removeItem(SESSION_SECRET_KEY);localStorage.removeItem(SESSION_ACTIVE_KEY);
+    try{if(window.ThalysStorage?.put)await window.ThalysStorage.put(window.ThalysStorage.CONFIG.stores.meta,{key:IDB_SESSION_META_KEY,value:{},updatedAt:new Date().toISOString()});}catch(_){}
+    codeClient=null;await refreshUI();
   }
   async function refreshUI(){
     const el=document.getElementById('device-server-session-status');
@@ -96,19 +144,24 @@
     if(!c.enabled){el.textContent='Disattivata';return;}
     if(!c.googleCodeFlowEnabled){el.textContent='Pronta · non attiva';return;}
     const st=await status();
-    el.textContent=st?.active?'Attiva':st?.enabled?'Da attivare':'Non disponibile';
+    if(st?.active&&st?.transient)el.textContent='Attiva · verifica in corso';
+    else if(st?.active)el.textContent='Attiva';
+    else if(st?.transient)el.textContent='Verifica connessione…';
+    else el.textContent=st?.enabled?'Da attivare':'Non disponibile';
   }
   function cachedTokenExpiresAt(){
     try{return Number(JSON.parse(localStorage.getItem('thalys_drive_access_v1')||'null')?.expiresAt||0);}catch(_){return 0;}
   }
   let refreshTimer=null,refreshBusy=false;
   async function proactiveRefresh(){
-    if(refreshBusy||!navigator.onLine||!canRefresh())return false;
+    if(refreshBusy||!navigator.onLine)return false;
+    await hydrateSessionFromIndexedDb();
+    if(!canRefresh())return false;
     const expiresAt=cachedTokenExpiresAt();
     // Refresh only when the access token is missing or has less than 10 minutes left.
     if(expiresAt>Date.now()+10*60*1000)return true;
     refreshBusy=true;
-    try{return await refresh(true);}finally{refreshBusy=false;}
+    try{const ok=await refresh(true);await refreshUI();return ok;}finally{refreshBusy=false;}
   }
   function startRefreshSupervisor(){
     if(refreshTimer)clearInterval(refreshTimer);
@@ -116,10 +169,10 @@
     setTimeout(proactiveRefresh,1500);
     refreshTimer=setInterval(proactiveRefresh,5*60*1000);
   }
-  window.addEventListener('online',()=>setTimeout(proactiveRefresh,250),{passive:true});
+  window.addEventListener('online',()=>setTimeout(async()=>{await hydrateSessionFromIndexedDb();await proactiveRefresh();await refreshUI();},250),{passive:true});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(proactiveRefresh,250);});
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(refreshUI,0));
-  window.addEventListener('load',()=>{if(enabled()){buildCodeClient();startRefreshSupervisor();}},{once:true});
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(async()=>{await hydrateSessionFromIndexedDb();await refreshUI();},0));
+  window.addEventListener('load',async()=>{if(enabled()){await hydrateSessionFromIndexedDb();buildCodeClient();startRefreshSupervisor();await refreshUI();}},{once:true});
   window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,proactiveRefresh,status,clearSession,refreshUI});
   window.enableThalysServerSession=authorize;
 })();
