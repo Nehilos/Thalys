@@ -20,9 +20,13 @@ Questa release prosegue il punto 13 della roadmap in modo controllato.
 6. offline -> online con sync automatico;
 7. PC e iPhone/PWA.
 
-## v0.40.0 - Notification foundation
+## v0.41.0 - Notification foundation
 - Permissione notifiche richiesta solo dopo azione utente.
 - Notifica locale di test tramite Service Worker.
 - Service Worker pronto a ricevere eventi Push e gestire il click sulla notifica.
 - Push remoto non viene simulato: richiede endpoint backend + VAPID/subscription e verra collegato nella fase backend della roadmap.
 - Sync Queue usa ora la versione centralizzata ThalysConfig invece del vecchio valore legacy 0.36.4.
+
+
+## v0.41.0
+Client Push completato con backend bridge neutro. Il backend resta disabilitato finche non vengono configurati baseUrl e VAPID public key in js/config.js. Nessuna chiamata esterna viene effettuata nello stato predefinito.

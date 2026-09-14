@@ -1,4 +1,4 @@
-// Thalys v0.40.0 - Authentication and persistent session module
+// Thalys v0.41.0 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -9,7 +9,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.40.0';
+    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.41.0';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -32,6 +32,11 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       }catch(_){clearCachedDriveAccessToken();return false;}
     }
     function savedGoogleProfile(){try{return JSON.parse(localStorage.getItem(AUTH_PROFILE_STORAGE_KEY)||sessionStorage.getItem('gymbro_google_profile')||'null')||null;}catch(_){return null;}}
+    function authDiagnostics(){
+      let cached=null;try{cached=JSON.parse(localStorage.getItem(AUTH_DRIVE_TOKEN_STORAGE_KEY)||'null');}catch(_){}
+      const expiresAt=Number(cached?.expiresAt||0);
+      return {remembered:hasRememberedGoogleSession(),sessionVersion:rememberedSessionVersion(),currentVersion:THALYS_SOFTWARE_VERSION,online:navigator.onLine,driveTokenInMemory:!!getAccessToken(),cachedDriveTokenValid:!!(expiresAt>Date.now()+5000),cachedDriveTokenExpiresAt:expiresAt?new Date(expiresAt).toISOString():null,needsVersionReconnect:needsSoftwareVersionReconnect()};
+    }
 
     function rememberedSessionVersion(){try{return localStorage.getItem(AUTH_SESSION_VERSION_KEY)||'';}catch(_){return '';}}
     function sessionAuthorizedForCurrentVersion(){return localStorage.getItem('thalys_app_session_v1')==='1' && rememberedSessionVersion()===THALYS_SOFTWARE_VERSION;}
@@ -615,3 +620,5 @@ window.addEventListener('online',()=>{
     else autoReconnectGoogleAfterNetwork();
   },150);
 },{passive:true});
+
+window.ThalysAuthDiagnostics=authDiagnostics;

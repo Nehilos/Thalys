@@ -12,11 +12,13 @@
       capabilities:window.ThalysCapabilities?.snapshot?.()||null,
       deviceMedia:!!window.ThalysDeviceMedia,
       notifications:!!window.ThalysNotifications,
+      backend:window.ThalysBackend?.snapshot?.()||null,
       warnings:[]
     };
     if(!window.indexedDB)report.warnings.push('indexeddb-unavailable');
     if(cfg.features?.deviceMediaLayer&&!window.ThalysDeviceMedia)report.warnings.push('device-media-unavailable');
     if(cfg.features?.notificationLayer&&!window.ThalysNotifications)report.warnings.push('notification-layer-unavailable');
+    if(cfg.features?.backendBridge&&!window.ThalysBackend)report.warnings.push('backend-bridge-unavailable');
     if(window.ThalysStorage?.CONFIG?.syncProtocolVersion!==cfg.syncProtocolVersion)report.warnings.push('sync-protocol-version-mismatch');
     try{
       const versions=await window.ThalysStorage?.get?.(window.ThalysStorage.CONFIG.stores.meta,'versions');

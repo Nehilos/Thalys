@@ -2,8 +2,8 @@
   'use strict';
   const CONFIG=Object.freeze({
     appName:'Thalys',
-    appVersion:'0.40.0',
-    cacheBust:'0400',
+    appVersion:'0.41.0',
+    cacheBust:'0410',
     sessionSchema:'v1',
     storageSchemaVersion:4,
     syncProtocolVersion:7,
@@ -15,7 +15,19 @@
       deviceMediaLayer:true,
       voiceDictation:true,
       notificationLayer:true,
-      pushFoundation:true
+      pushFoundation:true,
+      backendBridge:true,
+      pushClient:true
+    }),
+    backend:Object.freeze({
+      enabled:false,
+      provider:'none',
+      baseUrl:'',
+      vapidPublicKey:'',
+      healthPath:'/health',
+      pushSubscribePath:'/push/subscriptions',
+      pushUnsubscribePath:'/push/subscriptions/remove',
+      googleRefreshPath:'/auth/google/refresh'
     })
   });
   window.ThalysConfig=CONFIG;
