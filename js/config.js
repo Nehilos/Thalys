@@ -2,8 +2,8 @@
   'use strict';
   const CONFIG=Object.freeze({
     appName:'Thalys',
-    appVersion:'0.44.0',
-    cacheBust:'0440',
+    appVersion:'0.45.0',
+    cacheBust:'0450',
     sessionSchema:'v1',
     storageSchemaVersion:4,
     syncProtocolVersion:7,
@@ -34,14 +34,14 @@
       backendPreference:'cloudflare-workers-free'
     }),
     backend:Object.freeze({
-      enabled:false,
-      deploymentStage:'prepared',
+      enabled:true,
+      deploymentStage:'connected-test',
       contractVersion:'1',
       autoActivate:false,
       provider:'cloudflare-workers-free',
       freeTierOnly:true,
       requiresBilling:false,
-      baseUrl:'',
+      baseUrl:'https://thalys.thalys-app.workers.dev',
       vapidPublicKey:'',
       healthPath:'/health',
       pushSubscribePath:'/push/subscriptions',

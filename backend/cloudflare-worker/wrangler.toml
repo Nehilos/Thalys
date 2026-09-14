@@ -1,0 +1,18 @@
+name = "thalys"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Inserisci ESATTAMENTE il dominio pubblico di Thalys, senza slash finale.
+
+# Copia qui la chiave pubblica generata da generate-keys.mjs. Non e un segreto.
+
+[[d1_databases]]
+binding = "DB"
+database_name = "thalys"
+database_id = "b3fe8c33-1c4f-4e59-bca5-eed8680c5b29"
+
+# Segreti da aggiungere con Wrangler, MAI da scrivere in questo file:
+# npx wrangler secret put GOOGLE_CLIENT_SECRET
+# npx wrangler secret put AUTH_ENCRYPTION_KEY
+# npx wrangler secret put VAPID_PRIVATE_KEY
