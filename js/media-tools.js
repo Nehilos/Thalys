@@ -553,9 +553,9 @@ function saveRecognizedNutrition(e) {
     existing.calcium = calcium;
     existing.magnesium = magnesium;
     existing.zinc = zinc;
-    existing.fiber = fiber; existing.salt=salt; existing.iron=iron; existing.potassium=potassium; existing.vitaminsId=vitaminsId; existing.vitaminsLip=vitaminsLip;
+    existing.fiber = fiber; existing.salt=salt; existing.iron=iron; existing.potassium=potassium; existing.vitaminsId=vitaminsId; existing.vitaminsLip=vitaminsLip; existing.updatedAt=new Date().toISOString();
   } else {
-    appState.presets.push({ name, p, c, f, satFat, sugars, calcium, magnesium, zinc, fiber, salt, iron, potassium, vitaminsId, vitaminsLip, kcal, ts: new Date().toISOString() });
+    { const now=new Date().toISOString(); appState.presets.unshift({ name, p, c, f, satFat, sugars, calcium, magnesium, zinc, fiber, salt, iron, potassium, vitaminsId, vitaminsLip, kcal, ts:now, createdAt:now, updatedAt:now }); }
   }
 
   persistFoodDatabase();

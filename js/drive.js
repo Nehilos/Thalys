@@ -124,8 +124,8 @@ async function findDriveFolder(name,parentId=null){
     function databasePayloads(){
       const {consultations:_consultations,aiConsults:_aiConsults,...appCore}=appState||{};
       return {
-        'thalys_manifest.json':{app:'Thalys',schemaVersion:8,updatedAt:new Date().toISOString(),databaseVersion:6,syncProtocolVersion:5},
-        'sync_meta.json':window.ThalysSyncQueue?.getSyncMetadata?window.ThalysSyncQueue.getSyncMetadata():{version:1,protocolVersion:5,records:{},tombstones:{}},
+        'thalys_manifest.json':{app:'Thalys',schemaVersion:8,updatedAt:new Date().toISOString(),databaseVersion:6,syncProtocolVersion:6},
+        'sync_meta.json':window.ThalysSyncQueue?.getSyncMetadata?window.ThalysSyncQueue.getSyncMetadata():{version:1,protocolVersion:6,records:{},tombstones:{}},
         'app_state.json':{...appCore,photos:[],profilePhoto:null},
         'workouts.json':appState.workouts||[],
         'workout_plans.json':{plans:appState.workoutPlans||[],activePlanId:appState.activeWorkoutPlanId||null,assignments:appState.workoutAssignments||{},completions:appState.workoutCompletions||{}},
@@ -157,9 +157,16 @@ async function findDriveFolder(name,parentId=null){
       try{
         if(window.ThalysSyncQueue?.flushWrites)await window.ThalysSyncQueue.flushWrites();
         const payloads=databasePayloads();
-        const results=await Promise.allSettled(Object.entries(payloads).map(async ([name,data])=>({name,result:await uploadDriveFile(name,JSON.stringify(data),'application/json',driveFolders.databaseFolderId,true)})));
+        // v0.36.1: publish sync metadata/tombstones before domain files.
+        // This prevents another device from reading a newly-deleted database state with stale deletion metadata
+        // (or an old database copy without knowing that the record is already tombstoned).
+        if(Object.prototype.hasOwnProperty.call(payloads,'sync_meta.json')){
+          await uploadDriveFile('sync_meta.json',JSON.stringify(payloads['sync_meta.json']),'application/json',driveFolders.databaseFolderId,true);
+        }
+        const domainEntries=Object.entries(payloads).filter(([name])=>name!=='sync_meta.json');
+        const results=await Promise.allSettled(domainEntries.map(async ([name,data])=>({name,result:await uploadDriveFile(name,JSON.stringify(data),'application/json',driveFolders.databaseFolderId,true)})));
         const failed=results.filter(r=>r.status==='rejected');
-        if(failed.length){const first=failed[0].reason||new Error('Errore salvataggio');first.failedCount=failed.length;first.failedNames=results.map((r,i)=>r.status==='rejected'?Object.keys(payloads)[i]:null).filter(Boolean);throw first;}
+        if(failed.length){const first=failed[0].reason||new Error('Errore salvataggio');first.failedCount=failed.length;first.failedNames=results.map((r,i)=>r.status==='rejected'?domainEntries[i][0]:null).filter(Boolean);throw first;}
         lastDriveSyncAt=Date.now();driveDirty=false;localStorage.setItem('thalys_drive_dirty','0');localStorage.setItem('thalys_last_drive_sync',String(lastDriveSyncAt));
         if(window.ThalysSyncQueue?.markPendingSynced)await window.ThalysSyncQueue.markPendingSynced({driveSyncAt:lastDriveSyncAt});
         lastSyncError=null;setDriveStatus('ok','Sincronizzato');updateManualSyncUI();return true;

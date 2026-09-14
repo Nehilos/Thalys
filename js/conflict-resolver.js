@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.36';
-  const PROTOCOL_VERSION = 5;
+  const APP_VERSION = '0.36.1';
+  const PROTOCOL_VERSION = 6;
 
   function clone(value) {
     try { return structuredClone(value); }
@@ -104,9 +104,18 @@
     }
   }
 
-  function applyOperation(state, op, touched, decisions) {
+  function tombstoneKeyForOperation(op){ return `${String(op?.entity||'')}::${String(op?.entityId ?? op?.date ?? '')}`; }
+  function applyOperation(state, op, touched, decisions, syncMeta) {
     if (!op || op.kind !== 'operation') return;
     const entity = op.entity;
+    const tomb=syncMeta?.tombstones?.[tombstoneKeyForOperation(op)];
+    if(tomb){
+      const deletedAt=ts(tomb.deletedAt), operationAt=opTime(op);
+      if(deletedAt>=operationAt){
+        decisions.push({opId:op.id,entity,entityId:op.entityId,resolution:'blocked-by-newer-tombstone',deletedAt:tomb.deletedAt,operationAt:op.updatedAt||op.createdAt});
+        return;
+      }
+    }
     if (entity === 'water') {
       const date = String(op.date || op.entityId || ''); if (!date) return;
       state.water = {...(state.water || {})}; state.waterUpdatedAt = {...(state.waterUpdatedAt || {})};
@@ -147,7 +156,7 @@
     const touched = {fields:new Set(), waterDates:new Set()};
     const decisions=[];
     applyTombstones(state,syncMeta,touched,decisions);
-    for (const op of ops) applyOperation(state,op,touched,decisions);
+    for (const op of ops) applyOperation(state,op,touched,decisions,syncMeta);
     const result={
       state,
       pendingCount:ops.length,

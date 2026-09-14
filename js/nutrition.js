@@ -1,7 +1,7 @@
 // Thalys v0.29 - Nutrition domain extracted from app-core.js
 // Food logging, water, nutrition targets, presets and nutrition rendering.
 
-    function persistFoodDatabase(){appState.presets=(appState.presets||[]).map(normalizeFoodPreset).filter(x=>x.name);saveStateToLocal({source:'nutrition-presets'}); }
+    function persistFoodDatabase(){appState.presets=sortFoodPresetsNewestFirst((appState.presets||[]).map(normalizeFoodPreset).filter(x=>x.name));saveStateToLocal({source:'nutrition-presets'}); }
 
     function shiftNutritionDate(days) {
       const input = document.getElementById('nutrition-date');
@@ -333,8 +333,18 @@
       name:String(item?.name||'').trim(),kcal:Number(item?.kcal)||0,p:Number(item?.p)||0,c:Number(item?.c)||0,f:Number(item?.f)||0,
       satFat:Number(item?.satFat ?? item?.saturatedFat)||0,sugars:Number(item?.sugars)||0,calcium:Number(item?.calcium)||0,magnesium:Number(item?.magnesium)||0,zinc:Number(item?.zinc)||0,
       fiber:Number(item?.fiber)||0,salt:Number(item?.salt)||0,iron:Number(item?.iron)||0,potassium:Number(item?.potassium)||0,
-      vitaminsId:normalizeVitaminCodes(item?.vitaminsId ?? item?.vitaminsID ?? '', 'id'),vitaminsLip:normalizeVitaminCodes(item?.vitaminsLip ?? '', 'lip')
+      vitaminsId:normalizeVitaminCodes(item?.vitaminsId ?? item?.vitaminsID ?? '', 'id'),vitaminsLip:normalizeVitaminCodes(item?.vitaminsLip ?? '', 'lip'),
+      ...((item?.createdAt||item?.ts)?{createdAt:item.createdAt||item.ts}:{}),
+      ...((item?.updatedAt||item?.createdAt||item?.ts)?{updatedAt:item.updatedAt||item.createdAt||item.ts}:{})
     };}
+
+    function sortFoodPresetsNewestFirst(items){
+      return (items||[]).map((raw,index)=>({preset:normalizeFoodPreset(raw),index})).sort((a,b)=>{
+        const at=Date.parse(a.preset.createdAt||a.preset.updatedAt||0)||0, bt=Date.parse(b.preset.createdAt||b.preset.updatedAt||0)||0;
+        if(at!==bt)return bt-at;
+        return a.index-b.index;
+      }).map(x=>x.preset);
+    }
 
     let editingFoodPresetIndex=null;
 
@@ -365,15 +375,24 @@
     function recalcFoodMacros(){ applyPresetToForm(); }
 
     function saveFoodPreset(e){
-      e.preventDefault(); const raw={}; PRESET_FIELD_MAP.forEach(([id,key])=>raw[key]=document.getElementById(id)?.value||''); const p=normalizeFoodPreset(raw); if(!p.name)return;
-      if(editingFoodPresetIndex===null)appState.presets.push(p);else appState.presets[editingFoodPresetIndex]=p; persistFoodDatabase();renderPresets();resetFoodPresetForm();toggleFoodPresetForm(false);renderNutrition();renderHomeDashboard();showToast('Alimento salvato ✓ · sincronizzazione avviata','fa-bookmark');
+      e.preventDefault(); const raw={}; PRESET_FIELD_MAP.forEach(([id,key])=>raw[key]=document.getElementById(id)?.value||''); const now=new Date().toISOString();
+      const existing=editingFoodPresetIndex===null?null:normalizeFoodPreset(appState.presets?.[editingFoodPresetIndex]);
+      const p=normalizeFoodPreset({...raw,createdAt:existing?.createdAt||now,updatedAt:now}); if(!p.name)return;
+      if(editingFoodPresetIndex===null)appState.presets.unshift(p);else appState.presets[editingFoodPresetIndex]=p; persistFoodDatabase();renderPresets();resetFoodPresetForm();toggleFoodPresetForm(false);renderNutrition();renderHomeDashboard();showToast('Alimento salvato ✓ · sincronizzazione avviata','fa-bookmark');
     }
 
     function deletePreset(index){if(!confirm(`Eliminare ${appState.presets[index]?.name||'questo alimento'}?`))return;appState.presets.splice(index,1);saveStateToLocal();renderPresets();}
 
     function renderPresets(){
-      const list=document.getElementById('presets-list'),selectContainer=document.getElementById('preset-select-container'),select=document.getElementById('preset-select');if(!list||!select)return;list.innerHTML='';select.innerHTML='<option value="">-- Seleziona un Preset --</option>';selectContainer?.classList.toggle('hidden',!(appState.presets||[]).length);
-      (appState.presets||[]).forEach((raw,idx)=>{const p=normalizeFoodPreset(raw);appState.presets[idx]=p;const item=document.createElement('div');item.className='bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs';item.innerHTML=`<div class="flex justify-between gap-2"><div class="min-w-0"><div class="font-bold text-slate-200">${p.name}</div><div class="text-[10px] text-slate-400">${p.kcal} kcal · P ${p.p}g · C ${p.c}g · G ${p.f}g · Sat ${p.satFat}g · Zuc ${p.sugars}g</div><div class="text-[10px] text-slate-500">Fibre ${p.fiber}g · Sale ${p.salt}g · Ca ${p.calcium}mg · Mg ${p.magnesium}mg · Zn ${p.zinc}mg · Fe ${p.iron}mg · K ${p.potassium}mg</div><div class="text-[10px] text-slate-500">Vit ID ${p.vitaminsId||'—'} · Vit LIP ${p.vitaminsLip||'—'} / 100g</div></div><div class="flex gap-1"><button onclick="editFoodPreset(${idx})" class="text-cyan-400 p-2"><i class="fa-solid fa-pen"></i></button><button onclick="deletePreset(${idx})" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button></div></div>`;list.appendChild(item);const opt=document.createElement('option');opt.value=idx;opt.textContent=`${p.name} (${p.kcal} kcal/100g)`;select.appendChild(opt);});
+      const list=document.getElementById('presets-list'),selectContainer=document.getElementById('preset-select-container'),select=document.getElementById('preset-select');if(!list||!select)return;
+      appState.presets=sortFoodPresetsNewestFirst(appState.presets||[]);
+      const search=(document.getElementById('food-preset-search')?.value||'').trim().toLocaleLowerCase('it');
+      list.innerHTML='';select.innerHTML='<option value="">-- Seleziona un Preset --</option>';selectContainer?.classList.toggle('hidden',!(appState.presets||[]).length);
+      let visible=0;
+      (appState.presets||[]).forEach((raw,idx)=>{const p=normalizeFoodPreset(raw);appState.presets[idx]=p;const matches=!search||p.name.toLocaleLowerCase('it').includes(search);if(matches){visible++;const item=document.createElement('div');item.className='bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs';item.innerHTML=`<div class="flex justify-between gap-2"><div class="min-w-0"><div class="font-bold text-slate-200">${p.name}</div><div class="text-[10px] text-slate-400">${p.kcal} kcal · P ${p.p}g · C ${p.c}g · G ${p.f}g · Sat ${p.satFat}g · Zuc ${p.sugars}g</div><div class="text-[10px] text-slate-500">Fibre ${p.fiber}g · Sale ${p.salt}g · Ca ${p.calcium}mg · Mg ${p.magnesium}mg · Zn ${p.zinc}mg · Fe ${p.iron}mg · K ${p.potassium}mg</div><div class="text-[10px] text-slate-500">Vit ID ${p.vitaminsId||'—'} · Vit LIP ${p.vitaminsLip||'—'} / 100g</div></div><div class="flex gap-1"><button onclick="editFoodPreset(${idx})" class="text-cyan-400 p-2"><i class="fa-solid fa-pen"></i></button><button onclick="deletePreset(${idx})" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button></div></div>`;list.appendChild(item);}
+        const opt=document.createElement('option');opt.value=idx;opt.textContent=`${p.name} (${p.kcal} kcal/100g)`;select.appendChild(opt);});
+      const empty=document.getElementById('food-preset-search-empty'); if(empty)empty.classList.toggle('hidden',visible!==0||!search);
+      const count=document.getElementById('food-preset-search-count'); if(count)count.textContent=search?`${visible} risultati`:`${(appState.presets||[]).length} alimenti`;
     }
 
     function saveTargets(e) {
