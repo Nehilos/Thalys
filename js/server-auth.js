@@ -98,8 +98,28 @@
     const st=await status();
     el.textContent=st?.active?'Attiva':st?.enabled?'Da attivare':'Non disponibile';
   }
+  function cachedTokenExpiresAt(){
+    try{return Number(JSON.parse(localStorage.getItem('thalys_drive_access_v1')||'null')?.expiresAt||0);}catch(_){return 0;}
+  }
+  let refreshTimer=null,refreshBusy=false;
+  async function proactiveRefresh(){
+    if(refreshBusy||!navigator.onLine||!canRefresh())return false;
+    const expiresAt=cachedTokenExpiresAt();
+    // Refresh only when the access token is missing or has less than 10 minutes left.
+    if(expiresAt>Date.now()+10*60*1000)return true;
+    refreshBusy=true;
+    try{return await refresh(true);}finally{refreshBusy=false;}
+  }
+  function startRefreshSupervisor(){
+    if(refreshTimer)clearInterval(refreshTimer);
+    if(!enabled())return;
+    setTimeout(proactiveRefresh,1500);
+    refreshTimer=setInterval(proactiveRefresh,5*60*1000);
+  }
+  window.addEventListener('online',()=>setTimeout(proactiveRefresh,250),{passive:true});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(proactiveRefresh,250);});
   document.addEventListener('DOMContentLoaded',()=>setTimeout(refreshUI,0));
-  window.addEventListener('load',()=>{if(enabled())buildCodeClient();},{once:true});
-  window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,status,clearSession,refreshUI});
+  window.addEventListener('load',()=>{if(enabled()){buildCodeClient();startRefreshSupervisor();}},{once:true});
+  window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,proactiveRefresh,status,clearSession,refreshUI});
   window.enableThalysServerSession=authorize;
 })();

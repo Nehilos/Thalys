@@ -1,14 +1,26 @@
-# Thalys v0.46.0 - Remote Push Test
+# Thalys v0.47.0 - Google Server Auth + Refresh Token
+
+- Google Authorization Code Flow server-side attivo.
+- Refresh token cifrato nel Worker/D1; non viene salvato nel browser.
+- Refresh automatico quando il token manca o ha meno di 10 minuti di validita.
+- Refresh al ritorno online e quando l'app torna in primo piano.
+- Browser OAuth precedente mantenuto come fallback di sicurezza.
+- Push remota v0.46 invariata. Foto sempre Google Drive only.
+
+## Primo test v0.47
+Dopo l'aggiornamento, vai in Opzioni e premi **Attiva sessione server** una sola volta. Completa il popup Google. Lo stato deve diventare **Attiva**.
+
+# Thalys v0.47.0 - Remote Push Test
 
 Questa versione attiva registrazione Push remota e test Worker->dispositivo. Google server auth resta disattivato.
 
 Prima di testare il pulsante **Test push remota**, pubblica il Worker incluso con `npx wrangler deploy`, poi pubblica l'app su Vercel.
 
-# Thalys v0.46.0 - Backend Connected Test
+# Thalys v0.47.0 - Backend Connected Test
 
 Backend health-check collegato a https://thalys.thalys-app.workers.dev. Google server auth resta disattivato in questa release. Foto progressi solo Google Drive.
 
-# Thalys v0.46.0 - Deployment Ready
+# Thalys v0.47.0 - Deployment Ready
 
 Questa versione prepara il deploy gratuito del backend senza attivarlo.
 
@@ -21,7 +33,7 @@ Questa versione prepara il deploy gratuito del backend senza attivarlo.
 
 Per il backend leggere `backend/cloudflare-worker/DEPLOY-GRATIS.md`.
 
-# Thalys v0.46.0 — Free-First Architecture
+# Thalys v0.47.0 — Free-First Architecture
 
 Questa release prepara il punto 14 senza migrare i dati che oggi funzionano.
 
@@ -52,7 +64,7 @@ Il backend NON contiene endpoint per foto o database Thalys. Non va usato per sp
 6. consulti AI esistenti: se il free tier e disponibile devono continuare a funzionare; se la quota e esaurita deve comparire errore senza fallback a pagamento.
 
 
-## v0.46.0 - Server Auth bridge
+## v0.47.0 - Server Auth bridge
 - Optional Google Authorization Code flow prepared for Cloudflare Worker Free.
 - Refresh tokens stay encrypted server-side in D1 and are never stored in the browser.
 - Existing browser OAuth remains the default and fallback until backend is explicitly enabled.

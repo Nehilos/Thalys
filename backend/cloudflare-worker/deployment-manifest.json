@@ -1,5 +1,5 @@
 {
-  "appVersion": "0.46.0",
+  "appVersion": "0.47.0",
   "contractVersion": "1",
   "provider": "cloudflare-workers-free",
   "billingRequired": false,
