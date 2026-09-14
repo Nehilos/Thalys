@@ -1,34 +1,37 @@
-const CACHE_NAME = 'thalys-shell-v0.37.7';
+const CACHE_NAME = 'thalys-shell-v0.37.8';
 
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
-  './male.svg?v=0377',
-  './female.svg?v=0377',
+  './Thalys Logo Dark.png?v=22',
+  './Thalys Logo Light.png?v=22',
+  './Loto.png?v=22',
+  './male.svg?v=0378',
+  './female.svg?v=0378',
   './assets/icons/thalys-app-icon-black.png',
   './css/thalys.css?v=024',
   './js/tailwind-config.js?v=015',
   './js/theme-bootstrap.js?v=015',
-  './js/storage-manager.js?v=0377',
-  './js/sync-queue.js?v=0377',
-  './js/conflict-resolver.js?v=0377',
-  './js/local-db.js?v=0377',
-  './js/ui-foundation.js?v=0377',
-  './js/language.js?v=0377',
-  './js/drive.js?v=0377',
-  './js/auth.js?v=0377',
-  './js/app-core.js?v=0377',
-  './js/body.js?v=0377',
-  './js/meditation.js?v=0377',
-  './js/nutrition.js?v=0377',
-  './js/workout.js?v=0377',
-  './js/home.js?v=0377',
-  './js/analytics.js?v=0377',
+  './js/storage-manager.js?v=0378',
+  './js/sync-queue.js?v=0378',
+  './js/conflict-resolver.js?v=0378',
+  './js/local-db.js?v=0378',
+  './js/ui-foundation.js?v=0378',
+  './js/language.js?v=0378',
+  './js/drive.js?v=0378',
+  './js/auth.js?v=0378',
+  './js/app-core.js?v=0378',
+  './js/body.js?v=0378',
+  './js/meditation.js?v=0378',
+  './js/nutrition.js?v=0378',
+  './js/workout.js?v=0378',
+  './js/home.js?v=0378',
+  './js/analytics.js?v=0378',
   './js/oauth-ui.js?v=015',
   './js/media-tools.js?v=025',
   './js/pwa-register.js?v=015',
-  './js/app-enhancements.js?v=0377',
+  './js/app-enhancements.js?v=0378',
   './lang/lang_it.json?v=23',
   './lang/lang_en.json?v=23',
   './lang/lang_es.json?v=23',
@@ -92,7 +95,7 @@ self.addEventListener('fetch', event => {
       })
       .catch(async () => {
         let cached = await caches.match(request);
-        // v0.37.7: local visual assets may have a version query that changed while the
+        // v0.37.8: local visual assets may have a version query that changed while the
         // device was offline. Fall back to the cached same-path asset instead of
         // rendering a broken/empty image.
         if (!cached && isLocal) cached = await caches.match(request, { ignoreSearch: true });

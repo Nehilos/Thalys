@@ -20,7 +20,7 @@ let chartMacroV7=null,chartMicroV7=null;
 async function loadExternalAvatarArtwork(force=false){
   if(window._thalysExternalAvatarLoaded&&!force)return true;
   try{
-    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0377',{cache:'reload'}),fetch('./female.svg?v=0377',{cache:'reload'})]);
+    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0378',{cache:'reload'}),fetch('./female.svg?v=0378',{cache:'reload'})]);
     if(!mr.ok||!fr.ok)throw new Error('SVG_NOT_FOUND');
     const parser=new DOMParser();
     async function install(res,id){const doc=parser.parseFromString(await res.text(),'image/svg+xml'),svg=doc.documentElement,s=document.getElementById(id);if(!s)return;const vb=svg.getAttribute('viewBox');if(vb)s.setAttribute('viewBox',vb);s.replaceChildren(...Array.from(svg.children).filter(n=>n.tagName.toLowerCase()!=='script').map(n=>document.importNode(n,true)));}
@@ -97,7 +97,7 @@ function avatarSetArtworkV8(gender,{force=false}={}){
   if(!group)return false;
   const file=female?'female.svg':'male.svg';
   const ns='http://www.w3.org/2000/svg';
-  const href=`./${file}?v=0377${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
+  const href=`./${file}?v=0378${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
   const image=document.createElementNS(ns,'image');
   image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','768');image.setAttribute('height','1536');
   image.setAttribute('preserveAspectRatio','xMidYMid meet');image.setAttribute('href',href);
@@ -2992,7 +2992,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 /* ==========================================================
-   THALYS v0.37.7 — Drive-only progress photos
+   THALYS v0.37.8 — Drive-only progress photos
    Progress photos are NEVER available offline. Drive /foto is the
    canonical source; local state stores metadata only (no base64).
    ========================================================== */
@@ -3138,7 +3138,7 @@ window.addEventListener('offline',()=>{revokeThalysPhotoUrlsV0376();if(!document
 window.addEventListener('online',()=>{if(!document.getElementById('photo-manager-modal')?.classList.contains('hidden'))setTimeout(()=>openPhotoManagerV19(),600);},{passive:true});
 
 /* ==========================================================
-   THALYS v0.37.7 — Drive photo manager hardening
+   THALYS v0.37.8 — Drive photo manager hardening
    Unique Drive files, explicit refresh/delete, return to gallery.
    ========================================================== */
 function photoUniqueFilenameV0377(date,view,part,ext='jpg'){

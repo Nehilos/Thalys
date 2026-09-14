@@ -93,9 +93,9 @@
 
   async function warmOfflineAppShell() {
     if (!window.caches || !window.isSecureContext) return 0;
-    const urls = ['./', './index.html', './manifest.json', './male.svg?v=0377', './female.svg?v=0377', './css/thalys.css?v=016', './js/storage-manager.js?v=0377', './js/sync-queue.js?v=0377', './js/conflict-resolver.js?v=0377', './js/local-db.js?v=0377', './js/ui-foundation.js?v=0377', './js/language.js?v=0377', './js/drive.js?v=0377', './js/auth.js?v=0377', './js/app-core.js?v=0377', './js/body.js?v=0377', './js/meditation.js?v=0377', './js/nutrition.js?v=0377', './js/workout.js?v=0377', './js/home.js?v=0377', './js/analytics.js?v=0377', './js/app-enhancements.js?v=0377'];
-    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.37.5').map(k=>caches.delete(k)));}catch(_){}
-    const cache = await caches.open('thalys-manual-offline-v0.37.5');
+    const urls = ['./', './index.html', './manifest.json', './Thalys Logo Dark.png?v=22', './Thalys Logo Light.png?v=22', './Loto.png?v=22', './male.svg?v=0378', './female.svg?v=0378', './css/thalys.css?v=016', './js/storage-manager.js?v=0378', './js/sync-queue.js?v=0378', './js/conflict-resolver.js?v=0378', './js/local-db.js?v=0378', './js/ui-foundation.js?v=0378', './js/language.js?v=0378', './js/drive.js?v=0378', './js/auth.js?v=0378', './js/app-core.js?v=0378', './js/body.js?v=0378', './js/meditation.js?v=0378', './js/nutrition.js?v=0378', './js/workout.js?v=0378', './js/home.js?v=0378', './js/analytics.js?v=0378', './js/app-enhancements.js?v=0378'];
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.37.8').map(k=>caches.delete(k)));}catch(_){}
+    const cache = await caches.open('thalys-manual-offline-v0.37.8');
     let saved = 0;
     for (const url of urls) {
       try { await cache.add(url); saved += 1; } catch (_) {}
