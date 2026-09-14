@@ -1,0 +1,12 @@
+{
+  "name": "thalys-free-backend",
+  "private": true,
+  "version": "0.44.0",
+  "type": "module",
+  "scripts": {
+    "keys": "node ./tools/generate-keys.mjs",
+    "check": "node ./tools/verify-package.mjs",
+    "dev": "npx wrangler@latest dev",
+    "deploy": "npx wrangler@latest deploy"
+  }
+}

@@ -1,0 +1,13 @@
+import { randomBytes, createECDH } from 'node:crypto';
+const b64url = b => Buffer.from(b).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const aes = b64url(randomBytes(32));
+const ecdh = createECDH('prime256v1');
+ecdh.generateKeys();
+const vapidPublic = b64url(ecdh.getPublicKey(undefined,'uncompressed'));
+const vapidPrivate = b64url(ecdh.getPrivateKey());
+console.log('\nTHALYS - chiavi generate localmente\n');
+console.log('AUTH_ENCRYPTION_KEY='+aes);
+console.log('VAPID_PUBLIC_KEY='+vapidPublic);
+console.log('VAPID_PRIVATE_KEY='+vapidPrivate);
+console.log('\nConserva PRIVATE_KEY e AUTH_ENCRYPTION_KEY solo come Cloudflare secrets.');
+console.log('La VAPID_PUBLIC_KEY andra anche in wrangler.toml e js/config.js quando attiveremo il backend.\n');

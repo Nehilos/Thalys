@@ -1,0 +1,23 @@
+{
+  "appVersion": "0.44.0",
+  "contractVersion": "1",
+  "provider": "cloudflare-workers-free",
+  "billingRequired": false,
+  "photos": "google-drive-only",
+  "appData": "google-drive-plus-indexeddb",
+  "activation": {
+    "backendEnabledDefault": false,
+    "googleCodeFlowEnabledDefault": false,
+    "autoActivate": false
+  },
+  "requiredSecrets": [
+    "GOOGLE_CLIENT_SECRET",
+    "AUTH_ENCRYPTION_KEY",
+    "VAPID_PRIVATE_KEY"
+  ],
+  "publicVars": [
+    "ALLOWED_ORIGIN",
+    "GOOGLE_CLIENT_ID",
+    "VAPID_PUBLIC_KEY"
+  ]
+}

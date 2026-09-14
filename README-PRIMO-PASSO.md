@@ -1,4 +1,17 @@
-# Thalys v0.43.0 — Free-First Architecture
+# Thalys v0.44.0 - Deployment Ready
+
+Questa versione prepara il deploy gratuito del backend senza attivarlo.
+
+- Foto progressi: sempre e solo Google Drive.
+- Dati app: Drive + IndexedDB.
+- Backend: Cloudflare Workers Free, ancora disattivato.
+- Google server auth: ancora disattivato.
+- Contratto app/backend: versione 1.
+- Chiavi: generate localmente, nessun segreto incluso.
+
+Per il backend leggere `backend/cloudflare-worker/DEPLOY-GRATIS.md`.
+
+# Thalys v0.44.0 — Free-First Architecture
 
 Questa release prepara il punto 14 senza migrare i dati che oggi funzionano.
 
@@ -29,7 +42,7 @@ Il backend NON contiene endpoint per foto o database Thalys. Non va usato per sp
 6. consulti AI esistenti: se il free tier e disponibile devono continuare a funzionare; se la quota e esaurita deve comparire errore senza fallback a pagamento.
 
 
-## v0.43.0 - Server Auth bridge
+## v0.44.0 - Server Auth bridge
 - Optional Google Authorization Code flow prepared for Cloudflare Worker Free.
 - Refresh tokens stay encrypted server-side in D1 and are never stored in the browser.
 - Existing browser OAuth remains the default and fallback until backend is explicitly enabled.

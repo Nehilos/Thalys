@@ -1,4 +1,4 @@
-// Thalys v0.43.0 free-first Cloudflare Worker.
+// Thalys v0.44.0 free-first Cloudflare Worker.
 // Scope: health, push subscription registry and optional Google server-side refresh sessions.
 // Progress photos and Thalys application databases NEVER live here.
 
@@ -47,7 +47,7 @@ export default {
     if(!originAllowed(request,env) && u.pathname!=='/health')return json({ok:false,error:'ORIGIN_NOT_ALLOWED'},403,'null');
 
     if(u.pathname==='/health'&&request.method==='GET'){
-      return json({ok:true,service:'thalys-free-backend',provider:'cloudflare-workers-free',photos:'google-drive-only',appData:'google-drive-plus-indexeddb',googleServerAuthReady:secureConfigured(env),billingRequired:false},200,origin||'*');
+      return json({ok:true,service:'thalys-free-backend',contractVersion:'1',provider:'cloudflare-workers-free',photos:'google-drive-only',appData:'google-drive-plus-indexeddb',billingRequired:false,capabilities:{d1:!!env.DB,googleServerAuth:secureConfigured(env),pushRegistry:!!env.DB,vapid:!!(env.VAPID_PUBLIC_KEY&&env.VAPID_PRIVATE_KEY)}},200,origin||'*');
     }
 
     if(u.pathname==='/push/subscriptions'&&request.method==='POST'){
