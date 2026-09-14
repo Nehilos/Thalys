@@ -2,8 +2,8 @@
   'use strict';
   const CONFIG=Object.freeze({
     appName:'Thalys',
-    appVersion:'0.39.0',
-    cacheBust:'0390',
+    appVersion:'0.40.0',
+    cacheBust:'0400',
     sessionSchema:'v1',
     storageSchemaVersion:4,
     syncProtocolVersion:7,
@@ -13,7 +13,9 @@
       autoSyncOnReconnect:true,
       capabilityLayer:true,
       deviceMediaLayer:true,
-      voiceDictation:true
+      voiceDictation:true,
+      notificationLayer:true,
+      pushFoundation:true
     })
   });
   window.ThalysConfig=CONFIG;

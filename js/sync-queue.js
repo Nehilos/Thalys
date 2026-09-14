@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.36.4';
+  const APP_VERSION = window.ThalysConfig?.appVersion || '0.40.0';
   const STORE = 'sync_queue';
   const GLOBAL_STATE_ID_PREFIX = 'state:';
   let writeChain = Promise.resolve();

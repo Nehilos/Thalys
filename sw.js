@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thalys-shell-v0.39.0';
+const CACHE_NAME = 'thalys-shell-v0.40.0';
 
 const APP_SHELL = [
   './',
@@ -7,35 +7,36 @@ const APP_SHELL = [
   './Thalys Logo Dark.png?v=22',
   './Thalys Logo Light.png?v=22',
   './Loto.png?v=22',
-  './male.svg?v=0390',
-  './female.svg?v=0390',
+  './male.svg?v=0400',
+  './female.svg?v=0400',
   './assets/icons/thalys-app-icon-black.png',
   './css/thalys.css?v=024',
   './js/tailwind-config.js?v=015',
   './js/theme-bootstrap.js?v=015',
-  './js/config.js?v=0390',
-  './js/capabilities.js?v=0390',
-  './js/device-media.js?v=0390',
-  './js/storage-manager.js?v=0390',
-  './js/sync-queue.js?v=0390',
-  './js/conflict-resolver.js?v=0390',
-  './js/local-db.js?v=0390',
-  './js/ui-foundation.js?v=0390',
-  './js/language.js?v=0390',
-  './js/drive.js?v=0390',
-  './js/auth.js?v=0390',
-  './js/app-core.js?v=0390',
-  './js/body.js?v=0390',
-  './js/meditation.js?v=0390',
-  './js/nutrition.js?v=0390',
-  './js/workout.js?v=0390',
-  './js/home.js?v=0390',
-  './js/analytics.js?v=0390',
+  './js/config.js?v=0400',
+  './js/capabilities.js?v=0400',
+  './js/device-media.js?v=0400',
+  './js/notifications.js?v=0400',
+  './js/storage-manager.js?v=0400',
+  './js/sync-queue.js?v=0400',
+  './js/conflict-resolver.js?v=0400',
+  './js/local-db.js?v=0400',
+  './js/ui-foundation.js?v=0400',
+  './js/language.js?v=0400',
+  './js/drive.js?v=0400',
+  './js/auth.js?v=0400',
+  './js/app-core.js?v=0400',
+  './js/body.js?v=0400',
+  './js/meditation.js?v=0400',
+  './js/nutrition.js?v=0400',
+  './js/workout.js?v=0400',
+  './js/home.js?v=0400',
+  './js/analytics.js?v=0400',
   './js/oauth-ui.js?v=015',
   './js/media-tools.js?v=025',
   './js/pwa-register.js?v=015',
-  './js/app-enhancements.js?v=0390',
-  './js/runtime-health.js?v=0390',
+  './js/app-enhancements.js?v=0400',
+  './js/runtime-health.js?v=0400',
   './lang/lang_it.json?v=23',
   './lang/lang_en.json?v=23',
   './lang/lang_es.json?v=23',
@@ -110,4 +111,23 @@ self.addEventListener('fetch', event => {
         return Response.error();
       })
   );
+});
+
+
+// v0.40.0 - notification/push foundation. Remote push delivery requires a server subscription endpoint.
+self.addEventListener('push', event => {
+  let payload={};
+  try{payload=event.data?event.data.json():{};}catch(_){payload={body:event.data?event.data.text():''};}
+  const title=payload.title||'Thalys';
+  const options={body:payload.body||'',tag:payload.tag||'thalys-push',data:{url:payload.url||'./',...(payload.data||{})}};
+  event.waitUntil(self.registration.showNotification(title,options));
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const target=event.notification?.data?.url||'./';
+  event.waitUntil((async()=>{
+    const list=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    for(const client of list){try{await client.focus();if('navigate' in client)await client.navigate(target);return;}catch(_){}}
+    return self.clients.openWindow(target);
+  })());
 });
