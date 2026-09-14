@@ -1,4 +1,4 @@
-// Thalys v0.37.6 - Authentication and persistent session module
+// Thalys v0.37.7 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -9,7 +9,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = '0.37.6';
+    const THALYS_SOFTWARE_VERSION = '0.37.7';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -241,7 +241,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       if(!navigator.onLine)return false;
       startupAccessRequested=false;
 
-      // v0.37.6: on iOS/PWA the in-memory gapi token can disappear while the app is
+      // v0.37.7: on iOS/PWA the in-memory gapi token can disappear while the app is
       // backgrounded/offline even though the cached OAuth token is still valid.
       // Restore that token first and only consider it unusable when it is actually
       // expired (5s safety margin), not one minute early.
@@ -502,7 +502,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
 // Canonical public UI bridge after legacy compatibility helpers.
 function setCloudUserUI(profile){ updateAuthUI(profile); }
 
-// ===== v0.37.6: robust reconnect after an app was STARTED offline =====
+// ===== v0.37.7: robust reconnect after an app was STARTED offline =====
 let thalysReconnectSupervisorV0376=null;
 let thalysReconnectBusyV0376=false;
 function stopReconnectSupervisorV0376(){if(thalysReconnectSupervisorV0376){clearInterval(thalysReconnectSupervisorV0376);thalysReconnectSupervisorV0376=null;}}
@@ -517,7 +517,7 @@ async function reconnectTickV0376(){
     }
     if(gapiInited&&gisInited&&!authRequestInFlight){startupAccessRequested=false;await handleAuthClick(true,false);}
     return !!getAccessToken();
-  }catch(e){console.warn('Reconnect supervisor v0.37.6',e);return false;}
+  }catch(e){console.warn('Reconnect supervisor v0.37.7',e);return false;}
   finally{thalysReconnectBusyV0376=false;}
 }
 function startReconnectSupervisorV0376(){
@@ -535,3 +535,68 @@ window.addEventListener('offline',()=>{stopReconnectSupervisorV0376();window.tha
 window.addEventListener('online',()=>{setTimeout(startReconnectSupervisorV0376,100);},{passive:true});
 window.addEventListener('pageshow',()=>{if(navigator.onLine&&hasRememberedGoogleSession())setTimeout(startReconnectSupervisorV0376,250);},{passive:true});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&navigator.onLine&&hasRememberedGoogleSession())setTimeout(startReconnectSupervisorV0376,200);});
+
+// ===== v0.37.7: reload Google libraries after an app was opened offline =====
+let thalysGoogleLibrariesLoadingV0377=null;
+function loadExternalScriptV0377(src,marker){
+  return new Promise((resolve,reject)=>{
+    if(marker())return resolve(true);
+    const existing=[...document.scripts].find(s=>String(s.src||'').startsWith(src));
+    if(existing){
+      const poll=setInterval(()=>{if(marker()){clearInterval(poll);resolve(true);}},120);
+      setTimeout(()=>{clearInterval(poll);if(marker())resolve(true);else{try{existing.remove();}catch(_){};const s=document.createElement('script');s.src=src;s.async=true;s.onload=()=>resolve(true);s.onerror=reject;document.head.appendChild(s);}},1000);
+      return;
+    }
+    const s=document.createElement('script');s.src=src;s.async=true;s.onload=()=>resolve(true);s.onerror=reject;document.head.appendChild(s);
+  });
+}
+async function ensureGoogleLibrariesV0377(){
+  if(!navigator.onLine)return false;
+  if(thalysGoogleLibrariesLoadingV0377)return thalysGoogleLibrariesLoadingV0377;
+  thalysGoogleLibrariesLoadingV0377=(async()=>{
+    try{
+      if(!window.google?.accounts?.oauth2)await loadExternalScriptV0377('https://accounts.google.com/gsi/client',()=>!!window.google?.accounts?.oauth2);
+      if(!window.gapi)await loadExternalScriptV0377('https://apis.google.com/js/api.js',()=>!!window.gapi);
+      if(window.gapi&&!gapiInited){await new Promise((resolve,reject)=>{try{gapi.load('client',{callback:resolve,onerror:reject,timeout:5000,ontimeout:reject});}catch(e){reject(e);}});await initializeGapiClient();}
+      if(window.google?.accounts?.oauth2&&!gisInited){if(rebuildTokenClient(true)){gisInited=true;maybeEnableButtons();}}
+      return !!(gapiInited&&gisInited&&tokenClient);
+    }catch(e){console.warn('Google libraries reload v0.37.7',e);return false;}
+    finally{thalysGoogleLibrariesLoadingV0377=null;}
+  })();
+  return thalysGoogleLibrariesLoadingV0377;
+}
+window.ensureGoogleLibrariesV0377=ensureGoogleLibrariesV0377;
+
+const _autoReconnectGoogleAfterNetworkV0377Base=autoReconnectGoogleAfterNetwork;
+autoReconnectGoogleAfterNetwork=async function(){
+  if(!navigator.onLine||!hasRememberedGoogleSession())return false;
+  if(needsSoftwareVersionReconnect())return false;
+  await ensureGoogleLibrariesV0377();
+  if(!gapiInited||!gisInited)return false;
+  if(!getAccessToken())restoreCachedDriveAccessToken();
+  if(getAccessToken()){
+    const ok=await connectDriveAfterToken(true);
+    if(ok)return true;
+  }
+  return _autoReconnectGoogleAfterNetworkV0377Base();
+};
+window.autoReconnectGoogleAfterNetwork=autoReconnectGoogleAfterNetwork;
+
+loginHandler=async function(){
+  if(!navigator.onLine){showToast('Sei offline: collega Internet per riconnettere Google');return false;}
+  const ready=await ensureGoogleLibrariesV0377();
+  if(!ready){showToast('Google non è ancora disponibile. Riprova tra qualche secondo');return false;}
+  startupAccessRequested=false;
+  return handleAuthClick(false,true);
+};
+
+// If the app booted offline, the original external Google scripts may have failed permanently.
+// On network restoration, reload them and retry until the remembered session is connected.
+window.addEventListener('online',()=>{
+  reconnectRetryCount=0;
+  setTimeout(async()=>{
+    await ensureGoogleLibrariesV0377();
+    if(typeof startReconnectSupervisorV0376==='function')startReconnectSupervisorV0376();
+    else autoReconnectGoogleAfterNetwork();
+  },150);
+},{passive:true});

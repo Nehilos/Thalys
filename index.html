@@ -163,11 +163,11 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/storage-manager.js?v=0376"></script>
-  <script src="./js/sync-queue.js?v=0376"></script>
-  <script src="./js/conflict-resolver.js?v=0376"></script>
-  <script src="./js/local-db.js?v=0376"></script>
-  <script src="./js/ui-foundation.js?v=0376"></script>
+  <script src="./js/storage-manager.js?v=0377"></script>
+  <script src="./js/sync-queue.js?v=0377"></script>
+  <script src="./js/conflict-resolver.js?v=0377"></script>
+  <script src="./js/local-db.js?v=0377"></script>
+  <script src="./js/ui-foundation.js?v=0377"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -309,7 +309,7 @@
           </div>
         </div>
         <p class="mt-1 text-xs leading-relaxed text-slate-400">Scegli la pratica in base a ciò che ti serve adesso: calmarti, concentrarti, rilassarti o recuperare.</p>
-        <div class="mt-3 grid grid-cols-3 gap-2"><div class="rounded-2xl bg-slate-950/50 p-3"><div id="med-page-today" class="text-lg font-black text-violet-300">0</div><div class="text-[9px] text-slate-500">min giorno</div></div><div class="rounded-2xl bg-slate-950/50 p-3"><div id="med-page-week" class="text-lg font-black text-cyan-300">0</div><div class="text-[9px] text-slate-500">min / 7 giorni</div></div><div class="rounded-2xl bg-slate-950/50 p-3"><div id="med-page-streak" class="text-lg font-black text-emerald-300">0</div><div class="text-[9px] text-slate-500">giorni streak</div></div></div>
+        <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2"><div class="rounded-2xl bg-slate-950/50 p-3"><div id="med-page-today" class="text-lg font-black text-violet-300">0</div><div class="text-[9px] text-slate-500">min giorno</div></div><div class="rounded-2xl bg-slate-950/50 p-3"><div id="med-page-week" class="text-lg font-black text-cyan-300">0</div><div class="text-[9px] text-slate-500">min / 7 giorni</div></div><div class="rounded-2xl bg-slate-950/50 p-3"><div id="med-page-streak" class="text-lg font-black text-emerald-300">0</div><div class="text-[9px] text-slate-500">giorni streak</div></div></div>
       </div>
 
       <div class="rounded-3xl border border-violet-500/20 bg-slate-950/65 p-4">
@@ -1251,7 +1251,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.37.6
+        Thalys · Software v0.37.7
       </div>
 
     </section>
@@ -2023,6 +2023,7 @@
       <div class="flex items-center justify-between gap-3 border-b border-slate-800 pb-3">
         <div><div class="text-[9px] uppercase tracking-[.16em] text-teal-300">Corpo</div><h3 class="text-base font-black text-white">Foto progressi</h3><p id="photo-manager-count-v19" class="mt-1 text-[9px] text-slate-500">0 foto</p></div>
         <div class="flex gap-2">
+          <button id="photo-refresh-drive-v0377" type="button" onclick="refreshPhotosFromDriveV0377()" class="h-10 w-10 rounded-xl bg-slate-800 text-teal-300" aria-label="Aggiorna foto da Drive" title="Aggiorna foto da Drive"><i class="fa-solid fa-arrows-rotate"></i></button>
           <button type="button" onclick="openAddPhotoModalV20()" class="photo-add-btn-v21 min-h-10 rounded-xl bg-teal-600 px-3 text-[10px] font-black text-white"><i class="fa-solid fa-plus mr-1"></i>Aggiungi foto</button>
           <button type="button" onclick="closeModal('photo-manager-modal')" class="h-10 w-10 rounded-xl bg-slate-800 text-slate-300"><i class="fa-solid fa-xmark"></i></button>
         </div>
@@ -2065,9 +2066,10 @@
         <button type="button" onclick="closeAddPhotoModalV20()" class="h-10 w-10 rounded-xl bg-slate-800 text-slate-300"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="mt-4 grid grid-cols-2 gap-3">
-        <label class="col-span-2 text-[10px] text-slate-400">Data
-          <input id="photo-add-date-v19" type="date" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white">
+        <label class="text-[10px] text-slate-400">Data
+          <input id="photo-add-date-v19" type="date" class="mt-1 w-full max-w-[170px] rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white">
         </label>
+        <div></div>
         <label class="text-[10px] text-slate-400">Vista
           <select id="photo-add-view-v19" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white">
             <option value="Fronte">Fronte</option><option value="Retro">Retro</option>
@@ -2101,6 +2103,7 @@
         <button id="photo-viewer-fav-v19" type="button" class="min-h-11 rounded-xl bg-slate-800 text-[10px] font-bold text-amber-300"><i class="fa-regular fa-star mr-1"></i>Preferito</button>
         <button id="photo-viewer-share-v19" type="button" class="min-h-11 rounded-xl bg-teal-600 text-[10px] font-black text-white"><i class="fa-solid fa-share-nodes mr-1"></i>Condividi</button>
         <button id="photo-viewer-save-v19" type="button" class="min-h-11 rounded-xl bg-slate-800 text-[10px] font-bold text-teal-300"><i class="fa-solid fa-download mr-1"></i>Salva</button>
+        <button id="photo-viewer-delete-v0377" type="button" class="min-h-11 rounded-xl bg-rose-950/50 border border-rose-700/40 text-[10px] font-bold text-rose-300"><i class="fa-solid fa-trash mr-1"></i>Elimina</button>
       </div>
     </div>
   </div>
@@ -2359,19 +2362,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0376"></script>
+  <script src="./js/language.js?v=0377"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0376"></script>
-  <script src="./js/body.js?v=0376"></script>
-  <script src="./js/meditation.js?v=0376"></script>
-  <script src="./js/nutrition.js?v=0376"></script>
-  <script src="./js/workout.js?v=0376"></script>
-  <script src="./js/home.js?v=0376"></script>
-  <script src="./js/analytics.js?v=0376"></script>
+  <script src="./js/app-core.js?v=0377"></script>
+  <script src="./js/body.js?v=0377"></script>
+  <script src="./js/meditation.js?v=0377"></script>
+  <script src="./js/nutrition.js?v=0377"></script>
+  <script src="./js/workout.js?v=0377"></script>
+  <script src="./js/home.js?v=0377"></script>
+  <script src="./js/analytics.js?v=0377"></script>
 
-  <script src="./js/drive.js?v=0376"></script>
-  <script src="./js/auth.js?v=0376"></script>
+  <script src="./js/drive.js?v=0377"></script>
+  <script src="./js/auth.js?v=0377"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2398,7 +2401,7 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0376"></script>
+<script src="./js/app-enhancements.js?v=0377"></script>
 
 </body>
 </html>

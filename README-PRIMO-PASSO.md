@@ -38,14 +38,14 @@ Correzioni di coerenza multi-device e avatar.
 - Nessuna modifica funzionale a Dieta, sync o Workout rispetto alla v0.36.4.
 
 
-## v0.37.6
+## v0.37.7
 - Sessione persistente sulla stessa versione software: refresh/riapertura entra direttamente nell app.
 - Una nuova versione software richiede una riconnessione una tantum.
 - Nome usato da Thalys spostato nel pannello Foto profilo.
 - male.svg e female.svg restano asset esterni nel repository e non sono inclusi nello ZIP.
 
 
-## v0.37.6
+## v0.37.7
 - Stato visibile: offline = Locale; Drive solo con rete e token attivo.
 - Riconnessione rapida coordinata Auth→Drive al ritorno della rete.
 - Foto progresso: cartella Drive /foto come sorgente canonica online, IndexedDB solo cache offline.

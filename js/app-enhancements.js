@@ -20,7 +20,7 @@ let chartMacroV7=null,chartMicroV7=null;
 async function loadExternalAvatarArtwork(force=false){
   if(window._thalysExternalAvatarLoaded&&!force)return true;
   try{
-    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0376',{cache:'reload'}),fetch('./female.svg?v=0376',{cache:'reload'})]);
+    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0377',{cache:'reload'}),fetch('./female.svg?v=0377',{cache:'reload'})]);
     if(!mr.ok||!fr.ok)throw new Error('SVG_NOT_FOUND');
     const parser=new DOMParser();
     async function install(res,id){const doc=parser.parseFromString(await res.text(),'image/svg+xml'),svg=doc.documentElement,s=document.getElementById(id);if(!s)return;const vb=svg.getAttribute('viewBox');if(vb)s.setAttribute('viewBox',vb);s.replaceChildren(...Array.from(svg.children).filter(n=>n.tagName.toLowerCase()!=='script').map(n=>document.importNode(n,true)));}
@@ -97,7 +97,7 @@ function avatarSetArtworkV8(gender,{force=false}={}){
   if(!group)return false;
   const file=female?'female.svg':'male.svg';
   const ns='http://www.w3.org/2000/svg';
-  const href=`./${file}?v=0376${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
+  const href=`./${file}?v=0377${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
   const image=document.createElementNS(ns,'image');
   image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','768');image.setAttribute('height','1536');
   image.setAttribute('preserveAspectRatio','xMidYMid meet');image.setAttribute('href',href);
@@ -2992,7 +2992,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 /* ==========================================================
-   THALYS v0.37.6 — Drive-only progress photos
+   THALYS v0.37.7 — Drive-only progress photos
    Progress photos are NEVER available offline. Drive /foto is the
    canonical source; local state stores metadata only (no base64).
    ========================================================== */
@@ -3136,3 +3136,112 @@ async function sharePhotoV0376(id){const p=photoByIdV19(id);if(!p||!navigator.on
 
 window.addEventListener('offline',()=>{revokeThalysPhotoUrlsV0376();if(!document.getElementById('photo-manager-modal')?.classList.contains('hidden'))renderPhotos();},{passive:true});
 window.addEventListener('online',()=>{if(!document.getElementById('photo-manager-modal')?.classList.contains('hidden'))setTimeout(()=>openPhotoManagerV19(),600);},{passive:true});
+
+/* ==========================================================
+   THALYS v0.37.7 — Drive photo manager hardening
+   Unique Drive files, explicit refresh/delete, return to gallery.
+   ========================================================== */
+function photoUniqueFilenameV0377(date,view,part,ext='jpg'){
+  const now=new Date();
+  const stamp=[now.getHours(),now.getMinutes(),now.getSeconds(),now.getMilliseconds()].map((v,i)=>String(v).padStart(i===3?3:2,'0')).join('');
+  const rnd=Math.random().toString(36).slice(2,7);
+  return `${date}_${photoSafeTokenV19(view)}_${photoSafeTokenV19(part)}_${stamp}_${rnd}.${ext}`;
+}
+
+loadPhotosFromDriveFolder=async function(){
+  if(!navigator.onLine||!getAccessToken()||!driveFolders?.appFolderId){
+    appState.photos=[];updatePhotoCounterV0376();return 0;
+  }
+  const folder=await findDriveFolder('foto',driveFolders.appFolderId);
+  if(!folder){appState.photos=[];updatePhotoCounterV0376();return 0;}
+  driveFolders.photoFolderId=folder.id;
+  const files=await listDriveImageFiles(folder.id,200);
+  let idx={};try{idx=JSON.parse(localStorage.getItem('photo_index')||'{}')||{};}catch(_){}
+  appState.photos=files.map(f=>{
+    const meta=idx[f.id]||{};
+    const parsed=String(f.name||'').replace(/\.[^.]+$/,'').split('_');
+    const fallback={
+      date:parsed[0]||String(f.createdTime||f.modifiedTime||'').slice(0,10),
+      view:parsed[1]||'Fronte',
+      part:parsed[2]||'Full'
+    };
+    return normalizePhotoV19({...fallback,...meta,id:'drive_'+f.id,driveFileId:f.id,driveName:f.name,filename:meta.filename||f.name,updatedAt:f.modifiedTime||f.createdTime||null});
+  });
+  updatePhotoCounterV0376();
+  return appState.photos.length;
+};
+
+async function refreshPhotosFromDriveV0377(showFeedback=true){
+  if(!navigator.onLine||!getAccessToken()){showToast(photoOfflineMessageV0376(),'fa-wifi');renderPhotos();return false;}
+  const btn=document.getElementById('photo-refresh-drive-v0377');
+  const old=btn?.innerHTML;if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i>';}
+  try{
+    revokeThalysPhotoUrlsV0376();
+    await initializeDriveWorkspace();
+    await loadPhotosFromDriveFolder();
+    renderPhotos();
+    if(showFeedback)showToast('Foto aggiornate da Drive ✓','fa-arrows-rotate');
+    return true;
+  }catch(e){console.warn('Refresh photos Drive',e);showToast('Impossibile aggiornare le foto da Drive','fa-triangle-exclamation');return false;}
+  finally{if(btn){btn.disabled=false;btn.innerHTML=old||'<i class="fa-solid fa-arrows-rotate"></i>';}}
+}
+window.refreshPhotosFromDriveV0377=refreshPhotosFromDriveV0377;
+
+handlePhotoUploadV19=async function(event){
+  const file=event.target.files?.[0];if(!file)return;
+  try{
+    if(!navigator.onLine||!getAccessToken()){showToast(photoOfflineMessageV0376(),'fa-wifi');return;}
+    if(!file.type.startsWith('image/')){showToast(tr('Seleziona un’immagine valida'));return;}
+    const date=document.getElementById('photo-add-date-v19')?.value||currentLocalDateStr();
+    const view=document.getElementById('photo-add-view-v19')?.value||'Fronte';
+    const part=document.getElementById('photo-add-part-v19')?.value||'Full';
+    const filename=photoUniqueFilenameV0377(date,view,part,photoExtV19(file));
+    await initializeDriveWorkspace();
+    const folder=driveFolders?.photoFolderId||(await ensureFolderAfterConsent('foto',driveFolders.appFolderId,'La cartella foto non esiste. Vuoi crearla in Thalys App?'))?.id;
+    if(!folder)throw new Error('PHOTO_FOLDER_MISSING');
+    driveFolders.photoFolderId=folder;
+    const uploadFile=new File([file],filename,{type:file.type||'image/jpeg'});
+    // The unique name guarantees uploadDriveFile creates a NEW Drive file instead of PATCHing an older photo.
+    const uploaded=await uploadDriveFile(filename,uploadFile,uploadFile.type,folder,true);
+    const idx=(()=>{try{return JSON.parse(localStorage.getItem('photo_index')||'{}')||{};}catch(_){return{};}})();
+    idx[uploaded.id]={id:uploaded.id,name:filename,filename,date,view,part,favorite:false,updatedAt:new Date().toISOString()};
+    try{localStorage.setItem('photo_index',JSON.stringify(idx));}catch(_){}
+    forceHideModalV20('add-photo-modal-v19');
+    await refreshPhotosFromDriveV0377(false);
+    forceShowModalV20('photo-manager-modal');
+    showToast('Foto salvata su Drive ✓','fa-cloud-arrow-up');
+  }catch(e){console.error('Photo Drive upload',e);showToast('Impossibile caricare la foto su Drive','fa-triangle-exclamation');}
+  finally{event.target.value='';}
+};
+handlePhotoUpload=handlePhotoUploadV19;
+
+async function deletePhotoFromDriveV0377(id){
+  if(!navigator.onLine||!getAccessToken()){showToast(photoOfflineMessageV0376(),'fa-wifi');return false;}
+  const p=photoByIdV19(id);if(!p?.driveFileId)return false;
+  if(!confirm('Eliminare questa foto da Google Drive?'))return false;
+  try{
+    await gapi.client.drive.files.delete({fileId:p.driveFileId});
+    const idx=(()=>{try{return JSON.parse(localStorage.getItem('photo_index')||'{}')||{};}catch(_){return{};}})();
+    delete idx[p.driveFileId];try{localStorage.setItem('photo_index',JSON.stringify(idx));}catch(_){}
+    revokeThalysPhotoUrlsV0376();
+    forceHideModalV20('photo-viewer-modal-v19');
+    await refreshPhotosFromDriveV0377(false);
+    forceShowModalV20('photo-manager-modal');
+    showToast('Foto eliminata da Drive','fa-trash');
+    return true;
+  }catch(e){console.error('Delete Drive photo',e);showToast('Impossibile eliminare la foto da Drive','fa-triangle-exclamation');return false;}
+}
+window.deletePhotoFromDriveV0377=deletePhotoFromDriveV0377;
+
+const _openPhotoViewerV0377Base=openPhotoViewerV19;
+openPhotoViewerV19=async function(id){
+  await _openPhotoViewerV0377Base(id);
+  const del=document.getElementById('photo-viewer-delete-v0377');
+  if(del)del.onclick=()=>deletePhotoFromDriveV0377(id);
+};
+
+const _openPhotoManagerV0377Base=openPhotoManagerV19;
+openPhotoManagerV19=async function(){
+  await _openPhotoManagerV0377Base();
+  if(navigator.onLine&&getAccessToken())await refreshPhotosFromDriveV0377(false);
+};
