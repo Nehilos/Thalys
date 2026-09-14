@@ -2,8 +2,8 @@
   'use strict';
   const CONFIG=Object.freeze({
     appName:'Thalys',
-    appVersion:'0.45.0',
-    cacheBust:'0450',
+    appVersion:'0.46.0',
+    cacheBust:'0460',
     sessionSchema:'v1',
     storageSchemaVersion:4,
     syncProtocolVersion:7,
@@ -35,7 +35,7 @@
     }),
     backend:Object.freeze({
       enabled:true,
-      deploymentStage:'connected-test',
+      deploymentStage:'push-remote-test',
       contractVersion:'1',
       autoActivate:false,
       provider:'cloudflare-workers-free',
@@ -46,6 +46,8 @@
       healthPath:'/health',
       pushSubscribePath:'/push/subscriptions',
       pushUnsubscribePath:'/push/subscriptions/remove',
+      pushConfigPath:'/push/config',
+      pushTestPath:'/push/test',
       googleCodeFlowEnabled:false,
       googleClientId:'530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.googleusercontent.com',
       googleScopes:'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',

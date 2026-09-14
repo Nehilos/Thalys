@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  const state={registration:null,subscription:null};
+  const state={registration:null,subscription:null,vapidPublicKey:''};
   function supported(){return 'Notification' in window && 'serviceWorker' in navigator;}
   function permission(){return supported()?Notification.permission:'unsupported';}
   async function registration(){
@@ -9,18 +9,29 @@
     state.registration=await navigator.serviceWorker.ready;
     return state.registration;
   }
-
   function pushSupported(){return supported()&&'PushManager' in window;}
-  function vapidKey(){return String(window.ThalysConfig?.backend?.vapidPublicKey||'').trim();}
+  function configuredVapidKey(){return String(window.ThalysConfig?.backend?.vapidPublicKey||'').trim();}
+  async function resolveVapidKey(force=false){
+    const local=configuredVapidKey(); if(local)return local;
+    if(state.vapidPublicKey&&!force)return state.vapidPublicKey;
+    if(!window.ThalysBackend?.configured?.())return '';
+    try{
+      const cfg=await window.ThalysBackend.pushConfig();
+      const key=String(cfg?.publicKey||'').trim();
+      if(cfg?.ok&&cfg?.enabled&&key){state.vapidPublicKey=key;return key;}
+    }catch(err){console.warn('VAPID discovery',err);}
+    return '';
+  }
   function urlBase64ToUint8Array(base64String){const padding='='.repeat((4-base64String.length%4)%4);const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');const raw=atob(base64);return Uint8Array.from([...raw].map(ch=>ch.charCodeAt(0)));}
   async function getPushSubscription(){if(!pushSupported())return null;const reg=await registration();if(!reg)return null;state.subscription=await reg.pushManager.getSubscription();return state.subscription;}
   async function subscribeRemote(){
     if(!pushSupported()){window.showToast?.('Push non supportate su questo dispositivo');return false;}
     const perm=await requestPermission();if(perm!=='granted')return false;
-    if(!window.ThalysBackend?.configured?.()||!vapidKey()){await refreshUI();window.showToast?.('Push remote pronte lato app: backend non ancora configurato');return false;}
+    if(!window.ThalysBackend?.configured?.()){await refreshUI();window.showToast?.('Backend Push non configurato');return false;}
+    const key=await resolveVapidKey(true);if(!key){await refreshUI();window.showToast?.('Chiave Push pubblica non disponibile');return false;}
     const reg=await registration();
     let sub=await reg.pushManager.getSubscription();
-    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(vapidKey())});
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(key)});
     state.subscription=sub;
     await window.ThalysBackend.registerPushSubscription(sub.toJSON());
     await refreshUI();window.showToast?.('Push remote attivate','fa-bell');return true;
@@ -31,52 +42,49 @@
     if(window.ThalysBackend?.configured?.()){try{await window.ThalysBackend.unregisterPushSubscription(endpoint);}catch(err){console.warn('Push backend unsubscribe',err);}}
     await sub.unsubscribe();state.subscription=null;await refreshUI();window.showToast?.('Push remote disattivate');return true;
   }
-
+  async function testRemote(){
+    if(!window.ThalysBackend?.configured?.()){window.showToast?.('Backend non disponibile');return false;}
+    let sub=await getPushSubscription();
+    if(!sub){const ok=await subscribeRemote();if(!ok)return false;sub=await getPushSubscription();}
+    try{
+      const result=await window.ThalysBackend.testRemotePush(sub.endpoint);
+      if(result?.ok){window.showToast?.('Push remota inviata','fa-satellite-dish');return true;}
+      window.showToast?.('Invio Push non riuscito');return false;
+    }catch(err){console.warn('Remote push test',err);window.showToast?.('Invio Push remoto non riuscito');return false;}
+  }
   async function refreshUI(){
     const p=permission();
     const el=document.getElementById('device-notification-status');
     if(el)el.textContent=p==='granted'?'Consentite':p==='denied'?'Negate':p==='default'?'Da chiedere':'Non supportate';
     const push=document.getElementById('device-push-status');
     if(push){
-      const cap=pushSupported();
-      let sub=null;try{sub=cap?await getPushSubscription():null;}catch(_){}
-      const backend=window.ThalysBackend?.snapshot?.()||{configured:false,pushConfigured:false};
-      push.textContent=!cap?'Non supportato':sub?'Attive':backend.pushConfigured?'Pronte da attivare':p==='granted'?'Client pronto · backend non configurato':'Disponibili';
+      const cap=pushSupported();let sub=null;try{sub=cap?await getPushSubscription():null;}catch(_){}
+      let key='';if(cap&&window.ThalysBackend?.configured?.())key=await resolveVapidKey();
+      push.textContent=!cap?'Non supportato':sub?'Attive · registrate':key?'Pronte da attivare':p==='granted'?'Backend Push non pronto':'Disponibili';
     }
     const backendEl=document.getElementById('device-backend-status');
     if(backendEl){const b=window.ThalysBackend?.snapshot?.()||{configured:false,provider:'none'};backendEl.textContent=b.configured?('Configurato · '+b.provider):(b.deploymentStage==='prepared'?'Pronto al deploy':'Non configurato');}
-    const costEl=document.getElementById('device-cost-status');
-    if(costEl)costEl.textContent=window.ThalysConfig?.costPolicy?.mode==='free-only'?'Solo gratuito':'Configurabile';
-    const photoEl=document.getElementById('device-photo-storage-status');
-    if(photoEl)photoEl.textContent=window.ThalysConfig?.costPolicy?.progressPhotos==='google-drive-only'?'Solo Google Drive':'Configurabile';
+    const costEl=document.getElementById('device-cost-status');if(costEl)costEl.textContent=window.ThalysConfig?.costPolicy?.mode==='free-only'?'Solo gratuito':'Configurabile';
+    const photoEl=document.getElementById('device-photo-storage-status');if(photoEl)photoEl.textContent=window.ThalysConfig?.costPolicy?.progressPhotos==='google-drive-only'?'Solo Google Drive':'Configurabile';
     try{await window.ThalysServerAuth?.refreshUI?.();}catch(_){}
     return p;
   }
   async function requestPermission(){
     if(!supported()){window.showToast?.('Notifiche non supportate su questo dispositivo');return 'unsupported';}
-    let p=Notification.permission;
-    if(p==='default')p=await Notification.requestPermission();
-    await refreshUI();
-    if(p==='granted')window.showToast?.('Notifiche abilitate','fa-bell');
-    else if(p==='denied')window.showToast?.('Permesso notifiche negato');
-    return p;
+    let p=Notification.permission;if(p==='default')p=await Notification.requestPermission();await refreshUI();
+    if(p==='granted')window.showToast?.('Notifiche abilitate','fa-bell');else if(p==='denied')window.showToast?.('Permesso notifiche negato');return p;
   }
   async function show(title,options={}){
-    if(Notification.permission!=='granted'){
-      const p=await requestPermission();if(p!=='granted')return false;
-    }
+    if(Notification.permission!=='granted'){const p=await requestPermission();if(p!=='granted')return false;}
     const reg=await registration();if(!reg)return false;
-    await reg.showNotification(title||'Thalys',{body:options.body||'',tag:options.tag||'thalys-local',renotify:false,data:{url:options.url||'./',...(options.data||{})}});
-    return true;
+    await reg.showNotification(title||'Thalys',{body:options.body||'',tag:options.tag||'thalys-local',renotify:false,data:{url:options.url||'./',...(options.data||{})}});return true;
   }
-  async function test(){
-    try{return await show('Thalys',{body:'Le notifiche sul dispositivo funzionano correttamente.',tag:'thalys-test'});}
-    catch(err){console.warn('Thalys notification test',err);window.showToast?.('Impossibile mostrare la notifica');return false;}
-  }
+  async function test(){try{return await show('Thalys',{body:'Le notifiche sul dispositivo funzionano correttamente.',tag:'thalys-test'});}catch(err){console.warn('Thalys notification test',err);window.showToast?.('Impossibile mostrare la notifica');return false;}}
   document.addEventListener('DOMContentLoaded',()=>setTimeout(refreshUI,0));
-  window.ThalysNotifications=Object.freeze({supported,pushSupported,permission,registration,refreshUI,requestPermission,show,test,getPushSubscription,subscribeRemote,unsubscribeRemote});
+  window.ThalysNotifications=Object.freeze({supported,pushSupported,permission,registration,refreshUI,requestPermission,show,test,getPushSubscription,subscribeRemote,unsubscribeRemote,testRemote,resolveVapidKey});
   window.requestThalysNotificationPermission=requestPermission;
   window.testThalysNotification=test;
   window.enableThalysRemotePush=subscribeRemote;
   window.disableThalysRemotePush=unsubscribeRemote;
+  window.testThalysRemotePush=testRemote;
 })();

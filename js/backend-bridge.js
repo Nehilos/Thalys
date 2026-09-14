@@ -44,12 +44,14 @@
       return {configured:true,ok:check.ok,provider:cfg().provider||'custom',costSafe:true,contractOk:check.ok,reason:check.reason||'',data};
     }catch(error){return {configured:true,ok:false,provider:cfg().provider||'custom',costSafe:true,error:String(error?.message||error)}}
   }
+  async function pushConfig(){return request(cfg().pushConfigPath||'/push/config',{timeoutMs:5000});}
   async function registerPushSubscription(subscription){return request(cfg().pushSubscribePath||'/push/subscriptions',{method:'POST',body:{subscription,deviceId:window.ThalysStorage?.deviceId?.()||null,appVersion:window.ThalysConfig?.appVersion||''}});}
   async function unregisterPushSubscription(endpoint){return request(cfg().pushUnsubscribePath||'/push/subscriptions/remove',{method:'POST',body:{endpoint,deviceId:window.ThalysStorage?.deviceId?.()||null}});}
+  async function testRemotePush(endpoint){return request(cfg().pushTestPath||'/push/test',{method:'POST',body:{endpoint,deviceId:window.ThalysStorage?.deviceId?.()||null}});}
   async function exchangeGoogleCode(payload={}){return request(cfg().googleCodeExchangePath||'/auth/google/code',{method:'POST',headers:{'X-Requested-With':'XmlHttpRequest'},body:payload});}
   async function refreshGoogleSession(payload={}){return request(cfg().googleRefreshPath||'/auth/google/refresh',{method:'POST',body:payload});}
   async function googleSessionStatus(payload={}){return request(cfg().googleStatusPath||'/auth/google/status',{method:'POST',body:payload});}
   async function deleteGoogleSession(payload={}){return request(cfg().googleLogoutPath||'/auth/google/logout',{method:'POST',body:payload});}
-  function snapshot(){const c=cfg(),p=costPolicy();return {configured:configured(),provider:c.provider||'none',baseUrl:configured()?String(c.baseUrl):'',deploymentStage:c.deploymentStage||'off',contractVersion:expectedContract(),autoActivate:c.autoActivate===true,pushConfigured:!!(configured()&&c.vapidPublicKey),refreshBridge:!!(configured()&&c.googleRefreshPath),googleCodeFlow:!!(configured()&&c.googleCodeFlowEnabled&&c.googleCodeExchangePath),freeOnly:p.mode==='free-only',costSafe:costSafe(),photos:p.progressPhotos||'google-drive-only'};}
-  window.ThalysBackend=Object.freeze({configured,costSafe,snapshot,health,validateHealthPayload,registerPushSubscription,unregisterPushSubscription,exchangeGoogleCode,refreshGoogleSession,googleSessionStatus,deleteGoogleSession});
+  function snapshot(){const c=cfg(),p=costPolicy();return {configured:configured(),provider:c.provider||'none',baseUrl:configured()?String(c.baseUrl):'',deploymentStage:c.deploymentStage||'off',contractVersion:expectedContract(),autoActivate:c.autoActivate===true,pushConfigured:!!configured(),refreshBridge:!!(configured()&&c.googleRefreshPath),googleCodeFlow:!!(configured()&&c.googleCodeFlowEnabled&&c.googleCodeExchangePath),freeOnly:p.mode==='free-only',costSafe:costSafe(),photos:p.progressPhotos||'google-drive-only'};}
+  window.ThalysBackend=Object.freeze({configured,costSafe,snapshot,health,validateHealthPayload,pushConfig,registerPushSubscription,unregisterPushSubscription,testRemotePush,exchangeGoogleCode,refreshGoogleSession,googleSessionStatus,deleteGoogleSession});
 })();

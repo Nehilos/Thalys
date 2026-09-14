@@ -1,4 +1,4 @@
-// Thalys v0.45.0 free-first Cloudflare Worker.
+// Thalys v0.46.0 free-first Cloudflare Worker.
 // Scope: health, push subscription registry and optional Google server-side refresh sessions.
 // Progress photos and Thalys application databases NEVER live here.
 
@@ -29,6 +29,28 @@ async function googleTokenRequest(params){
   if(!response.ok)throw Object.assign(new Error(data.error||'GOOGLE_TOKEN_ERROR'),{status:response.status,data});
   return data;
 }
+
+async function vapidPrivateKey(env){
+  const pub=dec(env.VAPID_PUBLIC_KEY||''),priv=dec(env.VAPID_PRIVATE_KEY||'');
+  if(pub.length!==65||pub[0]!==4||priv.length!==32)throw new Error('VAPID_KEY_INVALID');
+  const jwk={kty:'EC',crv:'P-256',x:enc(pub.slice(1,33)),y:enc(pub.slice(33,65)),d:enc(priv),ext:true};
+  return crypto.subtle.importKey('jwk',jwk,{name:'ECDSA',namedCurve:'P-256'},false,['sign']);
+}
+async function vapidJwt(endpoint,env){
+  const aud=new URL(endpoint).origin,now=Math.floor(Date.now()/1000);
+  const header=enc(textBytes(JSON.stringify({typ:'JWT',alg:'ES256'})));
+  const payload=enc(textBytes(JSON.stringify({aud,exp:now+60*60*12,sub:String(env.VAPID_SUBJECT||'https://thalys.vercel.app')})));
+  const signingInput=header+'.'+payload,key=await vapidPrivateKey(env);
+  const sig=new Uint8Array(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},key,textBytes(signingInput)));
+  return signingInput+'.'+enc(sig);
+}
+async function sendEmptyWebPush(endpoint,env){
+  if(!env.VAPID_PUBLIC_KEY||!env.VAPID_PRIVATE_KEY)throw new Error('VAPID_NOT_CONFIGURED');
+  const token=await vapidJwt(endpoint,env);
+  const response=await fetch(endpoint,{method:'POST',headers:{TTL:'60',Urgency:'normal',Authorization:`vapid t=${token}, k=${env.VAPID_PUBLIC_KEY}`}});
+  return {ok:response.ok,status:response.status};
+}
+
 async function verifiedSession(body,env){
   if(!env.DB)return null;
   const id=String(body.sessionId||''),secret=String(body.sessionSecret||'');
@@ -47,7 +69,12 @@ export default {
     if(!originAllowed(request,env) && u.pathname!=='/health')return json({ok:false,error:'ORIGIN_NOT_ALLOWED'},403,'null');
 
     if(u.pathname==='/health'&&request.method==='GET'){
-      return json({ok:true,service:'thalys',contractVersion:'1',provider:'cloudflare-workers-free',photos:'google-drive-only',appData:'google-drive-plus-indexeddb',billingRequired:false,capabilities:{d1:!!env.DB,googleServerAuth:secureConfigured(env),pushRegistry:!!env.DB,vapid:!!(env.VAPID_PUBLIC_KEY&&env.VAPID_PRIVATE_KEY)}},200,origin||'*');
+      return json({ok:true,service:'thalys',contractVersion:'1',provider:'cloudflare-workers-free',photos:'google-drive-only',appData:'google-drive-plus-indexeddb',billingRequired:false,capabilities:{d1:!!env.DB,googleServerAuth:secureConfigured(env),pushRegistry:!!env.DB,vapid:!!(env.VAPID_PUBLIC_KEY&&env.VAPID_PRIVATE_KEY)},vapidPublicKey:env.VAPID_PUBLIC_KEY||''},200,origin||'*');
+    }
+
+
+    if(u.pathname==='/push/config'&&request.method==='GET'){
+      return json({ok:true,enabled:!!(env.VAPID_PUBLIC_KEY&&env.VAPID_PRIVATE_KEY),publicKey:env.VAPID_PUBLIC_KEY||''},200,origin);
     }
 
     if(u.pathname==='/push/subscriptions'&&request.method==='POST'){
@@ -67,6 +94,20 @@ export default {
       if(!endpoint)return json({ok:false,error:'ENDPOINT_REQUIRED'},400,origin);
       await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint=?').bind(endpoint).run();
       return json({ok:true},200,origin);
+    }
+
+
+    if(u.pathname==='/push/test'&&request.method==='POST'){
+      if(!env.DB)return json({ok:false,error:'D1_NOT_CONFIGURED'},503,origin);
+      const body=await bodyJson(request),endpoint=String(body.endpoint||'');
+      if(!endpoint)return json({ok:false,error:'ENDPOINT_REQUIRED'},400,origin);
+      const row=await env.DB.prepare('SELECT endpoint FROM push_subscriptions WHERE endpoint=?').bind(endpoint).first();
+      if(!row)return json({ok:false,error:'SUBSCRIPTION_NOT_REGISTERED'},404,origin);
+      try{
+        const result=await sendEmptyWebPush(endpoint,env);
+        if(result.status===404||result.status===410)await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint=?').bind(endpoint).run();
+        return json({ok:result.ok,status:result.status},result.ok?200:502,origin);
+      }catch(err){return json({ok:false,error:err?.message||'PUSH_SEND_FAILED'},502,origin);}
     }
 
     if(u.pathname==='/auth/google/code'&&request.method==='POST'){
