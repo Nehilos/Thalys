@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '0.36.3';
+  const APP_VERSION = '0.36.4';
   const PROTOCOL_VERSION = 7;
 
   function clone(value) {

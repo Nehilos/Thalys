@@ -158,7 +158,7 @@ async function findDriveFolder(name,parentId=null){
       try{
         if(window.ThalysSyncQueue?.flushWrites)await window.ThalysSyncQueue.flushWrites();
         const payloads=databasePayloads();
-        // v0.36.3: publish sync metadata/tombstones before domain files.
+        // v0.36.4: publish sync metadata/tombstones before domain files.
         // This prevents another device from reading a newly-deleted database state with stale deletion metadata
         // (or an old database copy without knowing that the record is already tombstoned).
         if(Object.prototype.hasOwnProperty.call(payloads,'sync_meta.json')){
@@ -492,7 +492,7 @@ async function findDriveFolder(name,parentId=null){
         console.warn('Network recovery sync',e);
         driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');
         lastSyncError=classifyDriveError(e);
-        // v0.36.3: connectivity during recovery is non-blocking. Keep local mode,
+        // v0.36.4: connectivity during recovery is non-blocking. Keep local mode,
         // preserve pending changes and retry silently instead of opening an error modal.
         if(lastSyncError.code==='OFFLINE'||lastSyncError.code==='NETWORK_ERROR'){
           setDriveStatus('saving','Connessione instabile · dati locali protetti');

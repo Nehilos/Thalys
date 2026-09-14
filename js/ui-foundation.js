@@ -66,7 +66,7 @@ window.runWhenThalysCoreReady=runWhenThalysCoreReady;
         const returningFromOffline=thalysWasOffline||window.thalysOfflineSessionActive;
         thalysWasOffline = false;
         window.thalysOfflineSessionActive = false;
-        // v0.36.3: do not render stale local data before Drive/tombstone reconciliation.
+        // v0.36.4: do not render stale local data before Drive/tombstone reconciliation.
         window.thalysNetworkRecoveryPending = true;
         if (typeof updateSyncStatus === 'function') updateSyncStatus();
         if(returningFromOffline)showToast('modalità online attivata');

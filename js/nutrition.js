@@ -23,35 +23,78 @@
       return normalizeVitaminCodes((values || []).filter(Boolean).join(' '), group);
     }
 
-    function updateFoodDosePreview(){
-      const grams=Math.max(0,Number(document.getElementById('food-grams')?.value||0)); const r=grams/100;
-      const n=id=>Number(document.getElementById(id)?.value||0); const kcal=Math.round(n('food-kcal')*r);
-      const el=document.getElementById('food-dose-preview'); if(!el)return;
-      el.innerHTML=`Dose ${grams||0} g → <b class="text-slate-200">${kcal} kcal</b> · P ${(n('food-p')*r).toFixed(1)}g · C ${(n('food-c')*r).toFixed(1)}g · G ${(n('food-f')*r).toFixed(1)}g · saturi ${(n('food-sat-fat')*r).toFixed(1)}g`;
+    let mealPresetTarget = 'Colazione';
+
+    function openFoodForMeal(meal){
+      mealPresetTarget = meal || 'Colazione';
+      const title=document.getElementById('meal-preset-target-label');
+      if(title)title.textContent=mealPresetTarget;
+      const search=document.getElementById('meal-preset-search');
+      if(search)search.value='';
+      renderMealPresetPicker();
+      openModal('add-food-modal');
+      setTimeout(()=>search?.focus(),100);
     }
 
-    function openFoodForMeal(meal){openModal('add-food-modal');setTimeout(()=>{const s=document.getElementById('food-meal');if(s)s.value=meal},0)}
-
-    function saveFoodLog(e) {
-      e.preventDefault();
-      const date = document.getElementById('nutrition-date').value;
-      const name = document.getElementById('food-name').value.trim();
-      const meal = document.getElementById('food-meal').value;
-      const grams = Math.max(0, parseFloat(document.getElementById('food-grams').value) || 0);
-      const ratio = grams / 100;
-      const base = id => parseFloat(document.getElementById(id)?.value) || 0;
-      const p = base('food-p') * ratio, c = base('food-c') * ratio, f = base('food-f') * ratio;
-      const satFat = base('food-sat-fat') * ratio, sugars = base('food-sugars') * ratio;
-      const calcium = base('food-calcium') * ratio, magnesium = base('food-magnesium') * ratio, zinc = base('food-zinc') * ratio;
-      const fiber = base('food-fiber') * ratio, salt = base('food-salt') * ratio;
-      const iron = base('food-iron') * ratio, potassium = base('food-potassium') * ratio;
-      const vitaminsId = normalizeVitaminCodes(document.getElementById('food-vitamins-id')?.value,'id');
-      const vitaminsLip = normalizeVitaminCodes(document.getElementById('food-vitamins-lip')?.value,'lip');
-      const baseKcal=base('food-kcal'); const kcal=baseKcal>0?Math.round(baseKcal*ratio):Math.round((p*4)+(c*4)+(f*9));
-      const newLog={id:'food_'+Date.now(),date,name,meal,grams,p,c,f,satFat,sugars,calcium,magnesium,zinc,fiber,salt,iron,potassium,vitaminsId,vitaminsLip,kcal};
-      appState.nutrition.push(newLog); saveStateToLocal(); closeModal('add-food-modal'); document.getElementById('add-food-form').reset();
-      const gramsEl=document.getElementById('food-grams');if(gramsEl)gramsEl.value=100; updateFoodDosePreview(); renderNutrition(); updateAnalyticsCharts(); showToast('Alimento salvato ✓','fa-circle-check');
+    function renderMealPresetPicker(){
+      const list=document.getElementById('meal-preset-list');
+      const empty=document.getElementById('meal-preset-empty');
+      const count=document.getElementById('meal-preset-count');
+      if(!list)return;
+      appState.presets=sortFoodPresetsNewestFirst(appState.presets||[]);
+      const search=(document.getElementById('meal-preset-search')?.value||'').trim().toLocaleLowerCase('it');
+      const visible=[];
+      (appState.presets||[]).forEach((raw,idx)=>{
+        const p=normalizeFoodPreset(raw);
+        appState.presets[idx]=p;
+        if(!search || p.name.toLocaleLowerCase('it').includes(search)) visible.push({p,idx});
+      });
+      if(count)count.textContent=search?`${visible.length} risultati`:`${visible.length} alimenti`;
+      if(empty)empty.classList.toggle('hidden',visible.length!==0);
+      list.innerHTML=visible.map(({p,idx})=>`
+        <div class="rounded-2xl border border-slate-800 bg-slate-900/75 p-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <div class="truncate text-sm font-black text-white">${escapeHTML(p.name)}</div>
+              <div class="mt-1 text-[10px] text-slate-400">${Math.round(p.kcal)} kcal · P ${Number(p.p.toFixed(1))}g · C ${Number(p.c.toFixed(1))}g · G ${Number(p.f.toFixed(1))}g / 100g</div>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center gap-2">
+            <label class="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2">
+              <span class="text-[10px] font-bold text-slate-500">g</span>
+              <input id="meal-preset-grams-${idx}" type="number" min="1" step="1" value="100" inputmode="decimal" class="min-w-0 flex-1 bg-transparent text-xs font-bold text-white outline-none">
+            </label>
+            <button type="button" onclick="addPresetToCurrentMeal(${idx})" class="min-h-10 shrink-0 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-slate-950">Aggiungi</button>
+          </div>
+        </div>`).join('');
     }
+
+    function addPresetToCurrentMeal(index){
+      const p=normalizeFoodPreset(appState.presets?.[Number(index)]);
+      if(!p.name)return;
+      const grams=Math.max(1,Number(document.getElementById(`meal-preset-grams-${index}`)?.value||100));
+      const ratio=grams/100;
+      const date=document.getElementById('nutrition-date')?.value||homeSelectedDate||new Date().toISOString().split('T')[0];
+      const scaled=key=>(Number(p[key])||0)*ratio;
+      const protein=scaled('p'),carbs=scaled('c'),fat=scaled('f');
+      const kcal=p.kcal>0?Math.round(p.kcal*ratio):Math.round((protein*4)+(carbs*4)+(fat*9));
+      const newLog={
+        id:'food_'+Date.now(),date,name:p.name,meal:mealPresetTarget,grams,
+        p:protein,c:carbs,f:fat,satFat:scaled('satFat'),sugars:scaled('sugars'),
+        calcium:scaled('calcium'),magnesium:scaled('magnesium'),zinc:scaled('zinc'),fiber:scaled('fiber'),salt:scaled('salt'),iron:scaled('iron'),potassium:scaled('potassium'),
+        vitaminsId:p.vitaminsId||'',vitaminsLip:p.vitaminsLip||'',kcal
+      };
+      appState.nutrition.push(newLog);
+      saveStateToLocal({source:'nutrition-meal-preset'});
+      closeModal('add-food-modal');
+      renderNutrition();
+      updateAnalyticsCharts();
+      renderHomeDashboard();
+      showToast(`${p.name} aggiunto a ${mealPresetTarget} ✓`,'fa-circle-check');
+    }
+
+    function updateFoodDosePreview(){ /* v0.36.4: legacy no-op, manual meal entry removed */ }
+    function saveFoodLog(e){ e?.preventDefault?.(); }
 
     function deleteFoodLog(id) {
       appState.nutrition = appState.nutrition.filter(n => n.id !== id);
@@ -366,13 +409,9 @@
 
     function editFoodPreset(index){const p=normalizeFoodPreset(appState.presets[index]);editingFoodPresetIndex=index;toggleFoodPresetForm(true);PRESET_FIELD_MAP.forEach(([id,key])=>{const e=document.getElementById(id);if(e)e.value=p[key]??'';});showToast('Modalità modifica attiva');}
 
-    function applyPresetToForm(){
-      const idx=document.getElementById('preset-select')?.value; if(idx===''||idx==null)return; const p=normalizeFoodPreset(appState.presets?.[Number(idx)]); if(!p.name)return;
-      const pairs=[['food-name','name'],['food-kcal','kcal'],['food-p','p'],['food-c','c'],['food-f','f'],['food-sat-fat','satFat'],['food-sugars','sugars'],['food-calcium','calcium'],['food-magnesium','magnesium'],['food-zinc','zinc'],['food-fiber','fiber'],['food-salt','salt'],['food-iron','iron'],['food-potassium','potassium'],['food-vitamins-id','vitaminsId'],['food-vitamins-lip','vitaminsLip']];
-      pairs.forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.value=p[key]??'';}); updateFoodDosePreview();
-    }
+    function applyPresetToForm(){ renderMealPresetPicker(); }
 
-    function recalcFoodMacros(){ applyPresetToForm(); }
+    function recalcFoodMacros(){ renderMealPresetPicker(); }
 
     function saveFoodPreset(e){
       e.preventDefault(); const raw={}; PRESET_FIELD_MAP.forEach(([id,key])=>raw[key]=document.getElementById(id)?.value||''); const now=new Date().toISOString();
@@ -384,15 +423,16 @@
     function deletePreset(index){if(!confirm(`Eliminare ${appState.presets[index]?.name||'questo alimento'}?`))return;appState.presets.splice(index,1);saveStateToLocal();renderPresets();}
 
     function renderPresets(){
-      const list=document.getElementById('presets-list'),selectContainer=document.getElementById('preset-select-container'),select=document.getElementById('preset-select');if(!list||!select)return;
+      const list=document.getElementById('presets-list');if(!list)return;
       appState.presets=sortFoodPresetsNewestFirst(appState.presets||[]);
       const search=(document.getElementById('food-preset-search')?.value||'').trim().toLocaleLowerCase('it');
-      list.innerHTML='';select.innerHTML='<option value="">-- Seleziona un Preset --</option>';selectContainer?.classList.toggle('hidden',!(appState.presets||[]).length);
+      list.innerHTML='';
       let visible=0;
       (appState.presets||[]).forEach((raw,idx)=>{const p=normalizeFoodPreset(raw);appState.presets[idx]=p;const matches=!search||p.name.toLocaleLowerCase('it').includes(search);if(matches){visible++;const item=document.createElement('div');item.className='bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs';item.innerHTML=`<div class="flex justify-between gap-2"><div class="min-w-0"><div class="font-bold text-slate-200">${p.name}</div><div class="text-[10px] text-slate-400">${p.kcal} kcal · P ${p.p}g · C ${p.c}g · G ${p.f}g · Sat ${p.satFat}g · Zuc ${p.sugars}g</div><div class="text-[10px] text-slate-500">Fibre ${p.fiber}g · Sale ${p.salt}g · Ca ${p.calcium}mg · Mg ${p.magnesium}mg · Zn ${p.zinc}mg · Fe ${p.iron}mg · K ${p.potassium}mg</div><div class="text-[10px] text-slate-500">Vit ID ${p.vitaminsId||'—'} · Vit LIP ${p.vitaminsLip||'—'} / 100g</div></div><div class="flex gap-1"><button onclick="editFoodPreset(${idx})" class="text-cyan-400 p-2"><i class="fa-solid fa-pen"></i></button><button onclick="deletePreset(${idx})" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button></div></div>`;list.appendChild(item);}
-        const opt=document.createElement('option');opt.value=idx;opt.textContent=`${p.name} (${p.kcal} kcal/100g)`;select.appendChild(opt);});
+      });
       const empty=document.getElementById('food-preset-search-empty'); if(empty)empty.classList.toggle('hidden',visible!==0||!search);
       const count=document.getElementById('food-preset-search-count'); if(count)count.textContent=search?`${visible} risultati`:`${(appState.presets||[]).length} alimenti`;
+      if(document.getElementById('meal-preset-list'))renderMealPresetPicker();
     }
 
     function saveTargets(e) {
