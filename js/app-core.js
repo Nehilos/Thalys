@@ -86,7 +86,7 @@
         const record = await window.ThalysStorage?.readPrimaryState?.();
         if (record?.state) {
           appState = normalizeLoadedAppState(record.state);
-          // v0.37.1: recover the full user-selected profile photo from the local
+          // v0.37.2: recover the full user-selected profile photo from the local
           // IndexedDB document if the first v0.37 migration started from the compact
           // localStorage mirror where dataUrl was intentionally stripped.
           try {
@@ -101,11 +101,13 @@
           } catch (error) { console.warn('Ripristino foto profilo completa', error); }
           window.appState = appState;
           window.__THALYS_PRIMARY_STATE_HYDRATED__ = true;
+          try{window.dispatchEvent(new CustomEvent('thalys:primary-state-ready',{detail:{source:'indexeddb'}}));}catch(_){}
           try { localStorage.setItem('thalys_data', JSON.stringify(compactStateForLocalStorage(appState))); } catch (_) {}
-          try { await window.ThalysStorage?.writePrimaryState?.(appState, { source: 'v0.37.1-profile-photo-repair' }); } catch (_) {}
+          try { await window.ThalysStorage?.writePrimaryState?.(appState, { source: 'v0.37.2-profile-photo-repair' }); } catch (_) {}
           return { source: 'indexeddb', savedAt: record.savedAt || null };
         }
         window.__THALYS_PRIMARY_STATE_HYDRATED__ = true;
+        try{window.dispatchEvent(new CustomEvent('thalys:primary-state-ready',{detail:{source:'localStorage'}}));}catch(_){}
         await window.ThalysStorage?.writePrimaryState?.(appState, { source: 'bootstrap-fallback' });
         return { source: 'localStorage' };
       } catch (error) {

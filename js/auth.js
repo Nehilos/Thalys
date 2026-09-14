@@ -9,7 +9,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
-    let authRequestSerial = 0;
+    let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
     function getAccessToken(){ return (window.gapi && gapi.client && gapi.client.getToken && gapi.client.getToken())?.access_token || null; }
     function cacheDriveAccessToken(resp){
@@ -79,7 +79,11 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       startupAccessRequested=true;
       handleAuthClick(true);
     }
-    function loginHandler(){ if(gapiInited&&gisInited) return handleAuthClick(); showToast('Google si sta caricando, riprova tra un secondo'); }
+    function loginHandler(){
+      // Explicit user action must never be blocked by a stale silent-startup request.
+      if(gapiInited&&gisInited) return handleAuthClick(false,true);
+      showToast('Google si sta caricando, riprova tra un secondo');
+    }
 
     async function getGoogleProfile(){ try{const r=await gapi.client.oauth2.userinfo.get();return r.result||{};}catch(e){return{};} }
 
@@ -115,7 +119,11 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         if(Number(status)===401){if(window.gapi?.client)gapi.client.setToken('');clearCachedDriveAccessToken();startupAccessRequested=false;}
         setDriveStatus('error',navigator.onLine?'Drive da riconnettere':'Offline · dati locali');
         updateAuthUI(profile);
-        if(navigator.onLine&&typeof lockApp==='function')lockApp();
+        // A transient Drive/network failure must never throw the user back to the
+        // access screen. Keep the already authenticated installation usable locally
+        // and let the reconnect supervisor retry in the background.
+        if(typeof unlockApp==='function' && hasRememberedGoogleSession())unlockApp(false);
+        if(navigator.onLine)scheduleAutomaticReconnect();
         return false;
       }
     }
@@ -126,8 +134,14 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       // v0.35.2: never allow two Google token popups/callbacks to overlap.
       // A second OAuth request could finish after the first and incorrectly show permission_denied.
       if(authRequestInFlight){
-        if(!silent)showToast('Accesso Google già in corso…','fa-spinner');
-        return false;
+        if(silent)return false;
+        // Manual reconnect supersedes a silent request that may have stalled while
+        // iOS was offline/backgrounded. The serial invalidates any late callback.
+        authRequestSerial++;
+        authRequestInFlight=false;
+        startupAccessRequested=false;
+        manualAuthFallbackUsed=false;
+        rebuildTokenClient(false);
       }
       authRequestInFlight=true;
       const requestSerial=++authRequestSerial;
@@ -203,19 +217,33 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     }
     function setCloudUserUI(profile){updateAuthUI(profile);}
     function logoutCloud(){handleSignoutClick();}
+    function scheduleAutomaticReconnect(delay=1500){
+      if(!navigator.onLine||reconnectRetryTimer)return;
+      reconnectRetryTimer=setTimeout(async()=>{
+        reconnectRetryTimer=null;
+        if(!navigator.onLine)return;
+        reconnectRetryCount++;
+        const ok=await autoReconnectGoogleAfterNetwork();
+        if(!ok && reconnectRetryCount<4)scheduleAutomaticReconnect(Math.min(8000,1500*reconnectRetryCount));
+      },delay);
+    }
     async function autoReconnectGoogleAfterNetwork(){
       if(!navigator.onLine)return false;
       startupAccessRequested=false;
       if(!getAccessToken())restoreCachedDriveAccessToken();
       if(getAccessToken()){
         const ok=await connectDriveAfterToken(true);
-        if(ok)return true;
+        if(ok){reconnectRetryCount=0;return true;}
       }
+      // If the cached token expired, ask GIS to renew the existing grant silently.
+      // This does not block local use; a manual reconnect can always supersede it.
       startupAccessRequested=false;
-      return requestGoogleAccessOnStartup();
+      requestGoogleAccessOnStartup();
+      return !!getAccessToken();
     }
     window.autoReconnectGoogleAfterNetwork=autoReconnectGoogleAfterNetwork;
-    window.addEventListener('online',()=>{setTimeout(()=>autoReconnectGoogleAfterNetwork(),80);},{passive:true});
+    window.addEventListener('offline',()=>{if(reconnectRetryTimer){clearTimeout(reconnectRetryTimer);reconnectRetryTimer=null;}},{passive:true});
+    window.addEventListener('online',()=>{reconnectRetryCount=0;setTimeout(()=>autoReconnectGoogleAfterNetwork().then(ok=>{if(!ok)scheduleAutomaticReconnect();}),250);},{passive:true});
 
 // ===== Session gate / welcome screen =====
 // Set your Google OAuth Client ID here
@@ -406,14 +434,23 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         if (typeof requestGoogleAccessOnStartup === 'function') requestGoogleAccessOnStartup();
       }
 
-      async function initializeAuthAfterLocalState() {
-        try { await (window.thalysPrimaryStateReady || window.thalysStorageReady || Promise.resolve()); } catch (_) {}
-        ensureGoogleIdentityReady();
-        refreshAuthUIFromStorage();
+      let authBootstrapPromise=null;
+      function initializeAuthAfterLocalState() {
+        if(authBootstrapPromise)return authBootstrapPromise;
+        authBootstrapPromise=(async()=>{
+          // IndexedDB on iOS can occasionally take time to resume after backgrounding.
+          // Never let that make the Google reconnect button unavailable indefinitely.
+          try{
+            const stateReady=window.thalysPrimaryStateReady || window.thalysStorageReady || Promise.resolve();
+            await Promise.race([stateReady,new Promise(resolve=>setTimeout(resolve,1800))]);
+          }catch(_){}
+          ensureGoogleIdentityReady();
+          refreshAuthUIFromStorage();
+        })();
+        return authBootstrapPromise;
       }
       initializeAuthAfterLocalState();
-
-      window.addEventListener('DOMContentLoaded', () => initializeAuthAfterLocalState(), { once: true });
+      window.addEventListener('DOMContentLoaded', initializeAuthAfterLocalState, { once: true });
 
 // Canonical public UI bridge after legacy compatibility helpers.
 function setCloudUserUI(profile){ updateAuthUI(profile); }

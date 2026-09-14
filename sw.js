@@ -1,34 +1,34 @@
-const CACHE_NAME = 'thalys-shell-v0.37.1';
+const CACHE_NAME = 'thalys-shell-v0.37.2';
 
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
-  './male.svg?v=0371',
-  './female.svg?v=0371',
+  './male.svg?v=0372',
+  './female.svg?v=0372',
   './assets/icons/thalys-app-icon-black.png',
   './css/thalys.css?v=024',
   './js/tailwind-config.js?v=015',
   './js/theme-bootstrap.js?v=015',
-  './js/storage-manager.js?v=0371',
-  './js/sync-queue.js?v=0371',
-  './js/conflict-resolver.js?v=0371',
-  './js/local-db.js?v=0371',
-  './js/ui-foundation.js?v=0371',
-  './js/language.js?v=0371',
-  './js/drive.js?v=0371',
-  './js/auth.js?v=0371',
-  './js/app-core.js?v=0371',
-  './js/body.js?v=0371',
-  './js/meditation.js?v=0371',
-  './js/nutrition.js?v=0371',
-  './js/workout.js?v=0371',
-  './js/home.js?v=0371',
-  './js/analytics.js?v=0371',
+  './js/storage-manager.js?v=0372',
+  './js/sync-queue.js?v=0372',
+  './js/conflict-resolver.js?v=0372',
+  './js/local-db.js?v=0372',
+  './js/ui-foundation.js?v=0372',
+  './js/language.js?v=0372',
+  './js/drive.js?v=0372',
+  './js/auth.js?v=0372',
+  './js/app-core.js?v=0372',
+  './js/body.js?v=0372',
+  './js/meditation.js?v=0372',
+  './js/nutrition.js?v=0372',
+  './js/workout.js?v=0372',
+  './js/home.js?v=0372',
+  './js/analytics.js?v=0372',
   './js/oauth-ui.js?v=015',
   './js/media-tools.js?v=025',
   './js/pwa-register.js?v=015',
-  './js/app-enhancements.js?v=0371',
+  './js/app-enhancements.js?v=0372',
   './lang/lang_it.json?v=23',
   './lang/lang_en.json?v=23',
   './lang/lang_es.json?v=23',
@@ -91,7 +91,11 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(async () => {
-        const cached = await caches.match(request);
+        let cached = await caches.match(request);
+        // v0.37.2: local visual assets may have a version query that changed while the
+        // device was offline. Fall back to the cached same-path asset instead of
+        // rendering a broken/empty image.
+        if (!cached && isLocal) cached = await caches.match(request, { ignoreSearch: true });
         if (cached) return cached;
         if (request.mode === 'navigate') {
           return caches.match('./index.html');

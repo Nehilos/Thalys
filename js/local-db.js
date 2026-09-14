@@ -93,9 +93,9 @@
 
   async function warmOfflineAppShell() {
     if (!window.caches || !window.isSecureContext) return 0;
-    const urls = ['./', './index.html', './manifest.json', './male.svg?v=0371', './female.svg?v=0371', './css/thalys.css?v=016', './js/storage-manager.js?v=0371', './js/sync-queue.js?v=0371', './js/conflict-resolver.js?v=0371', './js/local-db.js?v=0371', './js/ui-foundation.js?v=0371', './js/language.js?v=0371', './js/drive.js?v=0371', './js/auth.js?v=0371', './js/app-core.js?v=0371', './js/body.js?v=0371', './js/meditation.js?v=0371', './js/nutrition.js?v=0371', './js/workout.js?v=0371', './js/home.js?v=0371', './js/analytics.js?v=0371', './js/app-enhancements.js?v=0371'];
-    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.37.1').map(k=>caches.delete(k)));}catch(_){}
-    const cache = await caches.open('thalys-manual-offline-v0.37.1');
+    const urls = ['./', './index.html', './manifest.json', './male.svg?v=0372', './female.svg?v=0372', './css/thalys.css?v=016', './js/storage-manager.js?v=0372', './js/sync-queue.js?v=0372', './js/conflict-resolver.js?v=0372', './js/local-db.js?v=0372', './js/ui-foundation.js?v=0372', './js/language.js?v=0372', './js/drive.js?v=0372', './js/auth.js?v=0372', './js/app-core.js?v=0372', './js/body.js?v=0372', './js/meditation.js?v=0372', './js/nutrition.js?v=0372', './js/workout.js?v=0372', './js/home.js?v=0372', './js/analytics.js?v=0372', './js/app-enhancements.js?v=0372'];
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.37.2').map(k=>caches.delete(k)));}catch(_){}
+    const cache = await caches.open('thalys-manual-offline-v0.37.2');
     let saved = 0;
     for (const url of urls) {
       try { await cache.add(url); saved += 1; } catch (_) {}
@@ -120,7 +120,7 @@
         });
         window.appState.photos = [...merged.values()];
       }
-      if (profileRecord?.data && !window.appState.profilePhoto?.dataUrl) window.appState.profilePhoto = profileRecord.data;
+      if (profileRecord?.data && !window.appState.profilePhoto?.dataUrl) { window.appState.profilePhoto = profileRecord.data; try{await window.ThalysStorage?.writePrimaryState?.(window.appState,{source:'hydrate-local-media'});}catch(_){} }
       if (typeof renderPhotos === 'function') renderPhotos();
       if (typeof renderProfilePhotoUI === 'function') renderProfilePhotoUI();
       return true;

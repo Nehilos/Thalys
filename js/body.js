@@ -14,6 +14,14 @@
       document.querySelectorAll('.profile-photo-fallback').forEach(el=>el.classList.toggle('hidden',!!data));
     }
 
+
+    // v0.37.2: app-core starts with the compact localStorage mirror, where the heavy
+    // custom photo is intentionally omitted. Re-render as soon as IndexedDB restores
+    // the full state so offline startup never stays on an empty profile image.
+    window.addEventListener('thalys:primary-state-ready',()=>{
+      try{renderProfilePhotoUI();loadProfileUI();}catch(_){try{renderProfilePhotoUI();}catch(__){}}
+    });
+
     function openProfilePhotoMenu(){
       openModal('profile-photo-modal');
       renderProfilePhotoUI();
