@@ -1,4 +1,4 @@
-// Thalys v0.54.1 - Authentication and persistent session module
+// Thalys v0.54.2 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -11,10 +11,9 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.54.1';
+    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.54.2';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
-    function isDesktopGoogleFlow(){try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}}
 
     function getAccessToken(){ return (window.gapi && gapi.client && gapi.client.getToken && gapi.client.getToken())?.access_token || null; }
     function cacheDriveAccessToken(resp){
@@ -364,7 +363,6 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         updateWelcomeConnectionUI();
       }
 
-      window.showReconnectGateForVersion=showReconnectGateForVersion;
       function lockApp() {
         document.documentElement.classList.remove('thalys-session-preboot');
         localStorage.removeItem(THALYS_APP_SESSION_KEY);

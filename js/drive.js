@@ -193,6 +193,7 @@ async function findDriveFolder(name,parentId=null){
     }
     function scheduleDriveSync(delay=350){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');if(!getAccessToken()||!navigator.onLine||window.thalysNetworkRecoveryPending){updateManualSyncUI();return;}if(driveSyncTimer)clearTimeout(driveSyncTimer);driveSyncTimer=setTimeout(()=>{if(!navigator.onLine||window.thalysNetworkRecoveryPending){updateManualSyncUI();return;}if(driveSyncRunning){driveSyncQueued=true;return;}saveAllDatabasesToDrive(false);},delay);}
 
+    function isDesktopRuntimeV0542(){try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}}
     function isMeaningfulProfile(p){if(!p)return false;return Number(p.age)!==25||Number(p.height)!==175||Number(p.sleepHours)!==7||String(p.lifestyle||'moderato')!=='moderato'||String(p.gender||'male')!=='male';}
     function mergeByKey(localArr,cloudArr,keyFn){
       const map=new Map();(cloudArr||[]).forEach(x=>{if(x)map.set(keyFn(x),x)});(localArr||[]).forEach(x=>{if(!x)return;const k=keyFn(x);const old=map.get(k);if(!old){map.set(k,x);return;}const lt=Date.parse(x.updatedAt||x.completedAt||0)||0,ct=Date.parse(old.updatedAt||old.completedAt||0)||0;if(lt>=ct)map.set(k,{...old,...x});});return [...map.values()];
@@ -205,24 +206,14 @@ async function findDriveFolder(name,parentId=null){
       if(lp&&cp){const lt=Date.parse(lp.updatedAt||0)||0,ct=Date.parse(cp.updatedAt||0)||0;result.profilePhoto=lt>=ct?lp:cp;}
       else result.profilePhoto=lp||cp||null;
       result.targets={...DEFAULT_STATE.targets,...c.targets,...local.targets};result.settings={...DEFAULT_STATE.settings,...c.settings,...local.settings};
-      // v0.54.1: steps are shared daily data, like water. Do not let a stale desktop
-      // app_state copy mask a newer phone value. Prefer the newest timestamp; for old
-      // records without timestamps, Drive is canonical on the first upgraded merge.
-      const ls=local.steps||{}, cs=c.steps||{};
-      const lsm=local.stepsUpdatedAt||{}, csm=c.stepsUpdatedAt||{};
-      result.steps={}; result.stepsUpdatedAt={};
-      const stepDates=new Set([...Object.keys(cs),...Object.keys(ls)]);
-      stepDates.forEach(date=>{
-        const lt=Date.parse(lsm[date]||0)||0, ct=Date.parse(csm[date]||0)||0;
-        const chooseLocal=lt&&ct ? lt>=ct : lt&&!ct ? true : !lt&&ct ? false : false;
-        result.steps[date]=chooseLocal ? ls[date] : (Object.prototype.hasOwnProperty.call(cs,date)?cs[date]:ls[date]);
-        const stamp=chooseLocal?lsm[date]:csm[date]; if(stamp)result.stepsUpdatedAt[date]=stamp;
-      });
-      const localStepTargetAt=Date.parse(local.settings?.stepTargetUpdatedAt||0)||0;
-      const cloudStepTargetAt=Date.parse(c.settings?.stepTargetUpdatedAt||0)||0;
-      const cloudHasStepTarget=Number(c.settings?.stepTarget)>0;
-      const chooseLocalStepTarget=localStepTargetAt&&cloudStepTargetAt ? localStepTargetAt>=cloudStepTargetAt : localStepTargetAt&&!cloudStepTargetAt ? true : !localStepTargetAt&&cloudStepTargetAt ? false : false;
-      if(cloudHasStepTarget&&!chooseLocalStepTarget){result.settings.stepTarget=c.settings.stepTarget; if(c.settings.stepTargetUpdatedAt)result.settings.stepTargetUpdatedAt=c.settings.stepTargetUpdatedAt;}
+      // v0.54.2 desktop-only: phone keeps the exact v0.54.0 step code. On desktop,
+      // Drive is canonical for steps whenever this browser has no pending local writes.
+      // This mirrors the clean-device rule already used by Pianificato without changing
+      // how mobile saves or renders steps.
+      if(isDesktopRuntimeV0542()&&!driveDirty){
+        if(c.steps&&typeof c.steps==='object')result.steps={...(c.steps||{})};
+        if(Number(c.settings?.stepTarget)>0)result.settings.stepTarget=Number(c.settings.stepTarget);
+      }
       result.workouts=mergeByKey(local.workouts,c.workouts,x=>x.id||`${x.date}|${x.name}`);
       result.nutrition=mergeByKey(local.nutrition,c.nutrition,x=>x.id||`${x.date}|${x.meal}|${x.name}|${x.grams}`);
       result.mealPlans=mergeByKey(local.mealPlans,c.mealPlans,x=>x.id||x.name);
@@ -500,34 +491,30 @@ async function findDriveFolder(name,parentId=null){
         mealPlanLiveRefreshRunning=true;
         const f=await findDriveFile('app_state.json',driveFolders.databaseFolderId);if(!f)return false;
         const marker=String(f.version||f.modifiedTime||'');
-        if(lastSeenMealPlanDriveVersion===null){lastSeenMealPlanDriveVersion=marker;return false;}
-        if(marker===lastSeenMealPlanDriveVersion)return false;
+        const desktopSteps=isDesktopRuntimeV0542();
+        if(lastSeenMealPlanDriveVersion===null&&!desktopSteps){lastSeenMealPlanDriveVersion=marker;return false;}
+        if(marker===lastSeenMealPlanDriveVersion&&lastSeenMealPlanDriveVersion!==null)return false;
         const remote=await readDriveJSON('app_state.json',driveFolders.databaseFolderId);
         lastSeenMealPlanDriveVersion=marker;
         if(!remote||typeof remote!=='object'||Array.isArray(remote))return false;
-        const fields=['mealPlans','activeMealPlanId','mealPlanDailyOverrides','mealPlanCompletions','steps','stepsUpdatedAt'];
+        const fields=['mealPlans','activeMealPlanId','mealPlanDailyOverrides','mealPlanCompletions'];
+        if(desktopSteps){fields.push('steps');}
         let changed=false;
         for(const key of fields){
           if(!Object.prototype.hasOwnProperty.call(remote,key))continue;
           const next=remote[key];
           if(JSON.stringify(appState[key])!==JSON.stringify(next)){appState[key]=next;changed=true;}
         }
-        if(remote.settings&&typeof remote.settings==='object'){
+        if(desktopSteps&&remote.settings&&Number(remote.settings.stepTarget)>0){
           appState.settings=appState.settings||{};
-          const localAt=Date.parse(appState.settings.stepTargetUpdatedAt||0)||0;
-          const remoteAt=Date.parse(remote.settings.stepTargetUpdatedAt||0)||0;
-          if(Number(remote.settings.stepTarget)>0 && (remoteAt>localAt || (!remoteAt&&!localAt&&Number(appState.settings.stepTarget)!==Number(remote.settings.stepTarget)))){
-            appState.settings.stepTarget=remote.settings.stepTarget;
-            if(remote.settings.stepTargetUpdatedAt)appState.settings.stepTargetUpdatedAt=remote.settings.stepTargetUpdatedAt;
-            changed=true;
-          }
+          if(Number(appState.settings.stepTarget)!==Number(remote.settings.stepTarget)){appState.settings.stepTarget=Number(remote.settings.stepTarget);changed=true;}
         }
         if(!changed)return false;
         window.appState=appState;
         persistThalysStateLocally(appState);
         if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);
-        try{renderNutrition();}catch(_){} try{renderDailyStepsV0540();}catch(_){} try{renderHomeDashboard();}catch(_){} try{updateAnalyticsCharts();}catch(_){}
-        setDriveStatus('ok','Dati aggiornati da Drive');updateManualSyncUI();
+        try{renderNutrition();}catch(_){} if(desktopSteps){try{renderDailyStepsV0540();}catch(_){}} try{renderHomeDashboard();}catch(_){} try{updateAnalyticsCharts();}catch(_){}
+        setDriveStatus('ok',desktopSteps?'Dati aggiornati da Drive':'Piano alimentare aggiornato da Drive');updateManualSyncUI();
         return true;
       }catch(e){console.warn('Live meal-plan sync',e);return false;}finally{mealPlanLiveRefreshRunning=false;}
     }

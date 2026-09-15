@@ -8,6 +8,7 @@
   let hydratePromise=null;
   let authorizePromise=null;
   let authorizeResolve=null;
+  function isDesktopRuntimeV0542(){try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}}
 
   function backendCfg(){return window.ThalysConfig?.backend||{};}
   function enabled(){const c=backendCfg();return !!(window.ThalysBackend?.configured?.()&&c.googleCodeFlowEnabled===true&&c.googleCodeExchangePath);}
@@ -98,12 +99,6 @@
           return;
         }
         try{
-          // Desktop Chrome used to remain on the access page while waiting for the
-          // backend code exchange. Google has already completed user authorization at
-          // this point, so desktop can enter the app immediately while the durable
-          // server session is finalized. Mobile/PWA behavior is intentionally unchanged.
-          const desktopFastPath=(()=>{try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}})();
-          if(desktopFastPath){try{window.thalysUnifiedGoogleAuthorized?.();}catch(_){}}
           const s=ensureSession();
           const data=await window.ThalysBackend.exchangeGoogleCode({
             code:response.code,
@@ -129,7 +124,6 @@
         }catch(err){
           console.error('Server auth code exchange',err);
           markActive(false);
-          try{if(window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768&&typeof window.showReconnectGateForVersion==='function')window.showReconnectGateForVersion();}catch(_){ }
           window.showToast?.('Impossibile completare la sessione Google persistente');
           await refreshUI();
           if(authorizeResolve){authorizeResolve(false);authorizeResolve=null;authorizePromise=null;}
@@ -189,7 +183,7 @@
     const st=await status();
     if(st?.active&&st?.transient)el.textContent='Attiva · verifica in corso';
     else if(st?.active)el.textContent='Attiva';
-    else if(st?.transient&&canRefresh()&&(cachedActive()||cachedTokenExpiresAt()>Date.now()+5000))el.textContent='Attiva · verifica in corso';
+    else if(isDesktopRuntimeV0542()&&st?.transient&&cachedActive()&&canRefresh())el.textContent='Attiva · verifica in corso';
     else if(st?.transient)el.textContent='Verifica connessione…';
     else el.textContent=st?.enabled?'Da attivare':'Non disponibile';
   }
@@ -202,10 +196,8 @@
     await hydrateSessionFromIndexedDb();
     if(!canRefresh())return false;
     const expiresAt=cachedTokenExpiresAt();
-    // A valid Drive token is not proof that the persistent server session was restored.
-    // On desktop localStorage/IDB can hydrate at different times: if the active marker is
-    // missing, force one server refresh instead of leaving Options on 'Verifica connessione'.
-    if(expiresAt>Date.now()+10*60*1000&&cachedActive())return true;
+    // Refresh only when the access token is missing or has less than 10 minutes left.
+    if(expiresAt>Date.now()+10*60*1000)return true;
     refreshBusy=true;
     try{const ok=await refresh(true);await refreshUI();return ok;}finally{refreshBusy=false;}
   }
@@ -229,6 +221,20 @@
       return !!ok;
     }finally{refreshBusy=false;}
   }
+  async function recoverDesktopPersistentSessionV0542(){
+    if(!isDesktopRuntimeV0542()||!navigator.onLine||!enabled())return false;
+    await hydrateSessionFromIndexedDb();
+    if(!canRefresh()){await refreshUI();return false;}
+    try{
+      const st=await status();
+      if(st?.active===true){await refreshUI();return true;}
+      // Desktop can retain a valid Drive access token while the server-session marker
+      // has not been restored yet. Refresh only this desktop server session; mobile is untouched.
+      const ok=await refresh(true);
+      await refreshUI();
+      return !!ok;
+    }catch(_){await refreshUI();return false;}
+  }
   function startRefreshSupervisor(){
     if(refreshTimer)clearInterval(refreshTimer);
     if(!enabled())return;
@@ -236,9 +242,11 @@
     refreshTimer=setInterval(proactiveRefresh,5*60*1000);
   }
   window.addEventListener('online',()=>setTimeout(async()=>{await recoverAfterNetworkReturn();},250),{passive:true});
+  window.addEventListener('online',()=>{if(isDesktopRuntimeV0542())setTimeout(recoverDesktopPersistentSessionV0542,700);},{passive:true});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(async()=>{await proactiveRefresh();await refreshUI();},250);});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&isDesktopRuntimeV0542())setTimeout(recoverDesktopPersistentSessionV0542,650);});
   document.addEventListener('DOMContentLoaded',()=>setTimeout(async()=>{await hydrateSessionFromIndexedDb();await refreshUI();},0));
-  window.addEventListener('load',async()=>{if(enabled()){await hydrateSessionFromIndexedDb();buildCodeClient();startRefreshSupervisor();await refreshUI();}},{once:true});
-  window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,proactiveRefresh,recoverAfterNetworkReturn,status,clearSession,refreshUI});
+  window.addEventListener('load',async()=>{if(enabled()){await hydrateSessionFromIndexedDb();buildCodeClient();startRefreshSupervisor();if(isDesktopRuntimeV0542())await recoverDesktopPersistentSessionV0542();else await refreshUI();}},{once:true});
+  window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,proactiveRefresh,recoverAfterNetworkReturn,recoverDesktopPersistentSessionV0542,status,clearSession,refreshUI});
   window.enableThalysServerSession=authorize;
 })();
