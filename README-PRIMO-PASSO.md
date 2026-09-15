@@ -208,3 +208,11 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Check-in Home ridisegnato con grafico circolare a quattro settori per Sonno, Recupero, Umore e Stress.
 - Allenamento: primo tracker giornaliero Passi sincronizzato via app_state, con valore manuale, +/-500 e target configurabile.
 - La lettura automatica dai sensori non viene attivata in questa versione per preservare compatibilità e stabilità PWA/iOS/desktop.
+
+
+## v0.54.1 - Desktop Google/session sync fix
+- Desktop: persistent server session is restored even when the Drive access token is still valid.
+- Options no longer stays on 'Verifica connessione' for a transient status check when a valid persisted session/token exists.
+- Desktop Google login enters the app immediately after Google authorization while the server exchange completes; mobile flow unchanged.
+- Steps now merge by per-day timestamp and are included in the existing lightweight app_state live refresh, so phone/desktop changes propagate.
+- Step target also carries an update timestamp.

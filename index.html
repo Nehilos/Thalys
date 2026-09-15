@@ -24,7 +24,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
   
 
-  <link rel="stylesheet" href="./css/thalys.css?v=0540">
+  <link rel="stylesheet" href="./css/thalys.css?v=0541">
 
   <meta name="theme-color" content="#090d16">
   <script>
@@ -32,7 +32,7 @@
     // flashing the Google access screen before auth.js restores the local session.
     (function(){
       try{
-        var current='0.54.0';
+        var current='0.54.1';
         var hasSession=localStorage.getItem('thalys_app_session_v1')==='1';
         var sessionVersion=localStorage.getItem('thalys_auth_software_version_v1')||'';
         if(hasSession && sessionVersion===current) document.documentElement.classList.add('thalys-session-preboot');
@@ -113,7 +113,7 @@
       </div>
       <div class="min-w-0">
         <h1 class="thalys-header-title text-[17px] sm:text-xl font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Thalys</h1>
-        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.54.0</div>
+        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.54.1</div>
         <span class="hidden sm:block text-[10px] text-slate-400 tracking-wider font-semibold uppercase mt-0.5">Wellness</span>
       </div>
       <div class="hidden sm:block text-[9px] italic text-slate-300/80 leading-tight max-w-[190px] ml-1">
@@ -180,17 +180,17 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0540"></script>
-  <script src="./js/capabilities.js?v=0540"></script>
-  <script src="./js/device-media.js?v=0540"></script>
-  <script src="./js/backend-bridge.js?v=0540"></script>
-  <script src="./js/server-auth.js?v=0540"></script>
-  <script src="./js/notifications.js?v=0540"></script>
-  <script src="./js/storage-manager.js?v=0540"></script>
-  <script src="./js/sync-queue.js?v=0540"></script>
-  <script src="./js/conflict-resolver.js?v=0540"></script>
-  <script src="./js/local-db.js?v=0540"></script>
-  <script src="./js/ui-foundation.js?v=0540"></script>
+  <script src="./js/config.js?v=0541"></script>
+  <script src="./js/capabilities.js?v=0541"></script>
+  <script src="./js/device-media.js?v=0541"></script>
+  <script src="./js/backend-bridge.js?v=0541"></script>
+  <script src="./js/server-auth.js?v=0541"></script>
+  <script src="./js/notifications.js?v=0541"></script>
+  <script src="./js/storage-manager.js?v=0541"></script>
+  <script src="./js/sync-queue.js?v=0541"></script>
+  <script src="./js/conflict-resolver.js?v=0541"></script>
+  <script src="./js/local-db.js?v=0541"></script>
+  <script src="./js/ui-foundation.js?v=0541"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -336,9 +336,9 @@
       </div>
 
       <div class="rounded-3xl border border-emerald-500/15 bg-gradient-to-br from-slate-900 to-emerald-950/20 p-4">
-        <div class="flex items-start justify-between gap-3"><div><div class="text-[9px] uppercase tracking-[.18em] text-emerald-300">Passi</div><div class="mt-1 flex items-baseline gap-2"><span id="workout-steps-value-v0540" class="text-2xl font-black text-white">0</span><span class="text-[10px] text-slate-500">passi</span></div></div><button onclick="openStepsTargetV0540()" class="rounded-xl bg-slate-800 px-2.5 py-2 text-[9px] font-bold text-slate-300">Target <span id="workout-steps-target-v0540">8000</span></button></div>
-        <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div id="workout-steps-bar-v0540" class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400" style="width:0%"></div></div>
-        <div class="mt-3 grid grid-cols-3 gap-2"><button onclick="changeDailyStepsV0540(-500)" class="rounded-xl border border-slate-700 bg-slate-900 py-2 text-[10px] font-bold text-slate-300">−500</button><button onclick="editDailyStepsV0540()" class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 py-2 text-[10px] font-bold text-emerald-300">Imposta</button><button onclick="changeDailyStepsV0540(500)" class="rounded-xl border border-cyan-500/20 bg-cyan-500/10 py-2 text-[10px] font-bold text-cyan-300">+500</button></div>
+        <div class="flex items-start justify-between gap-3"><div><div class="text-[9px] uppercase tracking-[.18em] text-emerald-300">Passi</div><div class="mt-1 flex items-baseline gap-2"><span id="workout-steps-value-v0541" class="text-2xl font-black text-white">0</span><span class="text-[10px] text-slate-500">passi</span></div></div><button onclick="openStepsTargetV0541()" class="rounded-xl bg-slate-800 px-2.5 py-2 text-[9px] font-bold text-slate-300">Target <span id="workout-steps-target-v0541">8000</span></button></div>
+        <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div id="workout-steps-bar-v0541" class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400" style="width:0%"></div></div>
+        <div class="mt-3 grid grid-cols-3 gap-2"><button onclick="changeDailyStepsV0541(-500)" class="rounded-xl border border-slate-700 bg-slate-900 py-2 text-[10px] font-bold text-slate-300">−500</button><button onclick="editDailyStepsV0541()" class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 py-2 text-[10px] font-bold text-emerald-300">Imposta</button><button onclick="changeDailyStepsV0541(500)" class="rounded-xl border border-cyan-500/20 bg-cyan-500/10 py-2 text-[10px] font-bold text-cyan-300">+500</button></div>
         <div class="mt-2 text-[9px] leading-relaxed text-slate-500">Valore giornaliero sincronizzato. La lettura automatica dai sensori verrà collegata in un passaggio dedicato.</div>
       </div>
 
@@ -1352,7 +1352,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.54.0
+        Thalys · Software v0.54.1
       </div>
 
     </section>
@@ -2483,19 +2483,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0540"></script>
+  <script src="./js/language.js?v=0541"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0540"></script>
-  <script src="./js/body.js?v=0540"></script>
-  <script src="./js/meditation.js?v=0540"></script>
-  <script src="./js/nutrition.js?v=0540"></script>
-  <script src="./js/workout.js?v=0540"></script>
-  <script src="./js/home.js?v=0540"></script>
-  <script src="./js/analytics.js?v=0540"></script>
+  <script src="./js/app-core.js?v=0541"></script>
+  <script src="./js/body.js?v=0541"></script>
+  <script src="./js/meditation.js?v=0541"></script>
+  <script src="./js/nutrition.js?v=0541"></script>
+  <script src="./js/workout.js?v=0541"></script>
+  <script src="./js/home.js?v=0541"></script>
+  <script src="./js/analytics.js?v=0541"></script>
 
-  <script src="./js/drive.js?v=0540"></script>
-  <script src="./js/auth.js?v=0540"></script>
+  <script src="./js/drive.js?v=0541"></script>
+  <script src="./js/auth.js?v=0541"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2522,8 +2522,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0540"></script>
-<script src="./js/runtime-health.js?v=0540"></script>
+<script src="./js/app-enhancements.js?v=0541"></script>
+<script src="./js/runtime-health.js?v=0541"></script>
 
 </body>
 </html>

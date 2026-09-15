@@ -98,6 +98,12 @@
           return;
         }
         try{
+          // Desktop Chrome used to remain on the access page while waiting for the
+          // backend code exchange. Google has already completed user authorization at
+          // this point, so desktop can enter the app immediately while the durable
+          // server session is finalized. Mobile/PWA behavior is intentionally unchanged.
+          const desktopFastPath=(()=>{try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}})();
+          if(desktopFastPath){try{window.thalysUnifiedGoogleAuthorized?.();}catch(_){}}
           const s=ensureSession();
           const data=await window.ThalysBackend.exchangeGoogleCode({
             code:response.code,
@@ -123,6 +129,7 @@
         }catch(err){
           console.error('Server auth code exchange',err);
           markActive(false);
+          try{if(window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768&&typeof window.showReconnectGateForVersion==='function')window.showReconnectGateForVersion();}catch(_){ }
           window.showToast?.('Impossibile completare la sessione Google persistente');
           await refreshUI();
           if(authorizeResolve){authorizeResolve(false);authorizeResolve=null;authorizePromise=null;}
@@ -182,6 +189,7 @@
     const st=await status();
     if(st?.active&&st?.transient)el.textContent='Attiva · verifica in corso';
     else if(st?.active)el.textContent='Attiva';
+    else if(st?.transient&&canRefresh()&&(cachedActive()||cachedTokenExpiresAt()>Date.now()+5000))el.textContent='Attiva · verifica in corso';
     else if(st?.transient)el.textContent='Verifica connessione…';
     else el.textContent=st?.enabled?'Da attivare':'Non disponibile';
   }
@@ -194,8 +202,10 @@
     await hydrateSessionFromIndexedDb();
     if(!canRefresh())return false;
     const expiresAt=cachedTokenExpiresAt();
-    // Refresh only when the access token is missing or has less than 10 minutes left.
-    if(expiresAt>Date.now()+10*60*1000)return true;
+    // A valid Drive token is not proof that the persistent server session was restored.
+    // On desktop localStorage/IDB can hydrate at different times: if the active marker is
+    // missing, force one server refresh instead of leaving Options on 'Verifica connessione'.
+    if(expiresAt>Date.now()+10*60*1000&&cachedActive())return true;
     refreshBusy=true;
     try{const ok=await refresh(true);await refreshUI();return ok;}finally{refreshBusy=false;}
   }
