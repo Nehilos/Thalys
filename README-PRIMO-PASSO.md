@@ -210,8 +210,16 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - La lettura automatica dai sensori non viene attivata in questa versione per preservare compatibilità e stabilità PWA/iOS/desktop.
 
 
-## v0.54.2 - Desktop isolation fix
+## v0.54.3 - Desktop isolation fix
 - Ripartenza dalla v0.54.0 stabile: il codice Passi mobile resta invariato.
 - Desktop: recupero dedicato della sessione server Google su avvio, ritorno online e ritorno in primo piano.
 - Desktop: se la verifica backend e temporaneamente indisponibile ma la sessione persistente locale e valida, Opzioni mostra lo stato di verifica attiva invece di bloccare il flusso.
 - Desktop: i Passi vengono letti da app_state Drive nel refresh leggero, senza cambiare le funzioni di modifica/salvataggio del telefono.
+
+## v0.54.3 - Desktop Google session fix isolato
+- Fix limitato al ramo desktop della sessione server Google.
+- Una risposta valida di code exchange o refresh rende la sessione server autorevolmente Attiva.
+- Il primo sync Drive desktop non puo piu invalidare una sessione server gia creata correttamente.
+- Sul desktop il controllo /auth/google/status non blocca piu la UI su "Verifica connessione..."; il refresh reale e la fonte di verita.
+- Il flusso mobile/telefono resta invariato rispetto alla v0.54.2.
+- Nessuna modifica al tracker Passi o alla relativa sincronizzazione.
