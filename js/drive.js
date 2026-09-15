@@ -193,7 +193,7 @@ async function findDriveFolder(name,parentId=null){
     }
     function scheduleDriveSync(delay=350){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');if(!getAccessToken()||!navigator.onLine||window.thalysNetworkRecoveryPending){updateManualSyncUI();return;}if(driveSyncTimer)clearTimeout(driveSyncTimer);driveSyncTimer=setTimeout(()=>{if(!navigator.onLine||window.thalysNetworkRecoveryPending){updateManualSyncUI();return;}if(driveSyncRunning){driveSyncQueued=true;return;}saveAllDatabasesToDrive(false);},delay);}
 
-    function isDesktopRuntimeV0543(){try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}}
+    function isDesktopRuntimeV0542(){try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}}
     function isMeaningfulProfile(p){if(!p)return false;return Number(p.age)!==25||Number(p.height)!==175||Number(p.sleepHours)!==7||String(p.lifestyle||'moderato')!=='moderato'||String(p.gender||'male')!=='male';}
     function mergeByKey(localArr,cloudArr,keyFn){
       const map=new Map();(cloudArr||[]).forEach(x=>{if(x)map.set(keyFn(x),x)});(localArr||[]).forEach(x=>{if(!x)return;const k=keyFn(x);const old=map.get(k);if(!old){map.set(k,x);return;}const lt=Date.parse(x.updatedAt||x.completedAt||0)||0,ct=Date.parse(old.updatedAt||old.completedAt||0)||0;if(lt>=ct)map.set(k,{...old,...x});});return [...map.values()];
@@ -206,11 +206,11 @@ async function findDriveFolder(name,parentId=null){
       if(lp&&cp){const lt=Date.parse(lp.updatedAt||0)||0,ct=Date.parse(cp.updatedAt||0)||0;result.profilePhoto=lt>=ct?lp:cp;}
       else result.profilePhoto=lp||cp||null;
       result.targets={...DEFAULT_STATE.targets,...c.targets,...local.targets};result.settings={...DEFAULT_STATE.settings,...c.settings,...local.settings};
-      // v0.54.3 desktop-only: phone keeps the exact v0.54.0 step code. On desktop,
+      // v0.54.2 desktop-only: phone keeps the exact v0.54.0 step code. On desktop,
       // Drive is canonical for steps whenever this browser has no pending local writes.
       // This mirrors the clean-device rule already used by Pianificato without changing
       // how mobile saves or renders steps.
-      if(isDesktopRuntimeV0543()&&!driveDirty){
+      if(isDesktopRuntimeV0542()&&!driveDirty){
         if(c.steps&&typeof c.steps==='object')result.steps={...(c.steps||{})};
         if(Number(c.settings?.stepTarget)>0)result.settings.stepTarget=Number(c.settings.stepTarget);
       }
@@ -491,7 +491,7 @@ async function findDriveFolder(name,parentId=null){
         mealPlanLiveRefreshRunning=true;
         const f=await findDriveFile('app_state.json',driveFolders.databaseFolderId);if(!f)return false;
         const marker=String(f.version||f.modifiedTime||'');
-        const desktopSteps=isDesktopRuntimeV0543();
+        const desktopSteps=isDesktopRuntimeV0542();
         if(lastSeenMealPlanDriveVersion===null&&!desktopSteps){lastSeenMealPlanDriveVersion=marker;return false;}
         if(marker===lastSeenMealPlanDriveVersion&&lastSeenMealPlanDriveVersion!==null)return false;
         const remote=await readDriveJSON('app_state.json',driveFolders.databaseFolderId);

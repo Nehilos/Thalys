@@ -12,7 +12,26 @@ function json(data,status=200,origin='*'){
   }});
 }
 function allowedOrigins(env){return String(env.ALLOWED_ORIGIN||'').split(',').map(v=>v.trim()).filter(Boolean);}
-function corsOrigin(request,env){const origin=request.headers.get('origin')||'';const allowed=allowedOrigins(env);return allowed.includes('*')?'*':allowed.includes(origin)?origin:'';}
+function originMatchesPattern(origin,pattern){
+  if(!origin||!pattern)return false;
+  if(pattern==='*')return true;
+  if(pattern===origin)return true;
+  if(!pattern.includes('*'))return false;
+  try{
+    const u=new URL(origin);
+    const p=new URL(pattern.replace('*','wildcard'));
+    if(u.protocol!==p.protocol)return false;
+    const hostPattern=p.hostname.replace('wildcard','*');
+    if(!hostPattern.startsWith('*.'))return false;
+    const suffix=hostPattern.slice(1);
+    return u.hostname.endsWith(suffix)&&u.hostname.length>suffix.length;
+  }catch(_){return false;}
+}
+function corsOrigin(request,env){
+  const origin=request.headers.get('origin')||'';
+  const allowed=allowedOrigins(env);
+  return allowed.some(pattern=>originMatchesPattern(origin,pattern))?origin:'';
+}
 function originAllowed(request,env){return !!corsOrigin(request,env);}
 async function bodyJson(request){try{return await request.json();}catch(_){return {};}}
 function enc(bytes){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
@@ -22,7 +41,7 @@ async function sha256(value){return enc(new Uint8Array(await crypto.subtle.diges
 async function encryptionKey(env){const raw=dec(env.AUTH_ENCRYPTION_KEY||'');if(raw.length!==32)throw new Error('AUTH_ENCRYPTION_KEY_INVALID');return crypto.subtle.importKey('raw',raw,'AES-GCM',false,['encrypt','decrypt']);}
 async function encryptSecret(value,env){const iv=crypto.getRandomValues(new Uint8Array(12));const key=await encryptionKey(env);const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,textBytes(value));return {cipher:enc(new Uint8Array(cipher)),iv:enc(iv)};}
 async function decryptSecret(cipher,iv,env){const key=await encryptionKey(env);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:dec(iv)},key,dec(cipher));return new TextDecoder().decode(plain);}
-function secureConfigured(env){return !!(env.DB&&env.GOOGLE_CLIENT_ID&&env.GOOGLE_CLIENT_SECRET&&env.AUTH_ENCRYPTION_KEY&&allowedOrigins(env).length&& !allowedOrigins(env).includes('*'));}
+function secureConfigured(env){return !!(env.DB&&env.GOOGLE_CLIENT_ID&&env.GOOGLE_CLIENT_SECRET&&env.AUTH_ENCRYPTION_KEY&&allowedOrigins(env).length&&!allowedOrigins(env).includes('*'));}
 async function googleTokenRequest(params){
   const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams(params)});
   const data=await response.json().catch(()=>({}));
