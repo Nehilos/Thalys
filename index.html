@@ -24,7 +24,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
   
 
-  <link rel="stylesheet" href="./css/thalys.css?v=0546">
+  <link rel="stylesheet" href="./css/thalys.css?v=0550">
 
   <meta name="theme-color" content="#090d16">
   <script>
@@ -32,7 +32,7 @@
     // flashing the Google access screen before auth.js restores the local session.
     (function(){
       try{
-        var current='0.54.6';
+        var current='0.55.0';
         var hasSession=localStorage.getItem('thalys_app_session_v1')==='1';
         var sessionVersion=localStorage.getItem('thalys_auth_software_version_v1')||'';
         if(hasSession && sessionVersion===current) document.documentElement.classList.add('thalys-session-preboot');
@@ -113,7 +113,7 @@
       </div>
       <div class="min-w-0">
         <h1 class="thalys-header-title text-[17px] sm:text-xl font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Thalys</h1>
-        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.54.6</div>
+        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.55.0</div>
         <span class="hidden sm:block text-[10px] text-slate-400 tracking-wider font-semibold uppercase mt-0.5">Wellness</span>
       </div>
       <div class="hidden sm:block text-[9px] italic text-slate-300/80 leading-tight max-w-[190px] ml-1">
@@ -180,17 +180,17 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0546"></script>
-  <script src="./js/capabilities.js?v=0546"></script>
-  <script src="./js/device-media.js?v=0546"></script>
-  <script src="./js/backend-bridge.js?v=0546"></script>
-  <script src="./js/server-auth.js?v=0546"></script>
-  <script src="./js/notifications.js?v=0546"></script>
-  <script src="./js/storage-manager.js?v=0546"></script>
-  <script src="./js/sync-queue.js?v=0546"></script>
-  <script src="./js/conflict-resolver.js?v=0546"></script>
-  <script src="./js/local-db.js?v=0546"></script>
-  <script src="./js/ui-foundation.js?v=0546"></script>
+  <script src="./js/config.js?v=0550"></script>
+  <script src="./js/capabilities.js?v=0550"></script>
+  <script src="./js/device-media.js?v=0550"></script>
+  <script src="./js/backend-bridge.js?v=0550"></script>
+  <script src="./js/server-auth.js?v=0550"></script>
+  <script src="./js/notifications.js?v=0550"></script>
+  <script src="./js/storage-manager.js?v=0550"></script>
+  <script src="./js/sync-queue.js?v=0550"></script>
+  <script src="./js/conflict-resolver.js?v=0550"></script>
+  <script src="./js/local-db.js?v=0550"></script>
+  <script src="./js/ui-foundation.js?v=0550"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -1016,7 +1016,7 @@
             <i class="fa-solid fa-user-doctor text-violet-300"></i>
             <h2 class="text-2xl font-black text-white">Consulto</h2>
           </div>
-          <p class="mt-2 text-[11px] leading-relaxed text-slate-400">Crea un quadro congelato dei tuoi dati, scegli cosa vuoi migliorare e chiedi all’IA di analizzarlo. Nulla viene modificato automaticamente.</p>
+          <p class="mt-2 text-[11px] leading-relaxed text-slate-400">Per l’allenamento compila direttamente le tue preferenze: Thalys crea il quadro automaticamente e lo usa per l’analisi IA. Gli strumenti precedenti restano disponibili per gli altri consulti.</p>
           <div class="consult-privacy-note-v17 mt-3 rounded-2xl border border-cyan-500/15 bg-slate-950/45 p-3 text-[9px] leading-relaxed text-slate-400">
             <i class="fa-solid fa-shield-halved mr-1 text-cyan-300"></i>
             I dati vengono inviati all’IA solo quando premi il pulsante di consulto. L’API key resta sul server Vercel e non è presente nell’HTML.
@@ -1024,11 +1024,51 @@
         </div>
       </div>
 
+      <!-- v0.55 Unified workout AI -->
+      <div class="rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/25 p-4 shadow-lg">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-[9px] uppercase tracking-[.18em] text-emerald-300">NUOVO · ALLENAMENTO AI</div>
+            <h3 class="mt-1 text-base font-black text-white">Crea il tuo percorso allenamento</h3>
+            <p class="mt-1 text-[10px] leading-relaxed text-slate-400">Compila le preferenze una sola volta: Thalys crea automaticamente uno snapshot degli ultimi 30 giorni, lo salva come quadro allenamento e lo usa per il consulto IA.</p>
+          </div>
+          <i class="fa-solid fa-dumbbell text-emerald-300"></i>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <label class="text-[9px] text-slate-400">Livello
+            <select id="workout-ai-level" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs text-white"><option value="base">Base · principiante</option><option value="prestazioni">Prestazioni · regolare</option><option value="intensivo">Intensivo · esperto</option></select>
+          </label>
+          <label class="text-[9px] text-slate-400">Luogo
+            <select id="workout-ai-place" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs text-white"><option value="gym">Palestra</option><option value="home">Casa</option></select>
+          </label>
+          <label class="text-[9px] text-slate-400">Giorni / settimana
+            <input id="workout-ai-days" type="number" min="1" max="7" value="3" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white">
+          </label>
+          <label class="text-[9px] text-slate-400">Minuti / sessione
+            <input id="workout-ai-minutes" type="number" min="10" max="240" step="5" value="60" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white">
+          </label>
+        </div>
+        <label class="mt-3 block text-[9px] text-slate-400">Obiettivo
+          <select id="workout-ai-goal" onchange="updateUnifiedWorkoutGoalUI()" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white"><option value="lose">Perdere peso</option><option value="maintain" selected>Mantenere</option><option value="muscle">Aumentare massa muscolare</option><option value="strength">Aumentare forza</option><option value="custom">Personalizzato</option></select>
+        </label>
+        <label id="workout-ai-goal-custom-wrap" class="mt-2 hidden block text-[9px] text-slate-400">Obiettivo personalizzato
+          <input id="workout-ai-goal-custom" type="text" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white" placeholder="Es. migliorare esplosività e mobilità">
+        </label>
+        <label class="mt-3 block text-[9px] text-slate-400">Richiesta personale · facoltativa
+          <textarea id="workout-ai-prompt" rows="3" class="mt-1 w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white" placeholder="Es. ho poco tempo il martedì e preferisco evitare sessioni troppo lunghe"></textarea>
+          <button type="button" data-thalys-mic-target="workout-ai-prompt" onclick="startThalysDictation('workout-ai-prompt')" class="mt-2 min-h-9 rounded-xl bg-slate-800 px-3 text-[10px] font-bold text-cyan-300"><i class="fa-solid fa-microphone mr-1"></i>Detta</button>
+        </label>
+        <button onclick="runUnifiedWorkoutConsult()" id="workout-ai-run" class="mt-3 w-full min-h-12 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-xs font-black text-slate-950 shadow-lg"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Analizza e crea quadro allenamento</button>
+        <div id="workout-ai-loading" class="mt-3 hidden rounded-xl bg-slate-950/60 p-3 text-center text-[10px] text-emerald-300"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Creo il quadro e analizzo i dati…</div>
+        <div id="workout-ai-result" class="mt-3 hidden rounded-2xl border border-emerald-500/20 bg-slate-950/65 p-3"></div>
+        <div class="mt-4 border-t border-slate-800 pt-3"><div class="flex items-center justify-between"><div><div class="text-[9px] uppercase tracking-[.15em] text-slate-500">Memoria</div><div class="text-xs font-black text-white">Quadri allenamento</div></div><i class="fa-solid fa-clock-rotate-left text-slate-500"></i></div><div id="workout-frame-list" class="mt-2 max-h-56 space-y-2 overflow-y-auto pr-1"></div></div>
+      </div>
+
       <!-- Create snapshot -->
       <div class="rounded-3xl border border-slate-800 bg-darkcard p-4 shadow-lg">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <div class="text-[9px] uppercase tracking-[.18em] text-cyan-300">01 · Snapshot</div>
+            <div class="text-[9px] uppercase tracking-[.18em] text-cyan-300">Strumenti avanzati · Snapshot</div>
             <h3 class="mt-1 text-sm font-black text-white">Crea quadro generale</h3>
             <p class="mt-1 text-[10px] leading-relaxed text-slate-400">Lo snapshot fotografa i dati del periodo selezionato e resta invariato anche se in seguito modifichi dieta, misure o allenamenti.</p>
           </div>
@@ -1041,7 +1081,6 @@
           <div id="consult-snapshot-type-buttons" class="mt-1 grid grid-cols-2 gap-2">
             <button type="button" data-consult-snapshot="physical" onclick="setConsultSnapshotType('physical')" class="consult-choice active"><i class="fa-solid fa-person"></i><span>Fisico</span></button>
             <button type="button" data-consult-snapshot="nutrition" onclick="setConsultSnapshotType('nutrition')" class="consult-choice"><i class="fa-solid fa-utensils"></i><span>Alimentazione</span></button>
-            <button type="button" data-consult-snapshot="workout" onclick="setConsultSnapshotType('workout')" class="consult-choice"><i class="fa-solid fa-dumbbell"></i><span>Allenamenti</span></button>
             <button type="button" data-consult-snapshot="full" onclick="setConsultSnapshotType('full')" class="consult-choice"><i class="fa-solid fa-layer-group"></i><span>Completo</span></button>
           </div>
         </div>
@@ -1109,7 +1148,7 @@
       <div class="rounded-3xl border border-violet-500/20 bg-gradient-to-br from-slate-900 to-violet-950/25 p-4 shadow-lg">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <div class="text-[9px] uppercase tracking-[.18em] text-violet-300">03 · Analisi IA</div>
+            <div class="text-[9px] uppercase tracking-[.18em] text-violet-300">Analisi IA · Alimentazione / Completo</div>
             <h3 class="mt-1 text-sm font-black text-white">Chiedi un consulto</h3>
             <p class="mt-1 text-[10px] leading-relaxed text-slate-400">Scegli una richiesta preimpostata. Puoi aggiungere una domanda personale senza cambiare i dati dello snapshot.</p>
           </div>
@@ -1121,7 +1160,6 @@
           <input id="consult-ai-type" type="hidden" value="nutrition">
           <div id="consult-ai-type-buttons" class="mt-1 grid grid-cols-2 gap-2">
             <button type="button" data-consult-ai="nutrition" onclick="setConsultAIType('nutrition')" class="consult-choice active"><i class="fa-solid fa-utensils"></i><span>Alimentazione</span></button>
-            <button type="button" data-consult-ai="workout" onclick="setConsultAIType('workout')" class="consult-choice"><i class="fa-solid fa-dumbbell"></i><span>Allenamenti</span></button>
             <button type="button" data-consult-ai="full" onclick="setConsultAIType('full')" class="consult-choice"><i class="fa-solid fa-layer-group"></i><span>Quadro completo</span></button>
             <button type="button" data-consult-ai="food" onclick="setConsultAIType('food')" class="consult-choice"><i class="fa-solid fa-apple-whole"></i><span>Dati alimento</span></button>
           </div>
@@ -1352,7 +1390,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.54.6
+        Thalys · Software v0.55.0
       </div>
 
     </section>
@@ -2483,19 +2521,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0546"></script>
+  <script src="./js/language.js?v=0550"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0546"></script>
-  <script src="./js/body.js?v=0546"></script>
-  <script src="./js/meditation.js?v=0546"></script>
-  <script src="./js/nutrition.js?v=0546"></script>
-  <script src="./js/workout.js?v=0546"></script>
-  <script src="./js/home.js?v=0546"></script>
-  <script src="./js/analytics.js?v=0546"></script>
+  <script src="./js/app-core.js?v=0550"></script>
+  <script src="./js/body.js?v=0550"></script>
+  <script src="./js/meditation.js?v=0550"></script>
+  <script src="./js/nutrition.js?v=0550"></script>
+  <script src="./js/workout.js?v=0550"></script>
+  <script src="./js/home.js?v=0550"></script>
+  <script src="./js/analytics.js?v=0550"></script>
 
-  <script src="./js/drive.js?v=0546"></script>
-  <script src="./js/auth.js?v=0546"></script>
+  <script src="./js/drive.js?v=0550"></script>
+  <script src="./js/auth.js?v=0550"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2522,8 +2560,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0546"></script>
-<script src="./js/runtime-health.js?v=0546"></script>
+<script src="./js/app-enhancements.js?v=0550"></script>
+<script src="./js/runtime-health.js?v=0550"></script>
 
 </body>
 </html>

@@ -24,6 +24,7 @@
       deletedMessageIds: [],
       consultations: [],
       aiConsults: [],
+      workoutFrames: [], // unified workout AI requests with frozen snapshot + preferences
       targets: { calories: 2200, p: 150, c: 250, f: 70, satFat: 20, sugars: 50, calcium: 1000, magnesium: 350, zinc: 11, fiber: 30, salt: 5, iron: 11, potassium: 3500 },
       workouts: [], // completed per-exercise workout logs
       workoutHistory: [], // completed training days
@@ -132,7 +133,8 @@
         // Full consultation/AI histories are mirrored in IndexedDB and Drive. Keeping
         // only compact metadata here prevents WebKit QuotaExceededError (code 22).
         consultations: (source.consultations || []).slice(0, 40).map(x => ({id:x.id,type:x.type,date:x.date,createdAt:x.createdAt,updatedAt:x.updatedAt,goal:x.goal||''})),
-        aiConsults: (source.aiConsults || []).slice(0, 30).map(x => ({id:x.id,date:x.date,createdAt:x.createdAt,updatedAt:x.updatedAt,type:x.type,status:x.status,title:x.title||''}))
+        aiConsults: (source.aiConsults || []).slice(0, 30).map(x => ({id:x.id,date:x.date,createdAt:x.createdAt,updatedAt:x.updatedAt,type:x.type,status:x.status,title:x.title||''})),
+        workoutFrames: (source.workoutFrames || []).slice(0, 30).map(x => ({id:x.id,date:x.date,createdAt:x.createdAt,period:x.period,preferences:x.preferences||{}}))
       };
     }
 
@@ -509,6 +511,81 @@
       if(type==='full')snapshot.mind={sessions:meditation,totalMinutes:meditation.reduce((s,x)=>s+Number(x.minutes||0),0)};
       return snapshot;
     }
+    function unifiedWorkoutDateRange(){
+      const to=currentLocalDateStr();
+      const d=new Date(to+'T12:00:00');d.setDate(d.getDate()-29);
+      return {from:d.toISOString().slice(0,10),to};
+    }
+    function unifiedWorkoutGoalLabel(value,custom){
+      const labels={lose:'Perdere peso',maintain:'Mantenere',muscle:'Aumentare massa muscolare',strength:'Aumentare forza',custom:'Personalizzato'};
+      return value==='custom'?(String(custom||'').trim()||'Obiettivo personalizzato'):(labels[value]||value);
+    }
+    function getUnifiedWorkoutPreferences(){
+      const level=document.getElementById('workout-ai-level')?.value||'base';
+      const place=document.getElementById('workout-ai-place')?.value||'gym';
+      const days=Math.min(7,Math.max(1,Math.round(Number(document.getElementById('workout-ai-days')?.value)||3)));
+      const minutes=Math.min(240,Math.max(10,Math.round(Number(document.getElementById('workout-ai-minutes')?.value)||60)));
+      const goalCode=document.getElementById('workout-ai-goal')?.value||'maintain';
+      const customGoal=document.getElementById('workout-ai-goal-custom')?.value||'';
+      return {level,place,daysPerWeek:days,minutesPerSession:minutes,goalCode,goal:unifiedWorkoutGoalLabel(goalCode,customGoal),specificRequest:document.getElementById('workout-ai-prompt')?.value.trim()||''};
+    }
+    function updateUnifiedWorkoutGoalUI(){
+      const custom=document.getElementById('workout-ai-goal')?.value==='custom';
+      document.getElementById('workout-ai-goal-custom-wrap')?.classList.toggle('hidden',!custom);
+    }
+    function renderWorkoutFrames(){
+      const box=document.getElementById('workout-frame-list');if(!box)return;
+      const rows=(appState.workoutFrames||[]).slice().sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+      box.innerHTML=rows.length?rows.map(x=>{
+        const p=x.preferences||{};
+        const meta=[p.level,p.place,p.daysPerWeek?`${p.daysPerWeek} gg/set`:null,p.minutesPerSession?`${p.minutesPerSession} min`:null].filter(Boolean).join(' · ');
+        return `<div class="rounded-2xl border border-slate-800 bg-slate-900/55 p-3"><div class="flex items-start gap-2"><button onclick="openWorkoutFrame('${x.id}')" class="min-w-0 flex-1 text-left"><div class="flex items-center justify-between gap-2"><span class="text-xs font-black text-white">${escapeHTML(p.goal||'Allenamento')}</span><span class="text-[9px] text-cyan-300">${formatConsultDate(x.date)}</span></div><div class="mt-1 text-[9px] text-slate-400">${escapeHTML(meta)}</div></button><button onclick="deleteWorkoutFrame('${x.id}')" class="h-8 w-8 rounded-lg bg-slate-950 text-rose-300"><i class="fa-solid fa-trash text-[10px]"></i></button></div></div>`;
+      }).join(''):`<div class="rounded-xl bg-slate-900/50 p-4 text-center text-[10px] text-slate-500">${tr('Nessun quadro allenamento salvato.')}</div>`;
+    }
+    function openWorkoutFrame(id){
+      const x=(appState.workoutFrames||[]).find(r=>r.id===id);if(!x)return;
+      const title=document.getElementById('consult-detail-title'),meta=document.getElementById('consult-detail-meta'),body=document.getElementById('consult-detail-body');
+      if(title)title.textContent=`${tr('Quadro allenamento')} · ${x.preferences?.goal||''}`;
+      if(meta)meta.textContent=`${formatConsultDate(x.date)} · ${x.period?.from||'—'} → ${x.period?.to||'—'}`;
+      if(body)body.innerHTML=`<div class="rounded-xl border border-cyan-500/15 bg-cyan-500/5 p-3"><div class="text-[9px] font-black uppercase tracking-[.13em] text-cyan-300">${tr('Impostazioni')}</div><pre class="mt-2 whitespace-pre-wrap break-words text-[10px] leading-relaxed text-slate-300">${escapeHTML(JSON.stringify(x.preferences||{},null,2))}</pre></div><div class="mt-3 rounded-xl border border-slate-800 bg-slate-900/65 p-3"><div class="text-[9px] font-black uppercase tracking-[.13em] text-slate-300">${tr('Snapshot automatico')}</div><pre class="mt-2 max-h-[22rem] overflow-auto whitespace-pre-wrap break-words text-[9px] leading-relaxed text-slate-400">${escapeHTML(JSON.stringify(x.snapshot||{},null,2))}</pre></div>`;
+      const pdf=document.getElementById('consult-export-pdf-btn'),txt=document.getElementById('consult-export-txt-btn');if(pdf)pdf.onclick=null;if(txt)txt.onclick=null;
+      openModal('consult-snapshot-modal');
+    }
+    function deleteWorkoutFrame(id){if(!confirm('Eliminare questo quadro allenamento?'))return;appState.workoutFrames=(appState.workoutFrames||[]).filter(x=>x.id!==id);saveStateToLocal({source:'delete-workout-frame'});renderWorkoutFrames();}
+    function renderUnifiedWorkoutResult(record,response){
+      const box=document.getElementById('workout-ai-result');if(!box)return;
+      box.classList.remove('hidden');
+      box.innerHTML=`<div class="flex items-center justify-between gap-2"><div class="text-xs font-black text-white">${tr('Analisi allenamento')}</div><span class="text-[8px] text-slate-500">${escapeHTML(response?.model||'')}</span></div><div class="mt-3 space-y-2">${aiResultHTML(response)}</div><button onclick="generateUnifiedWorkoutPlan('${record.id}')" class="mt-3 w-full min-h-11 rounded-xl bg-emerald-500 text-[10px] font-black text-slate-950"><i class="fa-solid fa-dumbbell mr-1"></i>${tr('Crea scheda allenamento')}</button>`;
+    }
+    async function runUnifiedWorkoutConsult(){
+      if(!ensureAIConsent())return;
+      const prefs=getUnifiedWorkoutPreferences();
+      if(prefs.goalCode==='custom'&&!document.getElementById('workout-ai-goal-custom')?.value.trim()){showToast(tr('Scrivi l’obiettivo personalizzato'),'fa-circle-exclamation');return;}
+      const period=unifiedWorkoutDateRange();
+      const snapshot=buildConsultSnapshot('full',period.from,period.to);
+      const frame={id:'workout_frame_'+Date.now(),date:currentLocalDateStr(),createdAt:new Date().toISOString(),period,preferences:prefs,snapshot};
+      const loading=document.getElementById('workout-ai-loading'),result=document.getElementById('workout-ai-result'),btn=document.getElementById('workout-ai-run');
+      loading?.classList.remove('hidden');result?.classList.add('hidden');if(btn)btn.disabled=true;
+      try{
+        const response=await callThalysAI({action:'workout_consult',locale:currentLocale(),goal:prefs.goal,snapshot,workoutPreferences:prefs,specificRequest:prefs.specificRequest});
+        appState.workoutFrames=Array.isArray(appState.workoutFrames)?appState.workoutFrames:[];appState.workoutFrames.unshift(frame);
+        const record={id:'ai_'+Date.now(),date:currentLocalDateStr(),createdAt:new Date().toISOString(),type:'workout',workoutFrameId:frame.id,goal:prefs.goal,specificRequest:prefs.specificRequest,workoutPreferences:prefs,response:response.data||response.text,model:response.model||null};
+        appState.aiConsults=Array.isArray(appState.aiConsults)?appState.aiConsults:[];appState.aiConsults.unshift(record);saveStateToLocal({source:'unified-workout-ai'});renderWorkoutFrames();renderAIConsultHistory();renderUnifiedWorkoutResult(record,response);
+      }catch(e){console.error('Unified workout AI',e);if(result){result.classList.remove('hidden');const msg=(e.message==='AUTH_REQUIRED'||e.message==='AUTH_EXPIRED')?tr('Riconnetti Google Drive e riprova.'):(e.message==='AI_FREE_TIER_LIMIT'?tr('Limite gratuito IA raggiunto. Riprova quando la quota gratuita si rinnova.'):e.message);result.innerHTML=`<div class="text-[10px] text-rose-300">${tr('Consulto IA non riuscito')}: ${escapeHTML(msg)}</div>`;}}
+      finally{loading?.classList.add('hidden');if(btn)btn.disabled=false;}
+    }
+    async function generateUnifiedWorkoutPlan(aiRecordId){
+      if(!ensureAIConsent())return;
+      const rec=(appState.aiConsults||[]).find(x=>x.id===aiRecordId),frame=(appState.workoutFrames||[]).find(x=>x.id===rec?.workoutFrameId);if(!rec||!frame)return;
+      const result=document.getElementById('workout-ai-result');if(result)result.innerHTML=`<div class="p-4 text-center text-[10px] text-violet-300"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i>${tr('Generazione scheda in corso…')}</div>`;
+      try{
+        const response=await callThalysAI({action:'workout_plan',locale:currentLocale(),goal:frame.preferences?.goal||rec.goal,snapshot:frame.snapshot,workoutPreferences:frame.preferences,previousAdvice:rec.response});
+        const proposal=normalizeAIWorkoutPlan(response.data?.workoutPlan||response.data);if(!proposal)throw new Error('INVALID_WORKOUT_PLAN');
+        lastAIWorkoutProposal=proposal;rec.generatedWorkoutPlan=proposal;rec.updatedAt=new Date().toISOString();saveStateToLocal({source:'unified-workout-plan'});renderAIConsultHistory();
+        if(result)result.innerHTML=`<div class="text-xs font-black text-white">${tr('Scheda proposta')}</div><div class="mt-2 text-[9px] text-slate-400">${escapeHTML(proposal.name)} · ${proposal.exercises.length} ${tr('esercizi')}</div><pre class="mt-3 max-h-[18rem] overflow-auto whitespace-pre-wrap rounded-xl bg-slate-950 p-3 text-[9px] text-slate-300">${escapeHTML(JSON.stringify(proposal,null,2))}</pre><div class="mt-3 grid grid-cols-2 gap-2"><button onclick="downloadAIWorkoutPlan()" class="min-h-10 rounded-xl bg-slate-800 text-[10px] font-bold text-cyan-300"><i class="fa-solid fa-download mr-1"></i>${tr('Scarica JSON')}</button><button onclick="importAIWorkoutPlan()" class="min-h-10 rounded-xl bg-emerald-500 text-[10px] font-black text-slate-950"><i class="fa-solid fa-file-import mr-1"></i>${tr('Importa in Schede')}</button></div><div class="mt-2 text-[9px] text-slate-500">${tr('La scheda non viene resa attiva automaticamente.')}</div>`;
+      }catch(e){if(result)result.innerHTML=`<div class="text-[10px] text-rose-300">${tr('Generazione scheda non riuscita')}: ${escapeHTML(e.message)}</div>`;}
+    }
+
     function createConsultSnapshot(ev){
       ev?.preventDefault?.();ev?.stopPropagation?.();
       const type=document.getElementById('consult-snapshot-type')?.value||'full',range=dateRangeForConsult(),goal=consultGoal();
@@ -868,6 +945,7 @@
       updateAnalyticsCharts();
       renderConsultations();
       renderAIConsultHistory();
+      renderWorkoutFrames();
       refreshConsultSelectors();
     }
 
@@ -895,7 +973,7 @@
         const main=document.querySelector('#app-shell > main');
         if(main)main.scrollTop=0;
         window.scrollTo(0,0);
-        renderConsultations();renderAIConsultHistory();refreshConsultSelectors();
+        renderConsultations();renderAIConsultHistory();renderWorkoutFrames();refreshConsultSelectors();
         const resetTop=()=>{if(main){main.scrollTop=0;main.scrollTo?.({top:0,left:0,behavior:'auto'});}window.scrollTo(0,0);};
         requestAnimationFrame(resetTop);setTimeout(resetTop,80);setTimeout(resetTop,220);
       }

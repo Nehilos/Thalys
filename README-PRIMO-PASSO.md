@@ -210,8 +210,18 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - La lettura automatica dai sensori non viene attivata in questa versione per preservare compatibilità e stabilità PWA/iOS/desktop.
 
 
-## v0.54.6 - Desktop isolation fix
+## v0.55.0 - Desktop isolation fix
 - Ripartenza dalla v0.54.0 stabile: il codice Passi mobile resta invariato.
 - Desktop: recupero dedicato della sessione server Google su avvio, ritorno online e ritorno in primo piano.
 - Desktop: se la verifica backend e temporaneamente indisponibile ma la sessione persistente locale e valida, Opzioni mostra lo stato di verifica attiva invece di bloccare il flusso.
 - Desktop: i Passi vengono letti da app_state Drive nel refresh leggero, senza cambiare le funzioni di modifica/salvataggio del telefono.
+
+
+## v0.55.0 - Consulto AI Allenamento unificato
+- Nuovo flusso unico Allenamento AI: livello, luogo, giorni/settimana, minuti/sessione, obiettivo e prompt.
+- Snapshot completo degli ultimi 30 giorni creato automaticamente e salvato in `workoutFrames`.
+- Il quadro allenamento conserva preferenze + fotografia dati ed e sincronizzato nello stato principale.
+- Il consulto AI non richiede piu una scheda allenamento preesistente.
+- Dalla risposta si puo generare una scheda, scaricarla e importarla nelle Schede esistenti.
+- Il vecchio flusso Consulto resta disponibile per Alimentazione/Completo mentre la parte workout passa al nuovo percorso.
+- Nessuna modifica a sessione Google desktop, passi, telefono o sincronizzazione gia stabilizzata in v0.54.6.

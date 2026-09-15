@@ -120,15 +120,19 @@ Do not prescribe supplements or therapeutic diets.`;
   }
 
   if (body.action === "workout_consult") {
-    return `Analyze the user's physical/training snapshot and compare it with the selected workout plan.
+    const preferences = JSON.stringify(body.workoutPreferences || null, null, 2);
+    return `Analyze the user's physical/training snapshot and training preferences.
 Goal: "${goal}".
 User-specific request: ${specific || "none"}.
 
 SNAPSHOT:
 ${snapshot}
 
-WORKOUT PLAN:
-${workoutPlan}
+TRAINING PREFERENCES:
+${preferences}
+
+CURRENT PLAN (optional):
+${workoutPlan || "none"}
 
 Return:
 {
@@ -165,14 +169,18 @@ Avoid diagnosis or treatment claims.`;
   }
 
   if (body.action === "workout_plan") {
-    return `Create an improved Thalys workout plan based on the snapshot, current plan and previous AI advice.
+    const preferences = JSON.stringify(body.workoutPreferences || null, null, 2);
+    return `Create an improved Thalys workout plan based on the snapshot, user preferences, optional current plan and previous AI advice.
 Goal: "${goal}".
 
 SNAPSHOT:
 ${snapshot}
 
-CURRENT PLAN:
-${workoutPlan}
+TRAINING PREFERENCES:
+${preferences}
+
+CURRENT PLAN (optional):
+${workoutPlan || "none"}
 
 PREVIOUS ADVICE:
 ${JSON.stringify(body.previousAdvice || null)}
@@ -318,8 +326,6 @@ module.exports = async function handler(req, res) {
 
     if (body.action !== "food_lookup" && !body.snapshot)
       return send(res, 400, { ok: false, error: "SNAPSHOT_REQUIRED" });
-    if (body.action === "workout_consult" && !body.workoutPlan)
-      return send(res, 400, { ok: false, error: "WORKOUT_PLAN_REQUIRED" });
     if (body.action === "food_lookup" && !String(body.foodName || "").trim())
       return send(res, 400, { ok: false, error: "FOOD_NAME_REQUIRED" });
 
