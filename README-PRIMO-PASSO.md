@@ -164,3 +164,9 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Pianificato: grafico di completamento giornaliero, kcal per pasto e kcal totali del giorno.
 - Le schede degli alimenti pianificati mostrano quantita, kcal e macro.
 - Conservata la possibilita di aggiungere alimenti solo alla copia quotidiana senza modificare il piano ufficiale.
+
+
+## v0.50.3 - Sync live Pianificato
+- Nessuna modifica alla UI mobile.
+- Il desktop accetta Drive come sorgente canonica per Pianificato quando non ha modifiche locali pendenti.
+- Controllo leggero ogni 5 secondi di app_state.json per aggiornare piano attivo, override giornalieri e spunte completamento tra dispositivi.

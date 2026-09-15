@@ -49,3 +49,9 @@ La versione applicativa, il protocollo sync e il cache bust devono derivare da `
 - L'editor usa ricerca e categoria per selezionare i preset, con quantita esplicita g/ml.
 - Il completamento giornaliero deriva da mealPlanCompletions e viene rappresentato come done/total + percentuale.
 - Le calorie pianificate sono calcolate dalle quantita giornaliere, per pasto e totale giorno.
+
+
+## v0.50.3 - Sync live Pianificato
+- Nessuna modifica alla UI mobile.
+- Il desktop accetta Drive come sorgente canonica per Pianificato quando non ha modifiche locali pendenti.
+- Controllo leggero ogni 5 secondi di app_state.json per aggiornare piano attivo, override giornalieri e spunte completamento tra dispositivi.

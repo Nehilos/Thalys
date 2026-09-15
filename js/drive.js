@@ -209,8 +209,16 @@ async function findDriveFolder(name,parentId=null){
       result.nutrition=mergeByKey(local.nutrition,c.nutrition,x=>x.id||`${x.date}|${x.meal}|${x.name}|${x.grams}`);
       result.mealPlans=mergeByKey(local.mealPlans,c.mealPlans,x=>x.id||x.name);
       result.activeMealPlanId=(driveDirty?local.activeMealPlanId:(c.activeMealPlanId??local.activeMealPlanId))||null;
-      result.mealPlanDailyOverrides={...(c.mealPlanDailyOverrides||{}),...(local.mealPlanDailyOverrides||{})};
-      result.mealPlanCompletions={...(c.mealPlanCompletions||{}),...(local.mealPlanCompletions||{})};
+      // v0.50.3: Pianificato follows the same clean-device rule as the dedicated
+      // live databases. When this device has no pending writes, Drive is canonical;
+      // otherwise keep local edits until they are uploaded. This prevents a stale
+      // desktop copy from masking a phone checkbox/quantity change.
+      result.mealPlanDailyOverrides=driveDirty
+        ? {...(c.mealPlanDailyOverrides||{}),...(local.mealPlanDailyOverrides||{})}
+        : {...(local.mealPlanDailyOverrides||{}),...(c.mealPlanDailyOverrides||{})};
+      result.mealPlanCompletions=driveDirty
+        ? {...(c.mealPlanCompletions||{}),...(local.mealPlanCompletions||{})}
+        : {...(local.mealPlanCompletions||{}),...(c.mealPlanCompletions||{})};
       result.bodyMetrics=mergeByKey(local.bodyMetrics,c.bodyMetrics,x=>x.id||x.date);
       result.wellness=mergeByKey(local.wellness,c.wellness,x=>x.date||x.id);
       result.meditation=mergeByKey(local.meditation,c.meditation,x=>x.id||`${x.date}|${x.completedAt||x.minutes}`);
@@ -461,6 +469,42 @@ async function findDriveFolder(name,parentId=null){
     }
     window.refreshWaterFromDriveLive=refreshWaterFromDriveLive;
 
+    // v0.50.3: lightweight live synchronization for Reale/Pianificato.
+    // app_state.json already contains the meal-plan domain, so we only read that
+    // file when its Drive version changes and update these fields. No UI or phone
+    // interaction changes are required.
+    let lastSeenMealPlanDriveVersion=null, mealPlanLiveRefreshRunning=false;
+    async function refreshMealPlanFromDriveLive(){
+      if(document.hidden||!navigator.onLine||!getAccessToken()||driveSyncRunning||driveRefreshRunning||driveDirty||mealPlanLiveRefreshRunning)return false;
+      try{
+        if(!driveFolders?.databaseFolderId)await initializeDriveWorkspace();
+        if(!driveFolders?.databaseFolderId)return false;
+        mealPlanLiveRefreshRunning=true;
+        const f=await findDriveFile('app_state.json',driveFolders.databaseFolderId);if(!f)return false;
+        const marker=String(f.version||f.modifiedTime||'');
+        if(lastSeenMealPlanDriveVersion===null){lastSeenMealPlanDriveVersion=marker;return false;}
+        if(marker===lastSeenMealPlanDriveVersion)return false;
+        const remote=await readDriveJSON('app_state.json',driveFolders.databaseFolderId);
+        lastSeenMealPlanDriveVersion=marker;
+        if(!remote||typeof remote!=='object'||Array.isArray(remote))return false;
+        const fields=['mealPlans','activeMealPlanId','mealPlanDailyOverrides','mealPlanCompletions'];
+        let changed=false;
+        for(const key of fields){
+          if(!Object.prototype.hasOwnProperty.call(remote,key))continue;
+          const next=remote[key];
+          if(JSON.stringify(appState[key])!==JSON.stringify(next)){appState[key]=next;changed=true;}
+        }
+        if(!changed)return false;
+        window.appState=appState;
+        persistThalysStateLocally(appState);
+        if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);
+        try{renderNutrition();}catch(_){} try{renderHomeDashboard();}catch(_){} try{updateAnalyticsCharts();}catch(_){}
+        setDriveStatus('ok','Piano alimentare aggiornato da Drive');updateManualSyncUI();
+        return true;
+      }catch(e){console.warn('Live meal-plan sync',e);return false;}finally{mealPlanLiveRefreshRunning=false;}
+    }
+    window.refreshMealPlanFromDriveLive=refreshMealPlanFromDriveLive;
+
     // v0.22: network recovery uses a read/merge/write cycle. This is important
     // when another device changed Drive while this device was offline: local pending
     // changes are merged with the newest Drive databases before anything is uploaded.
@@ -540,7 +584,7 @@ async function findDriveFolder(name,parentId=null){
     document.addEventListener('visibilitychange',()=>{if(!document.hidden&&getAccessToken()&&navigator.onLine){if(window.thalysNeedsDriveReconnectSync)syncAfterNetworkRestore();else refreshFromDrive(false);}});
     window.addEventListener('focus',()=>{if(getAccessToken())refreshFromDrive(false);});
     setInterval(()=>{if(!document.hidden&&getAccessToken())refreshFromDrive(false);},30000);
-    setInterval(()=>{refreshWaterFromDriveLive();},5000);
+    setInterval(()=>{refreshWaterFromDriveLive();refreshMealPlanFromDriveLive();},5000);
 
     window.addEventListener('load',()=>{setTimeout(()=>{if(window.google?.accounts?.oauth2&&!gisInited)gisLoaded();if(window.gapi&&!gapiInited)gapiLoaded();},150);setTimeout(()=>{try{const p=JSON.parse(sessionStorage.getItem('gymbro_google_profile')||'null');if(getAccessToken())updateAuthUI(p);}catch(e){}},1200);});
   
