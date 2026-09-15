@@ -5,7 +5,7 @@ let driveSyncTimer = null, driveSyncRunning = false, driveSyncQueued = false, dr
 let driveFolders = null, lastDriveSyncAt = Number(localStorage.getItem('thalys_last_drive_sync') || 0) || null, driveDirty = localStorage.getItem('thalys_drive_dirty')==='1';
 let lastSyncError = null;
 
-const DRIVE_DB_NAMES = ['thalys_manifest.json','app_state.json','nutrition_targets.json','workouts.json','workout_history.json','meal_history.json','active_plan_history.json','workout_plans.json','nutrition.json','alim_database.json','body_metrics.json','wellness_data.json','water.json','foto_index.json','foto_profilo.json','messages.json','meditation.json','gratitude.json','consultations.json','ai_consults.json','lang_it.json','lang_en.json','lang_es.json','lang_pt.json','lang_ro.json'];
+const DRIVE_DB_NAMES = ['thalys_manifest.json','app_state.json','nutrition_targets.json','workouts.json','workout_history.json','meal_history.json','active_plan_history.json','workout_plans.json','nutrition.json','alim_database.json','body_metrics.json','wellness_data.json','water.json','foto_index.json','foto_profilo.json','messages.json','meditation.json','consultations.json','ai_consults.json','lang_it.json','lang_en.json','lang_es.json','lang_pt.json','lang_ro.json'];
 
 function escapeDriveQuery(v){ return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function setDriveStatus(mode='idle', text){
@@ -110,7 +110,7 @@ async function findDriveFolder(name,parentId=null){
         let source=await findDriveFolder('database',legacyId);if(!source)source=await findDriveFolder('salvataggi',legacyId);if(!source){localStorage.removeItem('thalys_pending_legacy_import');return false;}
         const files=await listDatabaseFiles(source.id);const names=new Set(files.map(f=>f.name));const legacy={};
         const load=async(name,key)=>{if(names.has(name))legacy[key]=await readDriveJSON(name,source.id);};
-        await Promise.all([load('app_state.json','appState'),load('workouts.json','workouts'),load('workout_plans.json','plansPayload'),load('nutrition.json','nutrition'),load('alim_database.json','presets'),load('body_metrics.json','bodyMetrics'),load('wellness_data.json','wellness'),load('water.json','water'),load('meditation.json','meditation'),load('gratitude.json','gratitude')]);
+        await Promise.all([load('app_state.json','appState'),load('workouts.json','workouts'),load('workout_plans.json','plansPayload'),load('nutrition.json','nutrition'),load('alim_database.json','presets'),load('body_metrics.json','bodyMetrics'),load('wellness_data.json','wellness'),load('water.json','water'),load('meditation.json','meditation')]);
         if(legacy.appState&&typeof legacy.appState==='object')Object.assign(legacy,legacy.appState);if(legacy.plansPayload){legacy.workoutPlans=legacy.plansPayload.plans||[];legacy.workoutAssignments=legacy.plansPayload.assignments||{};legacy.workoutCompletions=legacy.plansPayload.completions||{};}
         appState=mergeCloudIntoLocal(legacy);window.appState=appState;persistThalysStateLocally(appState);localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));localStorage.removeItem('thalys_pending_legacy_import');driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');showToast('Dati della vecchia app importati in Thalys ✓','fa-file-import');return true;
       }catch(e){console.warn(e);return false;}
@@ -141,7 +141,6 @@ async function findDriveFolder(name,parentId=null){
         'foto_profilo.json':appState.profilePhoto||null,
         'messages.json':appState.messages||[],
         'meditation.json':appState.meditation||[],
-        'gratitude.json':appState.gratitude||[],
         'consultations.json':appState.consultations||[],
         'ai_consults.json':appState.aiConsults||[]
       };
@@ -201,10 +200,7 @@ async function findDriveFolder(name,parentId=null){
       const result={...DEFAULT_STATE,...c,...local};
       result.profile=isMeaningfulProfile(local.profile)?{...DEFAULT_STATE.profile,...c.profile,...local.profile}:{...DEFAULT_STATE.profile,...local.profile,...c.profile};
       const lp=local.profilePhoto||null,cp=c.profilePhoto||null;
-      const lpCustom=!!lp?.dataUrl, cpCustom=!!cp?.dataUrl;
-      if(lpCustom&&!cpCustom&&!cp?.explicitUserChoice) result.profilePhoto=lp;
-      else if(cpCustom&&!lpCustom&&!lp?.explicitUserChoice) result.profilePhoto=cp;
-      else if(lp&&cp){const lt=Date.parse(lp.updatedAt||0)||0,ct=Date.parse(cp.updatedAt||0)||0;result.profilePhoto=lt>=ct?lp:cp;}
+      if(lp&&cp){const lt=Date.parse(lp.updatedAt||0)||0,ct=Date.parse(cp.updatedAt||0)||0;result.profilePhoto=lt>=ct?lp:cp;}
       else result.profilePhoto=lp||cp||null;
       result.targets={...DEFAULT_STATE.targets,...c.targets,...local.targets};result.settings={...DEFAULT_STATE.settings,...c.settings,...local.settings};
       result.workouts=mergeByKey(local.workouts,c.workouts,x=>x.id||`${x.date}|${x.name}`);
@@ -212,7 +208,6 @@ async function findDriveFolder(name,parentId=null){
       result.bodyMetrics=mergeByKey(local.bodyMetrics,c.bodyMetrics,x=>x.id||x.date);
       result.wellness=mergeByKey(local.wellness,c.wellness,x=>x.date||x.id);
       result.meditation=mergeByKey(local.meditation,c.meditation,x=>x.id||`${x.date}|${x.completedAt||x.minutes}`);
-      result.gratitude=mergeByKey(local.gratitude,c.gratitude,x=>x.id||`${x.date}|${x.text||''}`);
       result.photos=mergeByKey(local.photos,c.photos,x=>x.id||`${x.date}|${String(x.base64||'').slice(-24)}`);
       // Dedicated Drive databases are canonical after the conflict resolver has replayed
       // any local pending operations. Do not let a stale local PC copy overwrite them.
@@ -247,7 +242,7 @@ async function findDriveFolder(name,parentId=null){
       let cloud={};
       const reads=[];
       const load=(name,key)=>{if(byName.has(name))reads.push(readDriveJSON(name,driveFolders.databaseFolderId).then(d=>{cloud[key]=d;}));};
-      load('app_state.json','appState');load('sync_meta.json','syncMeta');load('workouts.json','workouts');load('workout_history.json','workoutHistory');load('meal_history.json','mealHistory');load('active_plan_history.json','activeWorkoutPlanHistory');load('nutrition.json','nutrition');load('alim_database.json','presets');load('body_metrics.json','bodyMetrics');load('wellness_data.json','wellness');load('water.json','water');load('meditation.json','meditation');load('gratitude.json','gratitude');load('workout_plans.json','plansPayload');load('foto_index.json','photoIndex');load('foto_profilo.json','profilePhoto');load('messages.json','messages');load('consultations.json','consultations');load('ai_consults.json','aiConsults');
+      load('app_state.json','appState');load('sync_meta.json','syncMeta');load('workouts.json','workouts');load('workout_history.json','workoutHistory');load('meal_history.json','mealHistory');load('active_plan_history.json','activeWorkoutPlanHistory');load('nutrition.json','nutrition');load('alim_database.json','presets');load('body_metrics.json','bodyMetrics');load('wellness_data.json','wellness');load('water.json','water');load('meditation.json','meditation');load('workout_plans.json','plansPayload');load('foto_index.json','photoIndex');load('foto_profilo.json','profilePhoto');load('messages.json','messages');load('consultations.json','consultations');load('ai_consults.json','aiConsults');
       await Promise.all(reads);
       if(!byName.has('foto_profilo.json')){
         try{await uploadDriveFile('foto_profilo.json',JSON.stringify(appState.profilePhoto||null),'application/json',driveFolders.databaseFolderId,true);}
@@ -256,7 +251,7 @@ async function findDriveFolder(name,parentId=null){
       const dedicated={
         workouts:cloud.workouts, workoutHistory:cloud.workoutHistory, mealHistory:cloud.mealHistory,
         activeWorkoutPlanHistory:cloud.activeWorkoutPlanHistory, nutrition:cloud.nutrition, presets:cloud.presets,
-        bodyMetrics:cloud.bodyMetrics, wellness:cloud.wellness, water:cloud.water, meditation:cloud.meditation, gratitude:cloud.gratitude,
+        bodyMetrics:cloud.bodyMetrics, wellness:cloud.wellness, water:cloud.water, meditation:cloud.meditation,
         plansPayload:cloud.plansPayload, photoIndex:cloud.photoIndex, profilePhoto:cloud.profilePhoto,
         messages:cloud.messages, consultations:cloud.consultations, aiConsults:cloud.aiConsults
       };
@@ -279,32 +274,10 @@ async function findDriveFolder(name,parentId=null){
       }catch(e){console.warn('Conflict resolver fallback',e);conflictResolution=null;}
       appState=mergeCloudIntoLocal(cloud);
       if(conflictResolution&&window.ThalysConflictResolver?.overlayResolved){appState=window.ThalysConflictResolver.overlayResolved(appState,cloud,conflictResolution);}
-      // v0.49.4: foto_profilo.json is the dedicated cross-device profile-photo database.
-      // Re-apply it after conflict resolution so a compact/null app_state copy or a
-      // stale mobile bootstrap can never hide the custom photo that exists on Drive.
-      if(dedicated.profilePhoto!==undefined){
-        const remotePhoto=dedicated.profilePhoto;
-        const localPhoto=appState.profilePhoto||null;
-        const remoteCustom=!!remotePhoto?.dataUrl;
-        const localCustom=!!localPhoto?.dataUrl;
-        const remoteExplicitGoogle=remotePhoto?.mode==='google' && remotePhoto?.explicitUserChoice===true;
-        const rt=Date.parse(remotePhoto?.updatedAt||0)||0;
-        const lt=Date.parse(localPhoto?.updatedAt||0)||0;
-        const localPending=localStorage.getItem('thalys_drive_dirty')==='1'||localStorage.getItem('thalys_sync_queue_pending')==='1';
-        // v0.49.4 safety rule: an empty/bootstrap copy can NEVER delete a custom photo.
-        // A custom photo can be replaced by Google only after the explicit "Usa Google" action.
-        if(remoteCustom){
-          if(!localCustom || !localPending || rt>=lt) appState.profilePhoto={...remotePhoto,mode:'custom'};
-        }else if(remoteExplicitGoogle){
-          if(!localCustom || rt>=lt) appState.profilePhoto={...remotePhoto,mode:'google',dataUrl:''};
-        }else if(!localCustom && !localPending){
-          appState.profilePhoto=remotePhoto||{mode:'google',dataUrl:'',updatedAt:new Date(0).toISOString()};
-        }
-      }
       window.appState=appState;
       try{await loadPhotosFromDriveFolder();}catch(e){console.warn('Drive photo load failed',e);}
       persistThalysStateLocally(appState);localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);
-      renderAllViews();loadProfileUI();loadTargetsUI();renderPhotos();if(typeof renderProfilePhotoUI==='function'){renderProfilePhotoUI();setTimeout(renderProfilePhotoUI,120);setTimeout(renderProfilePhotoUI,500);}
+      renderAllViews();loadProfileUI();loadTargetsUI();renderPhotos();renderProfilePhotoUI();
       if(consolidate){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');setDriveStatus('ok','Dati Drive caricati · consolidamento…');updateManualSyncUI();scheduleDriveSync(250);}else{setDriveStatus('ok','Dati Drive aggiornati');updateManualSyncUI();}return true;
     }
     async function refreshFromDrive(showToastOnSuccess=false,forceLoad=false){if(!getAccessToken())return false;if(window.thalysNetworkRecoveryPending&&!forceLoad)return false;if(driveDirty&&!forceLoad){scheduleDriveSync(200);return false;}if(driveRefreshRunning)return false;driveRefreshRunning=true;try{await initializeDriveWorkspace();await loadDatabasesFromDrive(forceLoad);if(showToastOnSuccess)showToast('Tutti i database Thalys caricati e consolidati ✓','fa-cloud-check');return true;}catch(e){console.warn('Drive refresh',e);lastSyncError=classifyDriveError(e);if(lastSyncError.code==='OFFLINE'||lastSyncError.code==='NETWORK_ERROR'){setDriveStatus('saving','Connessione instabile · modalità locale');updateManualSyncUI();return false;}setDriveStatus('error',lastSyncError.short);showSyncError(lastSyncError);return false;}finally{driveRefreshRunning=false;}}
@@ -492,7 +465,7 @@ async function findDriveFolder(name,parentId=null){
     }
     async function syncAfterNetworkRestore(){
       if(!navigator.onLine)return false;
-      // v0.49.2: single-flight recovery. Auth, server-auth and the iOS reconnect
+      // v0.48.0: single-flight recovery. Auth, server-auth and the iOS reconnect
       // supervisor can all wake up on the same 'online' event. They must await the
       // same recovery instead of racing and treating 'already running' as failure.
       if(networkRecoveryPromise)return networkRecoveryPromise;
@@ -605,9 +578,8 @@ async function findDriveFolder(name,parentId=null){
 
     // ===== v0.25: current Drive workspace/database implementation (moved from app-enhancements.js) =====
 /* Drive database payload and single first-run consent */
-function databasePayloadsLegacyV7(){const {consultations:_c,aiConsults:_a,workoutHistory:_wh,activeWorkoutPlanHistory:_ph,...core}=appState||{};return {'thalys_manifest.json':{app:'Thalys',schemaVersion:8,updatedAt:new Date().toISOString(),databaseVersion:6},'app_state.json':{...core,photos:[],profilePhoto:null},'workouts.json':appState.workouts||[],'workout_history.json':appState.workoutHistory||[],'meal_history.json':appState.nutrition||[],'active_plan_history.json':appState.activeWorkoutPlanHistory||[],'workout_plans.json':{plans:(appState.workoutPlans||[]).map(normalizeWorkoutPlanV7),activePlanId:appState.activeWorkoutPlanId||null,assignments:appState.workoutAssignments||{},completions:appState.workoutCompletions||{},activeHistory:appState.activeWorkoutPlanHistory||[]},'nutrition.json':appState.nutrition||[],'alim_database.json':appState.presets||[],'body_metrics.json':appState.bodyMetrics||[],'wellness_data.json':appState.wellness||[],'water.json':appState.water||{},'foto_index.json':Object.fromEntries((appState.photos||[]).filter(p=>p.driveFileId).map(p=>[p.driveFileId,{id:p.driveFileId,name:p.driveName||'',date:p.date,updatedAt:p.updatedAt||null}])),'foto_profilo.json':appState.profilePhoto||null,'messages.json':appState.messages||[],'meditation.json':appState.meditation||[],
-        'gratitude.json':appState.gratitude||[],'consultations.json':appState.consultations||[],'ai_consults.json':appState.aiConsults||[]};}
-const THALYS_REQUIRED_DB_V7=['thalys_manifest.json','app_state.json','nutrition_targets.json','workouts.json','workout_history.json','meal_history.json','active_plan_history.json','workout_plans.json','nutrition.json','alim_database.json','body_metrics.json','wellness_data.json','water.json','foto_index.json','foto_profilo.json','messages.json','meditation.json','gratitude.json','consultations.json','ai_consults.json','lang_it.json','lang_en.json','lang_es.json','lang_pt.json','lang_ro.json'];
+function databasePayloadsLegacyV7(){const {consultations:_c,aiConsults:_a,workoutHistory:_wh,activeWorkoutPlanHistory:_ph,...core}=appState||{};return {'thalys_manifest.json':{app:'Thalys',schemaVersion:8,updatedAt:new Date().toISOString(),databaseVersion:6},'app_state.json':{...core,photos:[],profilePhoto:null},'workouts.json':appState.workouts||[],'workout_history.json':appState.workoutHistory||[],'meal_history.json':appState.nutrition||[],'active_plan_history.json':appState.activeWorkoutPlanHistory||[],'workout_plans.json':{plans:(appState.workoutPlans||[]).map(normalizeWorkoutPlanV7),activePlanId:appState.activeWorkoutPlanId||null,assignments:appState.workoutAssignments||{},completions:appState.workoutCompletions||{},activeHistory:appState.activeWorkoutPlanHistory||[]},'nutrition.json':appState.nutrition||[],'alim_database.json':appState.presets||[],'body_metrics.json':appState.bodyMetrics||[],'wellness_data.json':appState.wellness||[],'water.json':appState.water||{},'foto_index.json':Object.fromEntries((appState.photos||[]).filter(p=>p.driveFileId).map(p=>[p.driveFileId,{id:p.driveFileId,name:p.driveName||'',date:p.date,updatedAt:p.updatedAt||null}])),'foto_profilo.json':appState.profilePhoto||null,'messages.json':appState.messages||[],'meditation.json':appState.meditation||[],'consultations.json':appState.consultations||[],'ai_consults.json':appState.aiConsults||[]};}
+const THALYS_REQUIRED_DB_V7=['thalys_manifest.json','app_state.json','nutrition_targets.json','workouts.json','workout_history.json','meal_history.json','active_plan_history.json','workout_plans.json','nutrition.json','alim_database.json','body_metrics.json','wellness_data.json','water.json','foto_index.json','foto_profilo.json','messages.json','meditation.json','consultations.json','ai_consults.json','lang_it.json','lang_en.json','lang_es.json','lang_pt.json','lang_ro.json'];
 async function ensureAllDriveDatabasesV7(initial=false){if(!driveFolders?.databaseFolderId)return[];const files=await listDatabaseFiles(driveFolders.databaseFolderId),have=new Set(files.map(x=>x.name)),missing=THALYS_REQUIRED_DB_V7.filter(x=>!have.has(x));if(!missing.length)return[];const p=databasePayloads(),made=[];for(const name of missing){try{let data=p[name];if(name.startsWith('lang_'))data=await (await fetch(`./lang/${name}?v=22`,{cache:'no-store'})).json();if(data===undefined)data=[];await uploadDriveFile(name,JSON.stringify(data),'application/json',driveFolders.databaseFolderId,true);made.push(name)}catch(e){console.warn(name,e)}}return made;}
 async function initializeDriveWorkspaceLegacyV7(){if(!getAccessToken())return null;if(driveFolders?.databaseFolderId){const repaired=await ensureAllDriveDatabasesV7(false);if(repaired.length)showToast(`${tr('Ho ricreato i database mancanti')}: ${repaired.length}`,'fa-database');return driveFolders;}let root=await findDriveFolder('Thalys App'),fresh=false;if(!root){if(!confirm(tr('Thalys può creare una sola volta la propria cartella, tutti i database e le cartelle di servizio nel tuo Google Drive personale. Vuoi procedere?')))return null;root=await createDriveFolder('Thalys App',null);fresh=true;}let db=await findDriveFolder('database',root.id);if(!db)db=await createDriveFolder('database',root.id);let photos=await findDriveFolder('foto',root.id);if(!photos)photos=await createDriveFolder('foto',root.id);let backups=await findDriveFolder('backups',root.id);if(!backups)backups=await createDriveFolder('backups',root.id);driveFolders={appFolderId:root.id,databaseFolderId:db.id,photoFolderId:photos.id,backupFolderId:backups.id};const made=await ensureAllDriveDatabasesV7(fresh);if(fresh)showToast(tr('Struttura Thalys creata nel Drive ✓'),'fa-cloud-check');else if(made.length)showToast(`${tr('Ho ricreato i database mancanti')}: ${made.length}`,'fa-database');return driveFolders;}
 

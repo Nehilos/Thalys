@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = window.ThalysConfig?.appVersion || '0.49.4';
+  const APP_VERSION = window.ThalysConfig?.appVersion || '0.48.0';
   const PROTOCOL_VERSION = Number(window.ThalysConfig?.syncProtocolVersion || 7);
 
   function clone(value) {
@@ -47,7 +47,6 @@
     if (entity === 'workoutPlan') return String(item.name || index);
     if (entity === 'workoutHistory') return `${item.date||''}|${item.planId||''}`;
     if (entity === 'meditation') return `${item.date||''}|${item.completedAt||item.minutes||''}`;
-    if (entity === 'gratitude') return String(item.id || `${item.date||''}|${item.text||''}`);
     if (entity === 'foodPreset') return String(item.name || index).trim().toLowerCase();
     return String(item.date || index);
   }
@@ -55,7 +54,7 @@
   function arrayField(entity) {
     return ({
       nutrition: 'nutrition', bodyMetric: 'bodyMetrics', workoutPlan: 'workoutPlans',
-      workoutHistory: 'workoutHistory', meditation: 'meditation', gratitude: 'gratitude', foodPreset: 'presets'
+      workoutHistory: 'workoutHistory', meditation: 'meditation', foodPreset: 'presets'
     })[entity] || null;
   }
 

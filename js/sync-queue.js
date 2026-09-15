@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = window.ThalysConfig?.appVersion || '0.49.4';
+  const APP_VERSION = window.ThalysConfig?.appVersion || '0.48.0';
   const PROTOCOL_VERSION = Number(window.ThalysConfig?.syncProtocolVersion || 7);
   const STORE = 'sync_queue';
   const GLOBAL_STATE_ID_PREFIX = 'state:';
@@ -175,7 +175,6 @@
     ops.push(...diffMapArray(previousState.workoutPlans,currentState.workoutPlans,'workoutPlan',source));
     ops.push(...diffMapArray(previousState.workoutHistory,currentState.workoutHistory,'workoutHistory',source));
     ops.push(...diffMapArray(previousState.meditation,currentState.meditation,'meditation',source));
-    ops.push(...diffMapArray(previousState.gratitude,currentState.gratitude,'gratitude',source));
 
     if(!same(previousState.activeWorkoutPlanId,currentState.activeWorkoutPlanId)) {
       ops.push(baseRecord({entity:'activeWorkoutPlan',entityId:'active',action:'update',payload:{before:previousState.activeWorkoutPlanId||null,after:currentState.activeWorkoutPlanId||null},source}));

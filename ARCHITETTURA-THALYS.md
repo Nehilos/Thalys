@@ -1,4 +1,4 @@
-# Thalys - Architettura stabile v0.49.4
+# Thalys - Architettura stabile v0.48.0
 
 ## Sorgenti dati
 

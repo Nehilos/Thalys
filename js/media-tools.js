@@ -435,7 +435,6 @@ async function submitBarcodeLookup() {
       nutriments: product.nutriments || {}
     };
 
-    window.thalysNutritionProposalSource='barcode';
     openNutritionProposalModal(payload);
   } catch (err) {
     console.error('Open Food Facts barcode lookup failed:', err);
@@ -526,8 +525,8 @@ function saveRecognizedNutrition(e) {
   e.preventDefault();
   const name = document.getElementById('prop-name').value.trim();
   const kcal = parseInt(document.getElementById('prop-kcal').value) || 0;
-  const p = parseFloat(document.getElementById('prop-p').value) || 0;
-  const c = parseFloat(document.getElementById('prop-c').value) || 0;
+  const p = parseInt(document.getElementById('prop-p').value) || 0;
+  const c = parseInt(document.getElementById('prop-c').value) || 0;
   const f = parseFloat(document.getElementById('prop-f').value) || 0;
   const satFat = parseFloat(document.getElementById('prop-sat-fat').value) || 0;
   const sugars = parseFloat(document.getElementById('prop-sugars').value) || 0;
@@ -568,9 +567,7 @@ function saveRecognizedNutrition(e) {
   if (modal) modal.classList.add('hidden');
   updateModalScrollLock();
   e.target?.reset?.();
-  const fromBarcode=window.thalysNutritionProposalSource==='barcode'; window.thalysNutritionProposalSource='';
-  setTimeout(() => showToast(fromBarcode?'Alimento aggiunto ✓':'Alimento salvato ✓','fa-circle-check'), 60);
-  if(fromBarcode)setTimeout(()=>{try{openFoodDatabase();}catch(_){document.getElementById('food-preset-modal')?.classList.remove('hidden');}},120);
+  setTimeout(() => showToast('Alimento salvato ✓','fa-circle-check'), 60);
 }
 
 

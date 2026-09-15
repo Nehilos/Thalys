@@ -52,8 +52,7 @@
     return {sessionId:id,sessionSecret:secret};
   }
   function session(){return {sessionId:localStorage.getItem(SESSION_ID_KEY)||'',sessionSecret:localStorage.getItem(SESSION_SECRET_KEY)||''};}
-  function appSessionActive(){try{return localStorage.getItem('thalys_app_session_v1')==='1';}catch(_){return false;}}
-  function canRefresh(){const s=session();return enabled()&&appSessionActive()&&!!(s.sessionId&&s.sessionSecret);}
+  function canRefresh(){const s=session();return enabled()&&!!(s.sessionId&&s.sessionSecret);}
   async function installAccessToken(data,silent=true){
     const token=String(data?.access_token||'');
     if(!token)return false;
@@ -155,7 +154,7 @@
   }
   let refreshTimer=null,refreshBusy=false;
   async function proactiveRefresh(){
-    if(refreshBusy||!navigator.onLine||!appSessionActive())return false;
+    if(refreshBusy||!navigator.onLine)return false;
     await hydrateSessionFromIndexedDb();
     if(!canRefresh())return false;
     const expiresAt=cachedTokenExpiresAt();
