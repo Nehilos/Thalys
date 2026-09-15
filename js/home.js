@@ -24,7 +24,7 @@ function setHomeDate(date){
       else if((appState.workouts||[]).some(x=>x.date===date))steps.push({label:tr('Allenamento extra'),done:true,icon:'fa-dumbbell'});
       steps.push(
         {label:tr('Check-in wellness'),done:!!wellness,icon:'fa-heart-pulse'},
-        {label:tr('Idratazione'),done:water>=waterTarget*0.8,icon:'fa-glass-water'},
+        {label:tr('Idratazione'),done:water>=waterTarget,icon:'fa-glass-water'},
         {label:tr('Registra la dieta'),done:nutrition.length>0 && (kcal>=Number(target.calories||2200)*0.8),icon:'fa-utensils'},
         {label:tr('Pausa mentale'),done:(typeof isMentalPauseCompleted==='function'?isMentalPauseCompleted(date):meditation>=5),icon:'fa-spa'}
       );
@@ -252,7 +252,7 @@ function setHomeDate(date){
           const ex=getExercisesForDate(active,ds);
           if(ex.length){scheduled++;const c=getWorkoutCompletion(ds,active.id);if(ex.every(x=>c?.exercises?.[x.id]))workouts++}
         }else if((appState.workouts||[]).some(x=>x.date===ds))workouts++;
-        if(Number(appState.water?.[ds]||0)>=getWaterTarget(ds)*.8)hydrated++;
+        if(Number(appState.water?.[ds]||0)>=getWaterTarget(ds))hydrated++;
         if((appState.meditation||[]).some(x=>x.date===ds))mind++;
       });
       return {workouts,scheduled,hydrated,mind};
@@ -296,6 +296,31 @@ function setHomeDate(date){
       const span=btn?.querySelector('span');if(span)span.textContent=on?tr('Esci da Focus'):tr('Apri Focus');
     }
 
+
+    function renderHomeNutritionTargetsV0510(date){
+      const logs=(appState.nutrition||[]).filter(x=>x.date===date);
+      const sum=k=>logs.reduce((a,x)=>a+Number(x[k]||0),0);
+      const kcal=sum('kcal'), protein=sum('p'), carbs=sum('c'), fat=sum('f');
+      const t=appState.targets||{};
+      const calorieTarget=Math.max(1,Number(t.calories||2200));
+      const pTarget=Math.max(0,Number(t.p||150)), cTarget=Math.max(0,Number(t.c||250)), fTarget=Math.max(0,Number(t.f||70));
+      const pct=Math.max(0,Math.min(100,(kcal/calorieTarget)*100));
+      const remaining=calorieTarget-kcal;
+      const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+      set('home-calorie-balance-label-v0510',`${Math.round(kcal)} / ${Math.round(calorieTarget)} kcal`);
+      set('home-target-p-v0510',`${Number(protein.toFixed(1))} / ${Number(pTarget.toFixed(1))} g`);
+      set('home-target-c-v0510',`${Number(carbs.toFixed(1))} / ${Number(cTarget.toFixed(1))} g`);
+      set('home-target-f-v0510',`${Number(fat.toFixed(1))} / ${Number(fTarget.toFixed(1))} g`);
+      const bar=document.getElementById('home-calorie-balance-bar-v0510');if(bar)bar.style.width=`${pct}%`;
+      const status=document.getElementById('home-calorie-balance-status-v0510');
+      if(status){
+        if(kcal===0){status.textContent='Da iniziare';status.className='rounded-full bg-slate-800 px-2.5 py-1 text-[9px] font-bold text-slate-300';}
+        else if(remaining>=0){status.textContent=`${Math.round(pct)}%`;status.className='rounded-full bg-emerald-500/10 px-2.5 py-1 text-[9px] font-bold text-emerald-300';}
+        else{status.textContent='Oltre target';status.className='rounded-full bg-amber-500/10 px-2.5 py-1 text-[9px] font-bold text-amber-300';}
+      }
+      set('home-calorie-balance-detail-v0510',remaining>=0?`Residuo rispetto al target: ${Math.round(remaining)} kcal`:`Oltre il target di ${Math.round(Math.abs(remaining))} kcal`);
+    }
+
     function renderHomeDashboard(){
       const d=homeSelectedDate || new Date().toISOString().split('T')[0];
       const workouts=(appState.workouts||[]).filter(x=>x.date===d), nutrition=(appState.nutrition||[]).filter(x=>x.date===d);
@@ -304,7 +329,7 @@ function setHomeDate(date){
       const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
       const hp=document.getElementById('home-date-picker'); if(hp) hp.value=d;
       set('home-date',new Date(d+'T12:00:00').toLocaleDateString(currentLocale(),{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
-      const waterTarget=getWaterTarget(d); set('home-water',`${water} ml`);set('home-water-target',`/ ${waterTarget} ml`);set('home-kcal',Math.round(kcal));set('home-kcal-target',`/ ${target.calories||2200} kcal`);set('home-workout-count',workouts.length);set('home-readiness',w?`${w.readiness}/10`:'—');set('home-sleep',w?`${w.sleepHours} h`:'—');set('home-recovery',w?`${w.recovery}/10`:'—');set('home-mood',w?`${w.mood}/10`:'—');set('home-stress',w?`${w.stress}/10`:'—');set('home-med-today',`${med} min`);
+      const waterTarget=getWaterTarget(d); set('home-water',`${water} ml`);set('home-water-target',`/ ${waterTarget} ml`);set('home-kcal',Math.round(kcal));set('home-kcal-target',`/ ${target.calories||2200} kcal`);renderHomeNutritionTargetsV0510(d);set('home-workout-count',workouts.length);set('home-readiness',w?`${w.readiness}/10`:'—');set('home-sleep',w?`${w.sleepHours} h`:'—');set('home-recovery',w?`${w.recovery}/10`:'—');set('home-mood',w?`${w.mood}/10`:'—');set('home-stress',w?`${w.stress}/10`:'—');set('home-med-today',`${med} min`);
       const arr=Array.isArray(appState.meditation)?appState.meditation:[]; let streak=0; for(let i=0;i<365;i++){const dd=new Date();dd.setDate(dd.getDate()-i);const ds=dd.toISOString().split('T')[0];if(arr.some(x=>x.date===ds))streak++;else if(i>0)break;} set('home-med-streak',`${tr('Streak')}: ${streak} ${tr('giorni')}`);
       [['home-sleep-bar',w?Math.min(100,(Number(w.sleepHours)/8)*100):0],['home-recovery-bar',w?Number(w.recovery)*10:0],['home-mood-bar',w?Number(w.mood)*10:0],['home-stress-bar',w?Number(w.stress)*10:0]].forEach(([id,width])=>{const e=document.getElementById(id);if(e)e.style.width=width+'%';});
       const g=getDayGamification(d);

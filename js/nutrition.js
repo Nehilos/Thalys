@@ -24,7 +24,7 @@
     }
 
     let mealPresetTarget = 'Colazione';
-    let mealPresetPlannedContextV0504 = null;
+    let mealPresetPlannedContextV0510 = null;
 
     const FOOD_CATEGORIES=['Spuntino','Primo','Secondo','Contorno','Bevande','Altro'];
     const FOOD_UNITS=['Piatto','Fetta/Pz','Bicchiere'];
@@ -33,7 +33,7 @@
     function updateFoodUnitMeasureUI(){const category=document.getElementById('preset-category')?.value||'',unitEl=document.getElementById('preset-unit');if(category==='Bevande'&&unitEl&&unitEl.value!=='Bicchiere')unitEl.value='Bicchiere';const unit=unitEl?.value||'Piatto',m=foodUnitMeasure(unit,category),label=document.getElementById('preset-unit-measure-label'),input=document.getElementById('preset-unit-amount');if(label)label.textContent=m;if(input)input.placeholder=m==='ml'?`ml per ${unit==='Bicchiere'?'bicchiere':'unità'}`:unit==='Piatto'?`Grammi per piatto`:`Grammi per fetta/pezzo`; }
 
     function openFoodForMeal(meal){
-      mealPresetPlannedContextV0504=null;
+      mealPresetPlannedContextV0510=null;
       mealPresetTarget = meal || 'Colazione';
       const mode=document.getElementById('meal-preset-mode-label');if(mode)mode.textContent='Aggiungi pasto';
       const title=document.getElementById('meal-preset-target-label');
@@ -46,8 +46,8 @@
       setTimeout(()=>search?.focus(),100);
     }
 
-    function openFoodForPlannedMealV0504(date,meal){
-      mealPresetPlannedContextV0504={date,meal:meal||'Pranzo'};
+    function openFoodForPlannedMealV0510(date,meal){
+      mealPresetPlannedContextV0510={date,meal:meal||'Pranzo'};
       mealPresetTarget=meal||'Pranzo';
       const mode=document.getElementById('meal-preset-mode-label');if(mode)mode.textContent='Aggiungi al Pianificato';
       const title=document.getElementById('meal-preset-target-label');if(title)title.textContent=mealPresetTarget;
@@ -98,14 +98,14 @@
       const units=Number(document.getElementById(`meal-preset-units-${index}`)?.value||0);
       let amount=direct>0?direct:(isFoodPresetComplete(p)&&units>0?units*Number(p.unitAmount):100);
       amount=Math.max(0.01,amount);
-      if(mealPresetPlannedContextV0504){
-        const {date,meal}=mealPresetPlannedContextV0504;
+      if(mealPresetPlannedContextV0510){
+        const {date,meal}=mealPresetPlannedContextV0510;
         const d=ensurePlannedOverrideV0500(date);
         d.items.push(mealPlanItemFromPresetV0500(p,meal,amount));
         d.updatedAt=new Date().toISOString();
         saveStateToLocal({source:'meal-plan-day'});
         scheduleDriveSync?.(180);
-        mealPresetPlannedContextV0504=null;
+        mealPresetPlannedContextV0510=null;
         closeModal('add-food-modal');
         renderNutrition();
         showToast(`${p.name} aggiunto al Pianificato · ${meal} ✓`,'fa-circle-check');
@@ -531,7 +531,7 @@
       head.innerHTML=`<div class="flex min-w-0 items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] uppercase tracking-[.16em] text-violet-300">Piano attivo · ${weekday}</div><div class="mt-1 truncate text-lg font-black text-white">${escapeHTML(plan.name)}</div><div class="mt-1 text-[10px] text-slate-500">Le modifiche di oggi non cambiano il piano originale.</div></div><button onclick="openMealPlanManagerV0500()" class="shrink-0 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-[10px] font-black text-violet-200">Piani</button></div><div class="mt-4 rounded-2xl border border-violet-500/20 bg-violet-500/5 p-3"><div class="flex items-end justify-between gap-3"><div><div class="text-[9px] uppercase tracking-[.14em] text-violet-300">Progresso di oggi</div><div class="mt-1 text-2xl font-black text-white">${done}<span class="text-sm text-slate-500"> / ${total}</span></div></div><div class="text-right"><div class="text-lg font-black text-violet-200">${pct}%</div><div class="text-[9px] text-slate-500">piatti rispettati</div></div></div><div class="mt-3 h-3 overflow-hidden rounded-full bg-slate-900"><div class="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-400 to-emerald-400 transition-all" style="width:${pct}%"></div></div></div>`;
       box.innerHTML=MEAL_PLAN_MEALS_V0500.map(meal=>{
         const xs=items.filter(x=>x.meal===meal),mealKcal=xs.reduce((a,x)=>a+mealPlanItemKcalV0502(x),0);
-        return `<div class="rounded-2xl border border-slate-800 bg-darkcard p-3"><div class="flex items-center justify-between gap-3"><div class="flex min-w-0 items-center gap-2"><b class="text-xs text-white">${meal}</b><button type="button" onclick="openFoodForPlannedMealV0504('${date}','${meal}')" class="meal-add-circle bg-emerald-500/10 border border-emerald-500/25 text-emerald-300" aria-label="Aggiungi a ${meal} nel Pianificato"><i class="fa-solid fa-plus text-[10px]"></i></button></div><div class="text-right"><div class="text-[10px] font-black text-amber-300">${mealKcal} kcal</div><div class="text-[9px] text-slate-500">${xs.filter(x=>completed[x.id]).length}/${xs.length} completati</div></div></div><div class="mt-2 space-y-2">${xs.length?xs.map(x=>`<div class="rounded-xl border ${completed[x.id]?'border-emerald-500/25 bg-emerald-500/5':'border-slate-800 bg-slate-950/50'} p-2"><div class="flex items-start gap-2"><input type="checkbox" ${completed[x.id]?'checked':''} onchange="togglePlannedFoodConsumedV0500('${date}','${x.id}',this.checked)" class="mt-1 h-5 w-5 accent-emerald-500"><div class="min-w-0 flex-1"><div class="truncate text-xs font-bold ${completed[x.id]?'line-through text-emerald-300':'text-slate-200'}">${escapeHTML(x.name)}</div><div class="mt-1 flex flex-wrap items-center gap-1.5 text-[9px] text-slate-500"><input type="number" min="0.01" step="0.01" value="${Number(x.amount)||100}" onchange="updatePlannedDayAmountV0500('${date}','${x.id}',this.value)" class="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-[10px] text-white"><span>${x.category==='Bevande'?'ml':(x.quantityUnit||'g')}</span><span class="text-amber-300">${mealPlanItemKcalV0502(x)} kcal</span></div><div class="mt-1 text-[9px] text-slate-600">${mealPlanItemMacroTextV0502(x)}</div></div><button onclick="removePlannedDayItemV0500('${date}','${x.id}')" class="p-2 text-rose-400"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):`<div class="py-2 text-[10px] italic text-slate-600">Nessun alimento previsto</div>`}</div></div>`;
+        return `<div class="rounded-2xl border border-slate-800 bg-darkcard p-3"><div class="flex items-center justify-between gap-3"><div class="flex min-w-0 items-center gap-2"><b class="text-xs text-white">${meal}</b><button type="button" onclick="openFoodForPlannedMealV0510('${date}','${meal}')" class="meal-add-circle bg-emerald-500/10 border border-emerald-500/25 text-emerald-300" aria-label="Aggiungi a ${meal} nel Pianificato"><i class="fa-solid fa-plus text-[10px]"></i></button></div><div class="text-right"><div class="text-[10px] font-black text-amber-300">${mealKcal} kcal</div><div class="text-[9px] text-slate-500">${xs.filter(x=>completed[x.id]).length}/${xs.length} completati</div></div></div><div class="mt-2 space-y-2">${xs.length?xs.map(x=>`<div class="rounded-xl border ${completed[x.id]?'border-emerald-500/25 bg-emerald-500/5':'border-slate-800 bg-slate-950/50'} p-2"><div class="flex items-start gap-2"><input type="checkbox" ${completed[x.id]?'checked':''} onchange="togglePlannedFoodConsumedV0500('${date}','${x.id}',this.checked)" class="mt-1 h-5 w-5 accent-emerald-500"><div class="min-w-0 flex-1"><div class="truncate text-xs font-bold ${completed[x.id]?'line-through text-emerald-300':'text-slate-200'}">${escapeHTML(x.name)}</div><div class="mt-1 flex flex-wrap items-center gap-1.5 text-[9px] text-slate-500"><input type="number" min="0.01" step="0.01" value="${Number(x.amount)||100}" onchange="updatePlannedDayAmountV0500('${date}','${x.id}',this.value)" class="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-[10px] text-white"><span>${x.category==='Bevande'?'ml':(x.quantityUnit||'g')}</span><span class="text-amber-300">${mealPlanItemKcalV0502(x)} kcal</span></div><div class="mt-1 text-[9px] text-slate-600">${mealPlanItemMacroTextV0502(x)}</div></div><button onclick="removePlannedDayItemV0500('${date}','${x.id}')" class="p-2 text-rose-400"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):`<div class="py-2 text-[10px] italic text-slate-600">Nessun alimento previsto</div>`}</div></div>`;
       }).join('')+`<div class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-center"><div class="text-[9px] uppercase tracking-[.16em] text-amber-300">Calorie pianificate oggi</div><div class="mt-1 text-3xl font-black text-white">${totalKcal}<span class="ml-1 text-sm text-slate-500">kcal</span></div></div>`;
     }
     function ensurePlannedOverrideV0500(date){const x=getPlannedDayV0500(date,true);saveStateToLocal({source:'meal-plan-day'});return x;}

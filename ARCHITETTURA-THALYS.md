@@ -59,3 +59,7 @@ La versione applicativa, il protocollo sync e il cache bust devono derivare da `
 
 ### v0.50.4 - Picker alimenti condiviso Reale/Pianificato
 Il modal `add-food-modal` e il relativo motore di ricerca/selezione sono ora condivisi tra Reale e Pianificato. Il contesto di apertura determina la destinazione del salvataggio: diario reale oppure override giornaliero del piano.
+
+
+## v0.51.0 - Target giornalieri Home
+La Home espone un riepilogo dei target nutrizionali attivi e usa il target acqua effettivo come soglia di completamento (100%). Questa versione prepara il successivo bilancio energetico completo; il consumo energetico da passi/attività sarà collegato quando verrà introdotto il relativo tracker, evitando stime non ancora supportate dai dati dell'app.

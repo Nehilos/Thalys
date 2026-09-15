@@ -20,7 +20,7 @@ let chartMacroV7=null,chartMicroV7=null;
 async function loadExternalAvatarArtwork(force=false){
   if(window._thalysExternalAvatarLoaded&&!force)return true;
   try{
-    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0504',{cache:'reload'}),fetch('./female.svg?v=0504',{cache:'reload'})]);
+    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0510',{cache:'reload'}),fetch('./female.svg?v=0510',{cache:'reload'})]);
     if(!mr.ok||!fr.ok)throw new Error('SVG_NOT_FOUND');
     const parser=new DOMParser();
     async function install(res,id){const doc=parser.parseFromString(await res.text(),'image/svg+xml'),svg=doc.documentElement,s=document.getElementById(id);if(!s)return;const vb=svg.getAttribute('viewBox');if(vb)s.setAttribute('viewBox',vb);s.replaceChildren(...Array.from(svg.children).filter(n=>n.tagName.toLowerCase()!=='script').map(n=>document.importNode(n,true)));}
@@ -39,7 +39,7 @@ function getDayGamification(date){
   const exerciseTotal=dayEx.length,exerciseDone=plan?dayEx.filter(x=>c?.exercises?.[x.id]).length:0,workoutDone=exerciseTotal>0&&exerciseDone===exerciseTotal;
   const nutrition=(appState.nutrition||[]).filter(x=>x.date===date),kcal=nutrition.reduce((s,x)=>s+Number(x.kcal||0),0),water=Number(appState.water?.[date]||0),waterTarget=getWaterTarget(date),wellness=appState.wellness?.find(x=>x.date===date),meditation=(appState.meditation||[]).filter(x=>x.date===date).reduce((s,x)=>s+Number(x.minutes||0),0),active=getActiveWorkoutPlan(),scheduled=isPlanScheduledOnDate(active,date),mealDone=mealsCompletedForDateV7(date),mealCount=new Set(nutrition.map(x=>x.meal)).size;
   const steps=[];if(active)steps.push({label:scheduled?`${tr('Scheda')} ${active.name}`:tr('Riposo programmato'),done:scheduled?workoutDone:true,icon:scheduled?'fa-dumbbell':'fa-moon'});
-  steps.push({label:tr('Check-in wellness'),done:!!wellness,icon:'fa-heart-pulse'},{label:tr('Idratazione'),done:water>=waterTarget*.8,icon:'fa-glass-water'},{label:mealDone?tr('Attività completata'):`${tr('Pasti')} ${mealCount}/4`,done:mealDone,icon:'fa-utensils'},{label:tr('Pausa mentale'),done:(typeof isMentalPauseCompleted==='function'?isMentalPauseCompleted(date):meditation>=5),icon:'fa-spa'});
+  steps.push({label:tr('Check-in wellness'),done:!!wellness,icon:'fa-heart-pulse'},{label:tr('Idratazione'),done:water>=waterTarget,icon:'fa-glass-water'},{label:mealDone?tr('Attività completata'):`${tr('Pasti')} ${mealCount}/4`,done:mealDone,icon:'fa-utensils'},{label:tr('Pausa mentale'),done:(typeof isMentalPauseCompleted==='function'?isMentalPauseCompleted(date):meditation>=5),icon:'fa-spa'});
   return {plan,exerciseDone,exerciseTotal,workoutDone,steps,done:steps.filter(x=>x.done).length,total:steps.length,water,waterTarget,kcal,wellness,meditation,mealDone};
 }
 
@@ -97,7 +97,7 @@ function avatarSetArtworkV8(gender,{force=false}={}){
   if(!group)return false;
   const file=female?'female.svg':'male.svg';
   const ns='http://www.w3.org/2000/svg';
-  const href=`./${file}?v=0504${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
+  const href=`./${file}?v=0510${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
   const image=document.createElementNS(ns,'image');
   image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','768');image.setAttribute('height','1536');
   image.setAttribute('preserveAspectRatio','xMidYMid meet');image.setAttribute('href',href);

@@ -24,7 +24,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
   
 
-  <link rel="stylesheet" href="./css/thalys.css?v=0504">
+  <link rel="stylesheet" href="./css/thalys.css?v=0510">
 
   <meta name="theme-color" content="#090d16">
   <script>
@@ -32,7 +32,7 @@
     // flashing the Google access screen before auth.js restores the local session.
     (function(){
       try{
-        var current='0.50.4';
+        var current='0.51.0';
         var hasSession=localStorage.getItem('thalys_app_session_v1')==='1';
         var sessionVersion=localStorage.getItem('thalys_auth_software_version_v1')||'';
         if(hasSession && sessionVersion===current) document.documentElement.classList.add('thalys-session-preboot');
@@ -113,7 +113,7 @@
       </div>
       <div class="min-w-0">
         <h1 class="thalys-header-title text-[17px] sm:text-xl font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Thalys</h1>
-        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.50.4</div>
+        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.51.0</div>
         <span class="hidden sm:block text-[10px] text-slate-400 tracking-wider font-semibold uppercase mt-0.5">Wellness</span>
       </div>
       <div class="hidden sm:block text-[9px] italic text-slate-300/80 leading-tight max-w-[190px] ml-1">
@@ -180,17 +180,17 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0504"></script>
-  <script src="./js/capabilities.js?v=0504"></script>
-  <script src="./js/device-media.js?v=0504"></script>
-  <script src="./js/backend-bridge.js?v=0504"></script>
-  <script src="./js/server-auth.js?v=0504"></script>
-  <script src="./js/notifications.js?v=0504"></script>
-  <script src="./js/storage-manager.js?v=0504"></script>
-  <script src="./js/sync-queue.js?v=0504"></script>
-  <script src="./js/conflict-resolver.js?v=0504"></script>
-  <script src="./js/local-db.js?v=0504"></script>
-  <script src="./js/ui-foundation.js?v=0504"></script>
+  <script src="./js/config.js?v=0510"></script>
+  <script src="./js/capabilities.js?v=0510"></script>
+  <script src="./js/device-media.js?v=0510"></script>
+  <script src="./js/backend-bridge.js?v=0510"></script>
+  <script src="./js/server-auth.js?v=0510"></script>
+  <script src="./js/notifications.js?v=0510"></script>
+  <script src="./js/storage-manager.js?v=0510"></script>
+  <script src="./js/sync-queue.js?v=0510"></script>
+  <script src="./js/conflict-resolver.js?v=0510"></script>
+  <script src="./js/local-db.js?v=0510"></script>
+  <script src="./js/ui-foundation.js?v=0510"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -214,6 +214,25 @@
             <div class="home-metric-card-v17 home-metric-workout rounded-2xl border border-white/5 bg-slate-950/45 p-3"><div class="text-[10px] text-slate-400">Allenamento</div><div id="home-workout-count" class="mt-1 text-lg font-black text-cyan-300">0</div><div id="home-workout-label" class="text-[9px] text-slate-500">esercizi</div></div>
           </div>
         </div>
+      </div>
+
+      <div id="home-nutrition-balance-card-v0510" class="rounded-3xl border border-emerald-500/15 bg-gradient-to-br from-slate-900/95 to-emerald-950/25 p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-[9px] uppercase tracking-[.18em] text-emerald-300">Target nutrizionali oggi</div>
+            <div id="home-calorie-balance-label-v0510" class="mt-1 text-sm font-black text-white">0 / 2200 kcal</div>
+          </div>
+          <div id="home-calorie-balance-status-v0510" class="rounded-full bg-slate-800 px-2.5 py-1 text-[9px] font-bold text-slate-300">—</div>
+        </div>
+        <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+          <div id="home-calorie-balance-bar-v0510" class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-[width] duration-300" style="width:0%"></div>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div class="rounded-2xl bg-slate-950/55 p-2"><div class="text-[8px] uppercase text-slate-500">Proteine</div><div id="home-target-p-v0510" class="mt-1 text-[10px] font-black text-rose-300">0 / 150 g</div></div>
+          <div class="rounded-2xl bg-slate-950/55 p-2"><div class="text-[8px] uppercase text-slate-500">Carboidrati</div><div id="home-target-c-v0510" class="mt-1 text-[10px] font-black text-amber-300">0 / 250 g</div></div>
+          <div class="rounded-2xl bg-slate-950/55 p-2"><div class="text-[8px] uppercase text-slate-500">Grassi</div><div id="home-target-f-v0510" class="mt-1 text-[10px] font-black text-blue-300">0 / 70 g</div></div>
+        </div>
+        <div id="home-calorie-balance-detail-v0510" class="mt-2 text-[9px] text-slate-500">Residuo giornaliero: —</div>
       </div>
 
       <div class="home-avatar-card rounded-3xl border border-cyan-500/15 bg-gradient-to-br from-slate-900 to-slate-950 p-3">
@@ -1322,7 +1341,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.50.4
+        Thalys · Software v0.51.0
       </div>
 
     </section>
@@ -2453,19 +2472,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0504"></script>
+  <script src="./js/language.js?v=0510"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0504"></script>
-  <script src="./js/body.js?v=0504"></script>
-  <script src="./js/meditation.js?v=0504"></script>
-  <script src="./js/nutrition.js?v=0504"></script>
-  <script src="./js/workout.js?v=0504"></script>
-  <script src="./js/home.js?v=0504"></script>
-  <script src="./js/analytics.js?v=0504"></script>
+  <script src="./js/app-core.js?v=0510"></script>
+  <script src="./js/body.js?v=0510"></script>
+  <script src="./js/meditation.js?v=0510"></script>
+  <script src="./js/nutrition.js?v=0510"></script>
+  <script src="./js/workout.js?v=0510"></script>
+  <script src="./js/home.js?v=0510"></script>
+  <script src="./js/analytics.js?v=0510"></script>
 
-  <script src="./js/drive.js?v=0504"></script>
-  <script src="./js/auth.js?v=0504"></script>
+  <script src="./js/drive.js?v=0510"></script>
+  <script src="./js/auth.js?v=0510"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2492,8 +2511,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0504"></script>
-<script src="./js/runtime-health.js?v=0504"></script>
+<script src="./js/app-enhancements.js?v=0510"></script>
+<script src="./js/runtime-health.js?v=0510"></script>
 
 </body>
 </html>

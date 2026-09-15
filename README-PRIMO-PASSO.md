@@ -178,3 +178,11 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Il pulsante apre esattamente lo stesso selettore alimenti del Reale: ricerca, filtri categoria, dettagli nutrizionali, grammi/ml e unita.
 - Quando il selettore viene aperto dal Pianificato, l'alimento viene salvato esclusivamente nella copia giornaliera del piano e non modifica il piano ufficiale.
 - La sincronizzazione live Pianificato introdotta in v0.50.3 resta invariata.
+
+
+## v0.51.0 - Target Home + fix Idratazione
+- La progressione giornaliera considera Idratazione completata solo al raggiungimento del 100% del target acqua impostato.
+- Anche il riepilogo settimanale conta un giorno come idratato solo al 100% del target.
+- Home mostra una nuova scheda compatta dei target nutrizionali del giorno: calorie, proteine, carboidrati e grassi.
+- La scheda mostra avanzamento calorie, residuo rispetto al target o eventuale superamento.
+- Nessuna modifica al flusso Dieta Reale/Pianificato o alla sincronizzazione v0.50.4.
