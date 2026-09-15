@@ -130,10 +130,15 @@
   }
   async function clearSession(removeRemote=true){
     const s=session();
-    if(removeRemote&&enabled()&&s.sessionId&&s.sessionSecret){try{await window.ThalysBackend.deleteGoogleSession({sessionId:s.sessionId,sessionSecret:s.sessionSecret});}catch(_){}}
+    // Local logout must be immediate and must never depend on network latency.
     localStorage.removeItem(SESSION_ID_KEY);localStorage.removeItem(SESSION_SECRET_KEY);localStorage.removeItem(SESSION_ACTIVE_KEY);
+    codeClient=null;
     try{if(window.ThalysStorage?.put)await window.ThalysStorage.put(window.ThalysStorage.CONFIG.stores.meta,{key:IDB_SESSION_META_KEY,value:{},updatedAt:new Date().toISOString()});}catch(_){}
-    codeClient=null;await refreshUI();
+    try{await refreshUI();}catch(_){}
+    // Remote cleanup is best-effort and happens only after local state is already clean.
+    if(removeRemote&&enabled()&&s.sessionId&&s.sessionSecret){
+      try{await window.ThalysBackend.deleteGoogleSession({sessionId:s.sessionId,sessionSecret:s.sessionSecret});}catch(_){}
+    }
   }
   async function refreshUI(){
     const el=document.getElementById('device-server-session-status');

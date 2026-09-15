@@ -1,4 +1,4 @@
-// Thalys v0.49.0 - Authentication and persistent session module
+// Thalys v0.49.1 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -11,7 +11,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.49.0';
+    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.49.1';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -93,12 +93,9 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       const returningUser=localStorage.getItem('thalys_app_session_v1')==='1' || !!localStorage.getItem(AUTH_PROFILE_STORAGE_KEY);
       if(!returningUser)return;
       startupAccessRequested=true;
-      // Prefer the persisted server refresh session. Browser OAuth is only the fallback.
-      (async()=>{
-        try{if(window.ThalysServerAuth?.canRefresh?.() && await window.ThalysServerAuth.refresh(true))return;}catch(_){}
-        startupAccessRequested=false;
-        handleAuthClick(true);
-      })();
+      // Mobile-safe startup: only request Google access after GAPI/GIS are ready.
+      // Server-auth refresh remains available through the normal reconnect/supervisor path.
+      handleAuthClick(true);
     }
     function loginHandler(){
       // Explicit user action must never be blocked by a stale silent-startup request.
@@ -133,7 +130,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         } else {
           await refreshFromDrive(false,true);
         }
-        // v0.49.0: never declare reconnect complete while a persisted dirty flag or
+        // v0.49.1: never declare reconnect complete while a persisted dirty flag or
         // pending queue still exists. A concurrent module may have restored the token
         // first; this final gate guarantees the actual Drive flush has finished.
         let stillPending = localStorage.getItem('thalys_drive_dirty') === '1'
