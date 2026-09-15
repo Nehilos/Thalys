@@ -18,15 +18,22 @@
     return {ok:true};
   }
   function url(path){const base=String(cfg().baseUrl||'').replace(/\/+$/,'');const p=String(path||'').startsWith('/')?String(path):'/'+String(path||'');return base+p;}
+  function desktopRuntime(){try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}}
+  function isGoogleAuthPath(path){return String(path||'').startsWith('/auth/google/');}
+  function requestUrl(path){
+    if(desktopRuntime()&&isGoogleAuthPath(path)&&cfg().desktopGoogleProxyPath)return String(cfg().desktopGoogleProxyPath);
+    return url(path);
+  }
   async function request(path,options={}){
     if(!costSafe())throw Object.assign(new Error('PAID_BACKEND_BLOCKED'),{code:'PAID_BACKEND_BLOCKED'});
     if(!configured())throw Object.assign(new Error('BACKEND_NOT_CONFIGURED'),{code:'BACKEND_NOT_CONFIGURED'});
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),Number(options.timeoutMs||8000));
     try{
-      const response=await fetch(url(path),{
+      const useDesktopProxy=desktopRuntime()&&isGoogleAuthPath(path)&&cfg().desktopGoogleProxyPath;
+      const response=await fetch(requestUrl(path),{
         method:options.method||'GET',
-        headers:{'Content-Type':'application/json',...(options.headers||{})},
+        headers:{'Content-Type':'application/json',...(useDesktopProxy?{'X-Thalys-Backend-Path':String(path)}:{}),...(options.headers||{})},
         body:options.body===undefined?undefined:JSON.stringify(options.body),
         signal:controller.signal,
         credentials:'omit'

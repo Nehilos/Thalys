@@ -8,36 +8,9 @@
   let hydratePromise=null;
   let authorizePromise=null;
   let authorizeResolve=null;
-  function isDesktopRuntimeV0544(){try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}}
+  function isDesktopRuntimeV0542(){try{return window.matchMedia('(pointer:fine)').matches&&window.innerWidth>=768;}catch(_){return false;}}
 
   function backendCfg(){return window.ThalysConfig?.backend||{};}
-  function backendErrorCode(err){return String(err?.data?.error||err?.code||err?.message||'');}
-  function desktopOrigin(){try{return String(location.origin||'');}catch(_){return '';} }
-  async function diagnoseDesktopServerAuthFailure(err){
-    if(!isDesktopRuntimeV0544())return {kind:'generic',code:backendErrorCode(err)};
-    const code=backendErrorCode(err);
-    if(code==='ORIGIN_NOT_ALLOWED')return {kind:'origin',code,origin:desktopOrigin()};
-    if(/failed to fetch|networkerror|load failed|fetch/i.test(code)){
-      try{
-        const h=await window.ThalysBackend?.health?.();
-        if(h?.ok===true)return {kind:'origin-likely',code:'ORIGIN_NOT_ALLOWED_OR_CORS',origin:desktopOrigin()};
-      }catch(_){}
-    }
-    return {kind:'generic',code};
-  }
-  function showDesktopServerAuthFailure(diag){
-    if(!isDesktopRuntimeV0544())return false;
-    const el=document.getElementById('device-server-session-status');
-    if(diag?.kind==='origin'||diag?.kind==='origin-likely'){
-      const origin=diag.origin||desktopOrigin();
-      if(el)el.textContent='Origine desktop non autorizzata';
-      window.showToast?.(`Backend Google: autorizza ${origin}`,'fa-triangle-exclamation');
-      try{localStorage.setItem('thalys_server_auth_last_error_v1',JSON.stringify({type:'origin',origin,at:new Date().toISOString()}));}catch(_){}
-      return true;
-    }
-    if(el&&diag?.code)el.textContent=`Errore server: ${diag.code}`;
-    return false;
-  }
   function enabled(){const c=backendCfg();return !!(window.ThalysBackend?.configured?.()&&c.googleCodeFlowEnabled===true&&c.googleCodeExchangePath);}
   function randomBytes(n=32){const b=new Uint8Array(n);crypto.getRandomValues(b);return b;}
   function b64url(bytes){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
@@ -151,14 +124,8 @@
         }catch(err){
           console.error('Server auth code exchange',err);
           markActive(false);
-          if(isDesktopRuntimeV0544()){
-            const diag=await diagnoseDesktopServerAuthFailure(err);
-            const shown=showDesktopServerAuthFailure(diag);
-            if(!shown)window.showToast?.(`Sessione Google desktop non completata${diag?.code?': '+diag.code:''}`);
-          }else{
-            window.showToast?.('Impossibile completare la sessione Google persistente');
-          }
-          if(!isDesktopRuntimeV0544())await refreshUI();
+          window.showToast?.('Impossibile completare la sessione Google persistente');
+          await refreshUI();
           if(authorizeResolve){authorizeResolve(false);authorizeResolve=null;authorizePromise=null;}
           return false;
         }
@@ -194,12 +161,7 @@
       if(st?.active===true)markActive(true);
       else if(st?.active===false)markActive(false);
       return st;
-    }catch(err){
-      if(isDesktopRuntimeV0544()){
-        const diag=await diagnoseDesktopServerAuthFailure(err);
-        if(diag.kind==='origin'||diag.kind==='origin-likely')return {enabled:true,active:false,error:true,transient:false,originBlocked:true,origin:diag.origin};
-        return {enabled:true,active:cachedActive(),error:true,transient:true,errorCode:diag.code};
-      }
+    }catch(_){
       return {enabled:true,active:cachedActive(),error:true,transient:true};
     }
   }
@@ -219,10 +181,9 @@
     if(!c.enabled){el.textContent='Disattivata';return;}
     if(!c.googleCodeFlowEnabled){el.textContent='Pronta · non attiva';return;}
     const st=await status();
-    if(st?.originBlocked)el.textContent='Origine desktop non autorizzata';
-    else if(st?.active&&st?.transient)el.textContent='Attiva · verifica in corso';
+    if(st?.active&&st?.transient)el.textContent='Attiva · verifica in corso';
     else if(st?.active)el.textContent='Attiva';
-    else if(isDesktopRuntimeV0544()&&st?.transient&&cachedActive()&&canRefresh())el.textContent='Attiva · verifica in corso';
+    else if(isDesktopRuntimeV0542()&&st?.transient&&cachedActive()&&canRefresh())el.textContent='Attiva · verifica in corso';
     else if(st?.transient)el.textContent='Verifica connessione…';
     else el.textContent=st?.enabled?'Da attivare':'Non disponibile';
   }
@@ -260,8 +221,8 @@
       return !!ok;
     }finally{refreshBusy=false;}
   }
-  async function recoverDesktopPersistentSessionV0544(){
-    if(!isDesktopRuntimeV0544()||!navigator.onLine||!enabled())return false;
+  async function recoverDesktopPersistentSessionV0542(){
+    if(!isDesktopRuntimeV0542()||!navigator.onLine||!enabled())return false;
     await hydrateSessionFromIndexedDb();
     if(!canRefresh()){await refreshUI();return false;}
     try{
@@ -281,11 +242,11 @@
     refreshTimer=setInterval(proactiveRefresh,5*60*1000);
   }
   window.addEventListener('online',()=>setTimeout(async()=>{await recoverAfterNetworkReturn();},250),{passive:true});
-  window.addEventListener('online',()=>{if(isDesktopRuntimeV0544())setTimeout(recoverDesktopPersistentSessionV0544,700);},{passive:true});
+  window.addEventListener('online',()=>{if(isDesktopRuntimeV0542())setTimeout(recoverDesktopPersistentSessionV0542,700);},{passive:true});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(async()=>{await proactiveRefresh();await refreshUI();},250);});
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&isDesktopRuntimeV0544())setTimeout(recoverDesktopPersistentSessionV0544,650);});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&isDesktopRuntimeV0542())setTimeout(recoverDesktopPersistentSessionV0542,650);});
   document.addEventListener('DOMContentLoaded',()=>setTimeout(async()=>{await hydrateSessionFromIndexedDb();await refreshUI();},0));
-  window.addEventListener('load',async()=>{if(enabled()){await hydrateSessionFromIndexedDb();buildCodeClient();startRefreshSupervisor();if(isDesktopRuntimeV0544())await recoverDesktopPersistentSessionV0544();else await refreshUI();}},{once:true});
-  window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,proactiveRefresh,recoverAfterNetworkReturn,recoverDesktopPersistentSessionV0544,status,clearSession,refreshUI});
+  window.addEventListener('load',async()=>{if(enabled()){await hydrateSessionFromIndexedDb();buildCodeClient();startRefreshSupervisor();if(isDesktopRuntimeV0542())await recoverDesktopPersistentSessionV0542();else await refreshUI();}},{once:true});
+  window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,proactiveRefresh,recoverAfterNetworkReturn,recoverDesktopPersistentSessionV0542,status,clearSession,refreshUI});
   window.enableThalysServerSession=authorize;
 })();

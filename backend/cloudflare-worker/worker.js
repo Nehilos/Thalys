@@ -12,26 +12,7 @@ function json(data,status=200,origin='*'){
   }});
 }
 function allowedOrigins(env){return String(env.ALLOWED_ORIGIN||'').split(',').map(v=>v.trim()).filter(Boolean);}
-function originMatchesPattern(origin,pattern){
-  if(!origin||!pattern)return false;
-  if(pattern==='*')return true;
-  if(pattern===origin)return true;
-  if(!pattern.includes('*'))return false;
-  try{
-    const u=new URL(origin);
-    const p=new URL(pattern.replace('*','wildcard'));
-    if(u.protocol!==p.protocol)return false;
-    const hostPattern=p.hostname.replace('wildcard','*');
-    if(!hostPattern.startsWith('*.'))return false;
-    const suffix=hostPattern.slice(1);
-    return u.hostname.endsWith(suffix)&&u.hostname.length>suffix.length;
-  }catch(_){return false;}
-}
-function corsOrigin(request,env){
-  const origin=request.headers.get('origin')||'';
-  const allowed=allowedOrigins(env);
-  return allowed.some(pattern=>originMatchesPattern(origin,pattern))?origin:'';
-}
+function corsOrigin(request,env){const origin=request.headers.get('origin')||'';const allowed=allowedOrigins(env);return allowed.includes('*')?'*':allowed.includes(origin)?origin:'';}
 function originAllowed(request,env){return !!corsOrigin(request,env);}
 async function bodyJson(request){try{return await request.json();}catch(_){return {};}}
 function enc(bytes){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
@@ -41,23 +22,7 @@ async function sha256(value){return enc(new Uint8Array(await crypto.subtle.diges
 async function encryptionKey(env){const raw=dec(env.AUTH_ENCRYPTION_KEY||'');if(raw.length!==32)throw new Error('AUTH_ENCRYPTION_KEY_INVALID');return crypto.subtle.importKey('raw',raw,'AES-GCM',false,['encrypt','decrypt']);}
 async function encryptSecret(value,env){const iv=crypto.getRandomValues(new Uint8Array(12));const key=await encryptionKey(env);const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,textBytes(value));return {cipher:enc(new Uint8Array(cipher)),iv:enc(iv)};}
 async function decryptSecret(cipher,iv,env){const key=await encryptionKey(env);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:dec(iv)},key,dec(cipher));return new TextDecoder().decode(plain);}
-function secureConfigured(env){return !!(env.DB&&env.GOOGLE_CLIENT_ID&&env.GOOGLE_CLIENT_SECRET&&env.AUTH_ENCRYPTION_KEY);}
-function safeGoogleBrowserOrigin(request){
-  const origin=String(request.headers.get('origin')||'');
-  if(!origin)return '';
-  try{
-    const u=new URL(origin);
-    if(u.protocol==='https:')return origin;
-    if(u.protocol==='http:'&&(u.hostname==='localhost'||u.hostname==='127.0.0.1'))return origin;
-  }catch(_){}
-  return '';
-}
-function routeCorsOrigin(request,env,pathname){
-  const explicit=corsOrigin(request,env);
-  if(explicit)return explicit;
-  if(String(pathname||'').startsWith('/auth/google/'))return safeGoogleBrowserOrigin(request);
-  return '';
-}
+function secureConfigured(env){return !!(env.DB&&env.GOOGLE_CLIENT_ID&&env.GOOGLE_CLIENT_SECRET&&env.AUTH_ENCRYPTION_KEY&&allowedOrigins(env).length&& !allowedOrigins(env).includes('*'));}
 async function googleTokenRequest(params){
   const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams(params)});
   const data=await response.json().catch(()=>({}));
@@ -99,9 +64,9 @@ async function verifiedSession(body,env){
 export default {
   async fetch(request,env){
     const u=new URL(request.url);
-    const origin=routeCorsOrigin(request,env,u.pathname);
-    if(request.method==='OPTIONS')return origin?json({ok:true},204,origin):json({ok:false,error:'ORIGIN_NOT_ALLOWED'},403,request.headers.get('origin')||'*');
-    if(!origin && u.pathname!=='/health')return json({ok:false,error:'ORIGIN_NOT_ALLOWED'},403,request.headers.get('origin')||'*');
+    const origin=corsOrigin(request,env);
+    if(request.method==='OPTIONS')return origin?json({ok:true},204,origin):json({ok:false,error:'ORIGIN_NOT_ALLOWED'},403,'null');
+    if(!originAllowed(request,env) && u.pathname!=='/health')return json({ok:false,error:'ORIGIN_NOT_ALLOWED'},403,'null');
 
     if(u.pathname==='/health'&&request.method==='GET'){
       return json({ok:true,service:'thalys',contractVersion:'1',provider:'cloudflare-workers-free',photos:'google-drive-only',appData:'google-drive-plus-indexeddb',billingRequired:false,capabilities:{d1:!!env.DB,googleServerAuth:secureConfigured(env),pushRegistry:!!env.DB,vapid:!!(env.VAPID_PUBLIC_KEY&&env.VAPID_PRIVATE_KEY)},vapidPublicKey:env.VAPID_PUBLIC_KEY||''},200,origin||'*');

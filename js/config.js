@@ -2,8 +2,8 @@
   'use strict';
   const CONFIG=Object.freeze({
     appName:'Thalys',
-    appVersion:'0.54.5',
-    cacheBust:'0545',
+    appVersion:'0.54.6',
+    cacheBust:'0546',
     sessionSchema:'v1',
     storageSchemaVersion:4,
     syncProtocolVersion:7,
@@ -55,7 +55,8 @@
       googleCodeExchangePath:'/auth/google/code',
       googleRefreshPath:'/auth/google/refresh',
       googleStatusPath:'/auth/google/status',
-      googleLogoutPath:'/auth/google/logout'
+      googleLogoutPath:'/auth/google/logout',
+      desktopGoogleProxyPath:'/api/google-server-auth'
     })
   });
   window.ThalysConfig=CONFIG;

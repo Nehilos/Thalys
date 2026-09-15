@@ -105,13 +105,3 @@ Solo dopo questo test inseriremo l'URL e la `VAPID_PUBLIC_KEY` in `js/config.js`
 ## Regola di rollback
 
 Se qualcosa non funziona, rimettere `backend.enabled=false` e `googleCodeFlowEnabled=false`: Thalys torna immediatamente al login/browser Drive attuale.
-
-## Origini multiple / desktop Vercel
-
-`ALLOWED_ORIGIN` accetta piu origini separate da virgola. Da v0.54.4 accetta anche un wildcard di sottodominio esplicito, ad esempio:
-
-```text
-https://thalys.example.com,https://*.my-thalys-preview.vercel.app
-```
-
-Non usare `*` globale. Se desktop e PWA aprono Thalys da URL diversi, entrambi devono essere autorizzati. Dopo aver cambiato la variabile ridistribuire il Worker.
