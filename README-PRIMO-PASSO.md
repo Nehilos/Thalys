@@ -1,12 +1,12 @@
-# Thalys v0.49.2 - Automatic Reconnect Sync Fix
+# Thalys v0.49.3 - Automatic Reconnect Sync Fix
 
 Correzione single-flight del recovery Drive e gate finale su driveDirty/Sync Queue: il ritorno online non viene considerato completato finché le modifiche locali non sono state consolidate e salvate automaticamente.
 
-# Thalys v0.49.2 - Server Session Persistence Fix
+# Thalys v0.49.3 - Server Session Persistence Fix
 
 Correzione mirata: sessione server Google duplicata in IndexedDB, ripristino dopo avvio offline, stato UI resiliente agli errori transitori e refresh dello stato dopo reconnect. Nessuna modifica richiesta al Worker Cloudflare.
 
-# Thalys v0.49.2 - Google Server Auth + Refresh Token
+# Thalys v0.49.3 - Google Server Auth + Refresh Token
 
 - Google Authorization Code Flow server-side attivo.
 - Refresh token cifrato nel Worker/D1; non viene salvato nel browser.
@@ -18,17 +18,17 @@ Correzione mirata: sessione server Google duplicata in IndexedDB, ripristino dop
 ## Primo test v0.47
 Dopo l'aggiornamento, vai in Opzioni e premi **Attiva sessione server** una sola volta. Completa il popup Google. Lo stato deve diventare **Attiva**.
 
-# Thalys v0.49.2 - Remote Push Test
+# Thalys v0.49.3 - Remote Push Test
 
 Questa versione attiva registrazione Push remota e test Worker->dispositivo. Google server auth resta disattivato.
 
 Prima di testare il pulsante **Test push remota**, pubblica il Worker incluso con `npx wrangler deploy`, poi pubblica l'app su Vercel.
 
-# Thalys v0.49.2 - Backend Connected Test
+# Thalys v0.49.3 - Backend Connected Test
 
 Backend health-check collegato a https://thalys.thalys-app.workers.dev. Google server auth resta disattivato in questa release. Foto progressi solo Google Drive.
 
-# Thalys v0.49.2 - Deployment Ready
+# Thalys v0.49.3 - Deployment Ready
 
 Questa versione prepara il deploy gratuito del backend senza attivarlo.
 
@@ -41,7 +41,7 @@ Questa versione prepara il deploy gratuito del backend senza attivarlo.
 
 Per il backend leggere `backend/cloudflare-worker/DEPLOY-GRATIS.md`.
 
-# Thalys v0.49.2 — Free-First Architecture
+# Thalys v0.49.3 — Free-First Architecture
 
 Questa release prepara il punto 14 senza migrare i dati che oggi funzionano.
 
@@ -72,17 +72,17 @@ Il backend NON contiene endpoint per foto o database Thalys. Non va usato per sp
 6. consulti AI esistenti: se il free tier e disponibile devono continuare a funzionare; se la quota e esaurita deve comparire errore senza fallback a pagamento.
 
 
-## v0.49.2 - Server Auth bridge
+## v0.49.3 - Server Auth bridge
 - Optional Google Authorization Code flow prepared for Cloudflare Worker Free.
 - Refresh tokens stay encrypted server-side in D1 and are never stored in the browser.
 - Existing browser OAuth remains the default and fallback until backend is explicitly enabled.
 - Progress photos remain Google Drive only.
 - Manual offline cache list aligned with the current application version.
 
-## v0.49.2 - Final Architecture Hardening
+## v0.49.3 - Final Architecture Hardening
 
 Questa release consolida la baseline stabile senza cambiare il comportamento funzionale:
-- versione/cache bust centralizzati su 0.49.2 / 0492;
+- versione/cache bust centralizzati su 0.49.3 / 0493;
 - Conflict Resolver allineato a ThalysConfig;
 - Sync Queue e sync_meta allineati al protocollo v7;
 - Runtime Health esteso a coerenza resolver/queue/dirty state;
@@ -92,7 +92,7 @@ Questa release consolida la baseline stabile senza cambiare il comportamento fun
 Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloudflare Workers/D1 free-first. male.svg e female.svg non sono inclusi nel pacchetto.
 
 
-## v0.49.2 - Stability & UX Foundation
+## v0.49.3 - Stability & UX Foundation
 - server refresh preferred before silent browser OAuth; automatic retry on Drive 401;
 - same-version session prepaint avoids welcome-screen flash;
 - gratitude migrated into appState + IndexedDB/Drive (`gratitude.json`) and sync queue/conflict resolver;
@@ -100,3 +100,9 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - nutrition inputs accept hundredths and barcode save returns to food database;
 - confirmations added to destructive workout/diary/consult deletion paths;
 - tab changes start at top while same-view rerenders preserve scroll.
+
+
+## v0.49.3 mobile profile/session fix
+- Logout keeps the encrypted Cloudflare Google refresh session dormant instead of deleting it.
+- Server refresh is disabled while the app session is explicitly logged out.
+- `foto_profilo.json` is re-applied as the dedicated cross-device profile photo after Drive conflict resolution.

@@ -276,10 +276,23 @@ async function findDriveFolder(name,parentId=null){
       }catch(e){console.warn('Conflict resolver fallback',e);conflictResolution=null;}
       appState=mergeCloudIntoLocal(cloud);
       if(conflictResolution&&window.ThalysConflictResolver?.overlayResolved){appState=window.ThalysConflictResolver.overlayResolved(appState,cloud,conflictResolution);}
+      // v0.49.3: foto_profilo.json is the dedicated cross-device profile-photo database.
+      // Re-apply it after conflict resolution so a compact/null app_state copy or a
+      // stale mobile bootstrap can never hide the custom photo that exists on Drive.
+      if(dedicated.profilePhoto!==undefined){
+        const remotePhoto=dedicated.profilePhoto;
+        const localPhoto=appState.profilePhoto||null;
+        const rt=Date.parse(remotePhoto?.updatedAt||0)||0;
+        const lt=Date.parse(localPhoto?.updatedAt||0)||0;
+        const localPending=localStorage.getItem('thalys_drive_dirty')==='1'||localStorage.getItem('thalys_sync_queue_pending')==='1';
+        if(!localPending || !localPhoto || rt>=lt){
+          appState.profilePhoto=remotePhoto?.dataUrl?{...remotePhoto,mode:'custom'}:(remotePhoto||{mode:'google',dataUrl:'',updatedAt:new Date(0).toISOString()});
+        }
+      }
       window.appState=appState;
       try{await loadPhotosFromDriveFolder();}catch(e){console.warn('Drive photo load failed',e);}
       persistThalysStateLocally(appState);localStorage.setItem('thalys_foods',JSON.stringify(appState.presets||[]));if(typeof syncThalysLocalDocuments==='function')syncThalysLocalDocuments(appState);
-      renderAllViews();loadProfileUI();loadTargetsUI();renderPhotos();renderProfilePhotoUI();
+      renderAllViews();loadProfileUI();loadTargetsUI();renderPhotos();if(typeof renderProfilePhotoUI==='function'){renderProfilePhotoUI();setTimeout(renderProfilePhotoUI,120);setTimeout(renderProfilePhotoUI,500);}
       if(consolidate){driveDirty=true;localStorage.setItem('thalys_drive_dirty','1');setDriveStatus('ok','Dati Drive caricati · consolidamento…');updateManualSyncUI();scheduleDriveSync(250);}else{setDriveStatus('ok','Dati Drive aggiornati');updateManualSyncUI();}return true;
     }
     async function refreshFromDrive(showToastOnSuccess=false,forceLoad=false){if(!getAccessToken())return false;if(window.thalysNetworkRecoveryPending&&!forceLoad)return false;if(driveDirty&&!forceLoad){scheduleDriveSync(200);return false;}if(driveRefreshRunning)return false;driveRefreshRunning=true;try{await initializeDriveWorkspace();await loadDatabasesFromDrive(forceLoad);if(showToastOnSuccess)showToast('Tutti i database Thalys caricati e consolidati ✓','fa-cloud-check');return true;}catch(e){console.warn('Drive refresh',e);lastSyncError=classifyDriveError(e);if(lastSyncError.code==='OFFLINE'||lastSyncError.code==='NETWORK_ERROR'){setDriveStatus('saving','Connessione instabile · modalità locale');updateManualSyncUI();return false;}setDriveStatus('error',lastSyncError.short);showSyncError(lastSyncError);return false;}finally{driveRefreshRunning=false;}}

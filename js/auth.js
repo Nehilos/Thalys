@@ -1,4 +1,4 @@
-// Thalys v0.49.2 - Authentication and persistent session module
+// Thalys v0.49.3 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -11,7 +11,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.49.2';
+    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.49.3';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -128,7 +128,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         } else {
           await refreshFromDrive(false,true);
         }
-        // v0.49.2: never declare reconnect complete while a persisted dirty flag or
+        // v0.49.3: never declare reconnect complete while a persisted dirty flag or
         // pending queue still exists. A concurrent module may have restored the token
         // first; this final gate guarantees the actual Drive flush has finished.
         let stillPending = localStorage.getItem('thalys_drive_dirty') === '1'
@@ -246,7 +246,10 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       // Normal Thalys logout is a LOCAL sign-out, not an OAuth grant revocation.
       // Revoking here is asynchronous and can race with an immediate re-login,
       // producing permission_denied even though the new token was already issued.
-      try{window.ThalysServerAuth?.clearSession?.(true);}catch(_){}
+      // Keep the persistent server refresh session. Explicit logout only locks Thalys
+      // and clears the local Drive access token. The server session remains dormant
+      // while THALYS_APP_SESSION_KEY is absent, so the next login can reuse it without
+      // asking the user to activate Server Google Session again.
       authRequestSerial++;
       authRequestInFlight=false;
       startupAccessRequested=false;

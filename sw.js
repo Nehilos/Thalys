@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thalys-shell-v0.49.2';
+const CACHE_NAME = 'thalys-shell-v0.49.3';
 
 const APP_SHELL = [
   './',
@@ -7,38 +7,38 @@ const APP_SHELL = [
   './Thalys Logo Dark.png?v=22',
   './Thalys Logo Light.png?v=22',
   './Loto.png?v=22',
-  './male.svg?v=0492',
-  './female.svg?v=0492',
+  './male.svg?v=0493',
+  './female.svg?v=0493',
   './assets/icons/thalys-app-icon-black.png',
   './css/thalys.css?v=024',
   './js/tailwind-config.js?v=015',
   './js/theme-bootstrap.js?v=015',
-  './js/config.js?v=0492',
-  './js/capabilities.js?v=0492',
-  './js/device-media.js?v=0492',
-  './js/backend-bridge.js?v=0492',
-  './js/server-auth.js?v=0492',
-  './js/notifications.js?v=0492',
-  './js/storage-manager.js?v=0492',
-  './js/sync-queue.js?v=0492',
-  './js/conflict-resolver.js?v=0492',
-  './js/local-db.js?v=0492',
-  './js/ui-foundation.js?v=0492',
-  './js/language.js?v=0492',
-  './js/drive.js?v=0492',
-  './js/auth.js?v=0492',
-  './js/app-core.js?v=0492',
-  './js/body.js?v=0492',
-  './js/meditation.js?v=0492',
-  './js/nutrition.js?v=0492',
-  './js/workout.js?v=0492',
-  './js/home.js?v=0492',
-  './js/analytics.js?v=0492',
+  './js/config.js?v=0493',
+  './js/capabilities.js?v=0493',
+  './js/device-media.js?v=0493',
+  './js/backend-bridge.js?v=0493',
+  './js/server-auth.js?v=0493',
+  './js/notifications.js?v=0493',
+  './js/storage-manager.js?v=0493',
+  './js/sync-queue.js?v=0493',
+  './js/conflict-resolver.js?v=0493',
+  './js/local-db.js?v=0493',
+  './js/ui-foundation.js?v=0493',
+  './js/language.js?v=0493',
+  './js/drive.js?v=0493',
+  './js/auth.js?v=0493',
+  './js/app-core.js?v=0493',
+  './js/body.js?v=0493',
+  './js/meditation.js?v=0493',
+  './js/nutrition.js?v=0493',
+  './js/workout.js?v=0493',
+  './js/home.js?v=0493',
+  './js/analytics.js?v=0493',
   './js/oauth-ui.js?v=015',
   './js/media-tools.js?v=025',
   './js/pwa-register.js?v=015',
-  './js/app-enhancements.js?v=0492',
-  './js/runtime-health.js?v=0492',
+  './js/app-enhancements.js?v=0493',
+  './js/runtime-health.js?v=0493',
   './lang/lang_it.json?v=23',
   './lang/lang_en.json?v=23',
   './lang/lang_es.json?v=23',
@@ -116,7 +116,7 @@ self.addEventListener('fetch', event => {
 });
 
 
-// v0.49.2 - notification/push client foundation. Remote push delivery requires a server subscription endpoint.
+// v0.49.3 - notification/push client foundation. Remote push delivery requires a server subscription endpoint.
 self.addEventListener('push', event => {
   let payload={};
   try{payload=event.data?event.data.json():{};}catch(_){payload={body:event.data?event.data.text():''};}
