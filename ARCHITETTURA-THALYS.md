@@ -81,3 +81,7 @@ La Home viene semplificata rimuovendo card ridondanti. Il tracker essenziale e' 
 - Check-in Home ridisegnato con grafico circolare a quattro settori per Sonno, Recupero, Umore e Stress.
 - Allenamento: primo tracker giornaliero Passi sincronizzato via app_state, con valore manuale, +/-500 e target configurabile.
 - La lettura automatica dai sensori non viene attivata in questa versione per preservare compatibilità e stabilità PWA/iOS/desktop.
+
+
+### v0.54.5 desktop Google session
+Fix confinato al bridge server Google/Cloudflare. Nessuna modifica a workout, passi, Home, Pianificato o flusso mobile.

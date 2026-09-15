@@ -227,3 +227,7 @@ Il Worker ora supporta anche pattern espliciti in `ALLOWED_ORIGIN`, per esempio:
 `https://thalys.example.com,https://*.my-thalys-preview.vercel.app`
 
 Per sicurezza non usare `*` globale. Preferire il dominio produzione stabile; aggiungere un pattern preview solo se realmente necessario. Dopo la modifica di `ALLOWED_ORIGIN` il Worker deve essere ridistribuito, perche la regola CORS vive nel backend Cloudflare e non puo essere corretta dal solo frontend.
+
+
+## v0.54.5 - Desktop Google CORS fix
+Le rotte /auth/google/* del Worker accettano browser origin HTTPS (e localhost in sviluppo) anche quando ALLOWED_ORIGIN non contiene l'origine desktop. La sicurezza resta basata sul redirect URI verificato da Google per il code exchange e su sessionId/sessionSecret per refresh/status/logout. Dopo l'aggiornamento e necessario ridistribuire il Cloudflare Worker incluso in backend/cloudflare-worker/worker.js.
