@@ -1,4 +1,4 @@
-// Thalys v0.48.1 - Authentication and persistent session module
+// Thalys v0.48.2 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -11,7 +11,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.48.1';
+    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.48.2';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -128,7 +128,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         } else {
           await refreshFromDrive(false,true);
         }
-        // v0.48.1: never declare reconnect complete while a persisted dirty flag or
+        // v0.48.2: never declare reconnect complete while a persisted dirty flag or
         // pending queue still exists. A concurrent module may have restored the token
         // first; this final gate guarantees the actual Drive flush has finished.
         let stillPending = localStorage.getItem('thalys_drive_dirty') === '1'
@@ -263,7 +263,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       if(gisInited)rebuildTokenClient(false);
       updateAuthUI(null);
       if(typeof lockApp==='function')lockApp();
-      showToast('Disconnesso da Google Drive');
+      showToast('Disconnesso da Google · sessione server rimossa');
     }
     function setCloudUserUI(profile){updateAuthUI(profile);}
     function logoutCloud(){handleSignoutClick();}
@@ -351,7 +351,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         if (appShell) appShell.classList.add('hidden');
         if (welcomeScreen) welcomeScreen.classList.remove('hidden');
         const note=document.getElementById('welcome-connection-note');
-        if(note)note.textContent='Nuova versione Thalys rilevata. Riconnetti Google una volta per confermare la sessione su questa versione.';
+        if(note)note.textContent='Nuova versione Thalys rilevata. Premi Continua con Google una volta: verranno attivati insieme Drive e sessione server su questo dispositivo.';
         updateWelcomeConnectionUI();
       }
 
@@ -476,11 +476,11 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         const icon = document.getElementById('enter-app-icon');
         const note = document.getElementById('enter-app-note');
         const remembered = localStorage.getItem(THALYS_APP_SESSION_KEY) === '1' || !!localStorage.getItem(THALYS_PROFILE_KEY);
-        if (label) label.textContent = offline ? 'Continua offline' : (remembered ? 'Riconnetti con Google' : 'Continua con Google');
+        if (label) label.textContent = offline ? 'Continua offline' : 'Continua con Google';
         if (icon) icon.className = offline ? 'fa-solid fa-cloud-arrow-down text-base' : 'fa-brands fa-google text-base';
         if (note) note.textContent = offline
           ? 'Userai i dati locali. Potrai riconnettere Google Drive quando torni online.'
-          : (remembered ? 'La sessione Drive deve essere rinnovata prima di entrare.' : 'I tuoi dati restano nel tuo spazio Google Drive.');
+          : (remembered ? 'Conferma Google una volta per questa versione: Drive e sessione server verranno attivati insieme.' : 'Un solo accesso Google attiva Drive e la sessione server persistente.');
       }
 
       window.addEventListener('online', updateWelcomeConnectionUI, { passive: true });
@@ -556,7 +556,7 @@ async function reconnectTickV0376(){
   if(thalysReconnectBusyV0376||!navigator.onLine||!hasRememberedGoogleSession())return false;
   thalysReconnectBusyV0376=true;
   try{
-    // v0.48.1: restore the persistent server Google session first.  A cached
+    // v0.48.2: restore the persistent server Google session first.  A cached
     // Drive access token can still be valid after an offline interval, but it
     // must not short-circuit server-session recovery.
     if(window.ThalysServerAuth?.canRefresh?.()){
@@ -645,6 +645,13 @@ loginHandler=async function(){
   const ready=await ensureGoogleLibrariesV0377();
   if(!ready){showToast('Google non è ancora disponibile. Riprova tra qualche secondo');return false;}
   startupAccessRequested=false;
+  // v0.48.2: one explicit Google popup establishes BOTH Drive access and the
+  // persistent server refresh session. Options is no longer part of login.
+  if(window.ThalysServerAuth?.enabled?.()){
+    const ok=await window.ThalysServerAuth.authorize();
+    if(ok){markCurrentVersionAuthorized();updateAuthUI(savedGoogleProfile());}
+    return !!ok;
+  }
   return handleAuthClick(false,true);
 };
 

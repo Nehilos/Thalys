@@ -6,6 +6,8 @@
   const IDB_SESSION_META_KEY='server-auth-session-v1';
   let codeClient=null;
   let hydratePromise=null;
+  let authorizePromise=null;
+  let authorizeResolve=null;
 
   function backendCfg(){return window.ThalysConfig?.backend||{};}
   function enabled(){const c=backendCfg();return !!(window.ThalysBackend?.configured?.()&&c.googleCodeFlowEnabled===true&&c.googleCodeExchangePath);}
@@ -67,6 +69,7 @@
     try{
       const s=session();
       const data=await window.ThalysBackend.refreshGoogleSession({sessionId:s.sessionId,sessionSecret:s.sessionSecret});
+      markActive(true);
       return await installAccessToken(data,silent);
     }catch(err){
       const code=String(err?.data?.error||err?.message||'');
@@ -83,9 +86,17 @@
       client_id:String(c.googleClientId||window.THALYS_GOOGLE_CLIENT_ID||''),
       scope:scopes,
       ux_mode:'popup',
+      // Explicit login is intentionally authoritative: Google consent is requested
+      // here only after install/update/logout so the backend receives a durable
+      // refresh token and subsequent reconnects need no popup.
+      prompt:'consent',
       include_granted_scopes:true,
       callback:async response=>{
-        if(response?.error||!response?.code){window.showToast?.('Autorizzazione server Google non completata');return;}
+        if(response?.error||!response?.code){
+          window.showToast?.('Autorizzazione server Google non completata');
+          if(authorizeResolve){authorizeResolve(false);authorizeResolve=null;authorizePromise=null;}
+          return;
+        }
         try{
           const s=ensureSession();
           const data=await window.ThalysBackend.exchangeGoogleCode({
@@ -95,24 +106,45 @@
             sessionSecret:s.sessionSecret,
             deviceId:window.ThalysStorage?.deviceId?.()||''
           });
+          // A server session is considered valid only when Google issued/stored the
+          // persistent refresh token. This makes the single login popup authoritative.
+          if(data?.refreshStored!==true)throw Object.assign(new Error('REFRESH_TOKEN_NOT_STORED'),{code:'REFRESH_TOKEN_NOT_STORED'});
+          markActive(true);
           const ok=await installAccessToken(data,false);
-          if(data?.refreshStored)markActive(true);
-          window.showToast?.(data?.refreshStored?'Sessione Google persistente attivata':'Accesso Google attivato · refresh token non ancora emesso',data?.refreshStored?'fa-shield-halved':'fa-circle-info');
+          if(!ok)throw Object.assign(new Error('DRIVE_CONNECT_FAILED'),{code:'DRIVE_CONNECT_FAILED'});
+          window.showToast?.('Google collegato · sessione server attiva','fa-shield-halved');
           await refreshUI();
-          return ok;
-        }catch(err){console.error('Server auth code exchange',err);window.showToast?.('Impossibile attivare la sessione server');}
+          if(authorizeResolve){authorizeResolve(true);authorizeResolve=null;authorizePromise=null;}
+          return true;
+        }catch(err){
+          console.error('Server auth code exchange',err);
+          markActive(false);
+          window.showToast?.('Impossibile completare la sessione Google persistente');
+          await refreshUI();
+          if(authorizeResolve){authorizeResolve(false);authorizeResolve=null;authorizePromise=null;}
+          return false;
+        }
       },
-      error_callback:()=>window.showToast?.('Finestra Google chiusa o non disponibile')
+      error_callback:()=>{
+        window.showToast?.('Finestra Google chiusa o non disponibile');
+        if(authorizeResolve){authorizeResolve(false);authorizeResolve=null;authorizePromise=null;}
+      }
     });
     return codeClient;
   }
   async function authorize(){
     if(!enabled()){window.showToast?.('Backend gratuito non ancora configurato');return false;}
+    if(authorizePromise)return authorizePromise;
     ensureSession();
     const client=codeClient||buildCodeClient();
     if(!client){window.showToast?.('Google non pronto: riprova tra poco');return false;}
-    client.requestCode();
-    return true;
+    authorizePromise=new Promise(resolve=>{authorizeResolve=resolve;});
+    try{client.requestCode();}catch(err){
+      console.error('Server auth popup',err);
+      const resolve=authorizeResolve;authorizeResolve=null;authorizePromise=null;
+      resolve?.(false);
+    }
+    return authorizePromise;
   }
   async function status(){
     if(!enabled())return {enabled:false,active:false};
@@ -163,7 +195,7 @@
     refreshBusy=true;
     try{const ok=await refresh(true);await refreshUI();return ok;}finally{refreshBusy=false;}
   }
-  // v0.48.1: when connectivity returns, explicitly restore the persistent
+  // v0.48.2: when connectivity returns, explicitly restore the persistent
   // server-side Google session before Drive is considered reconnected.  This
   // intentionally bypasses the access-token expiry shortcut in proactiveRefresh:
   // a still-valid Drive token must not leave the server session UI/state stale.
