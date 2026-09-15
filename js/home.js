@@ -418,7 +418,23 @@ function setHomeDate(date){
         set('home-workout-label',tr('esercizi'));
       }
       const pe=document.getElementById('home-priorities');
-      if(pe){pe.innerHTML=`<div class="rounded-2xl bg-cyan-500/10 border border-cyan-500/20 p-3"><div class="flex justify-between"><span class="font-bold text-white">Progressione giornata</span><span class="font-black text-cyan-300">${g.done}/${g.total}</span></div><div class="mt-2 h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 rounded-full" style="width:${Math.round(g.done/g.total*100)}%"></div></div><div class="mt-2 grid grid-cols-1 gap-1">${g.steps.map(x=>`<div class="flex items-center gap-2 text-[10px]"><i class="fa-solid ${x.done?'fa-circle-check text-emerald-400':'fa-circle text-slate-600'}"></i><span class="${x.done?'text-emerald-300':'text-slate-400'}">${x.label}</span></div>`).join('')}</div></div>`;}
+      if(pe){
+        const calorieTarget=Math.max(1,Number(target.calories||2200));
+        const nutritionPct=Math.min(100,Math.round((kcal/calorieTarget)*100));
+        const hydrationPct=Math.min(100,Math.round((water/Math.max(1,waterTarget))*100));
+        const sleepHours=Number(w?.sleepHours||0), sleepPct=Math.min(100,Math.round((sleepHours/8)*100));
+        let workoutPct=0, workoutText='Nessun allenamento';
+        if(activePlanForHome && !scheduledForHome){workoutPct=100;workoutText='Riposo programmato';}
+        else if(g.plan && g.exerciseTotal>0){workoutPct=Math.min(100,Math.round((g.exerciseDone/g.exerciseTotal)*100));workoutText=`${g.exerciseDone}/${g.exerciseTotal} esercizi`;}
+        else if(workouts.length){workoutPct=100;workoutText='Allenamento registrato';}
+        const trackers=[
+          {label:'Alimentazione',icon:'fa-utensils',pct:nutritionPct,text:`${Math.round(kcal)} / ${Math.round(calorieTarget)} kcal`},
+          {label:'Idratazione',icon:'fa-glass-water',pct:hydrationPct,text:`${Math.round(water)} / ${Math.round(waterTarget)} ml`},
+          {label:'Allenamento',icon:'fa-dumbbell',pct:workoutPct,text:workoutText},
+          {label:'Sonno',icon:'fa-moon',pct:sleepPct,text:w?`${Number(sleepHours.toFixed(1))} / 8 h`:'Da registrare'}
+        ];
+        pe.innerHTML=`<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">${trackers.map(t=>`<div class="rounded-2xl border border-slate-800 bg-slate-950/45 p-3"><div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2"><i class="fa-solid ${t.icon} text-cyan-300"></i><span class="text-[10px] font-bold text-white">${t.label}</span></div><span class="text-[10px] font-black ${t.pct>=100?'text-emerald-300':'text-slate-400'}">${t.pct}%</span></div><div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800"><div class="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400" style="width:${t.pct}%"></div></div><div class="mt-1.5 text-[9px] text-slate-500">${t.text}</div></div>`).join('')}</div>`;
+      }
       const ie=document.getElementById('home-insight'); if(ie){
         ie.textContent=g.workoutDone
           ? `${tr('Scheda completata: ottimo lavoro.')} ${g.done}/${g.total}`

@@ -70,3 +70,6 @@ La Home espone un riepilogo dei target nutrizionali attivi e usa il target acqua
 - Grafico radar giornaliero in Home basato esclusivamente sui dati già registrati.
 - Nessuna modifica a Dieta Reale/Pianificato o sincronizzazione.
 
+
+## v0.53.0 - Tracker essenziali Home
+La Home viene semplificata rimuovendo card ridondanti. Il tracker essenziale e' una vista derivata dello stato gia sincronizzato: nutrizione, acqua, allenamento/scheda attiva e wellness/sonno. Non introduce nuovi store o file Drive. Il contapassi reale resta separato per evitare dipendenze da API/sensori non ancora consolidate nella PWA.

@@ -192,3 +192,11 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Cura di sé usa check-in + idratazione; Corpo usa il completamento allenamento; Mente usa la pausa mentale; Riposo usa sonno + recupero; Nutrizione usa calorie e macro rispetto ai target.
 - Il punteggio non inventa dati mancanti.
 
+
+## v0.53.0 - Home cleanup + tracker essenziali
+- Rimossa la card "Target nutrizionali oggi" dalla Home.
+- Rimosse le card secondarie "Meditazione" e "Trend" dalla Home.
+- Spostata la card "Compagno di giornata" subito sotto "La tua giornata" e sopra il Wellness Score.
+- Wellness Score e radar lasciati invariati nelle logiche di calcolo.
+- La precedente area "Priorità di oggi" diventa "Tracker di oggi" con quattro tracker essenziali derivati dai dati esistenti: Alimentazione, Idratazione, Allenamento e Sonno.
+- Nessun nuovo database o permesso richiesto; nessuna modifica a Reale/Pianificato, sync, login o offline.
