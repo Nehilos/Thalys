@@ -39,6 +39,7 @@
       wellness: [], // [{ id, date, sleepHours, stress, recovery, mood, readiness, notes, meditationMinutes, meditationQuality, meditationType }]
       meditation: [],
       gratitude: [], // [{ id, date, text, updatedAt }]
+      gratitudeDeleted: {}, // { gratitudeId: deletedAt } - cross-device tombstones
       presets: [
         { name: "Petto di Pollo (Cotto)", p: 31, c: 0, f: 3.6, sugars: 0, calcium: 15, magnesium: 30, fiber: 0 },
         { name: "Riso Basmati (Crudo)", p: 7, c: 78, f: 0.9, sugars: 0, calcium: 10, magnesium: 50, fiber: 1.6 },
@@ -833,7 +834,9 @@
     async function aiFillFoodPreset(){
       if(!ensureAIConsent())return;
       const name=document.getElementById('preset-name')?.value.trim()||'',status=document.getElementById('preset-ai-status'),btn=document.getElementById('preset-ai-fill-btn');
+      const category=document.getElementById('preset-category')?.value||'',unitType=document.getElementById('preset-unit')?.value||'',unitAmount=Number(document.getElementById('preset-unit-amount')?.value||0);
       if(!name){showToast(tr('Inserisci il nome dell’alimento'),'fa-circle-exclamation');return;}
+      if(!category||!unitType||unitAmount<=0){showToast('Prima completa Categoria, Unità e misura','fa-circle-exclamation');return;}
       if(btn)btn.disabled=true;if(status){status.classList.remove('hidden');status.innerHTML=`<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>${tr('Ricerca valori nutrizionali…')}`}
       try{
         const response=await callThalysAI({action:'food_lookup',locale:currentLocale(),foodName:name});

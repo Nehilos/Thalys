@@ -110,7 +110,7 @@
       source: String(meta.source || 'app'),
       deviceId: getDeviceId(),
       schemaVersion: CONFIG.schemaVersion,
-      appVersion: (window.ThalysConfig?.appVersion || '0.48.6')
+      appVersion: (window.ThalysConfig?.appVersion || '0.49.0')
     };
     try {
       await put(CONFIG.stores.snapshots, record);
@@ -149,7 +149,7 @@
       },
       updatedAt: now
     });
-    await put(CONFIG.stores.meta, { key: 'versions', value: { appVersion: (window.ThalysConfig?.appVersion || '0.48.6'), dbVersion: CONFIG.dbVersion, schemaVersion: CONFIG.schemaVersion, syncProtocolVersion: CONFIG.syncProtocolVersion }, updatedAt: now });
+    await put(CONFIG.stores.meta, { key: 'versions', value: { appVersion: (window.ThalysConfig?.appVersion || '0.49.0'), dbVersion: CONFIG.dbVersion, schemaVersion: CONFIG.schemaVersion, syncProtocolVersion: CONFIG.syncProtocolVersion }, updatedAt: now });
     window.dispatchEvent(new CustomEvent('thalys:storage-ready', { detail: { deviceId, dbVersion: CONFIG.dbVersion } }));
     return { available: true, deviceId, dbVersion: CONFIG.dbVersion };
   }

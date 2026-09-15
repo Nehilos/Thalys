@@ -32,7 +32,7 @@
     // flashing the Google access screen before auth.js restores the local session.
     (function(){
       try{
-        var current='0.48.6';
+        var current='0.49.0';
         var hasSession=localStorage.getItem('thalys_app_session_v1')==='1';
         var sessionVersion=localStorage.getItem('thalys_auth_software_version_v1')||'';
         if(hasSession && sessionVersion===current) document.documentElement.classList.add('thalys-session-preboot');
@@ -113,7 +113,7 @@
       </div>
       <div class="min-w-0">
         <h1 class="thalys-header-title text-[17px] sm:text-xl font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Thalys</h1>
-        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.48.6</div>
+        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.49.0</div>
         <span class="hidden sm:block text-[10px] text-slate-400 tracking-wider font-semibold uppercase mt-0.5">Wellness</span>
       </div>
       <div class="hidden sm:block text-[9px] italic text-slate-300/80 leading-tight max-w-[190px] ml-1">
@@ -180,17 +180,17 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0486"></script>
-  <script src="./js/capabilities.js?v=0486"></script>
-  <script src="./js/device-media.js?v=0486"></script>
-  <script src="./js/backend-bridge.js?v=0486"></script>
-  <script src="./js/server-auth.js?v=0486"></script>
-  <script src="./js/notifications.js?v=0486"></script>
-  <script src="./js/storage-manager.js?v=0486"></script>
-  <script src="./js/sync-queue.js?v=0486"></script>
-  <script src="./js/conflict-resolver.js?v=0486"></script>
-  <script src="./js/local-db.js?v=0486"></script>
-  <script src="./js/ui-foundation.js?v=0486"></script>
+  <script src="./js/config.js?v=0490"></script>
+  <script src="./js/capabilities.js?v=0490"></script>
+  <script src="./js/device-media.js?v=0490"></script>
+  <script src="./js/backend-bridge.js?v=0490"></script>
+  <script src="./js/server-auth.js?v=0490"></script>
+  <script src="./js/notifications.js?v=0490"></script>
+  <script src="./js/storage-manager.js?v=0490"></script>
+  <script src="./js/sync-queue.js?v=0490"></script>
+  <script src="./js/conflict-resolver.js?v=0490"></script>
+  <script src="./js/local-db.js?v=0490"></script>
+  <script src="./js/ui-foundation.js?v=0490"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -1307,7 +1307,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.48.6
+        Thalys · Software v0.49.0
       </div>
 
     </section>
@@ -1524,9 +1524,12 @@
       </div>
 
       <div class="pt-3">
+        <div class="grid grid-cols-[1fr_auto] gap-2">
         <div class="relative">
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-500"></i>
           <input id="meal-preset-search" type="search" oninput="renderMealPresetPicker()" placeholder="Cerca alimento…" autocomplete="off" class="w-full rounded-xl border border-slate-700 bg-slate-950 py-2.5 pl-9 pr-3 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none">
+        </div>
+        <select id="meal-preset-category" onchange="renderMealPresetPicker()" class="rounded-xl border border-slate-700 bg-slate-950 px-2 text-[10px] font-bold text-slate-200"><option>Tutte</option><option>Spuntino</option><option>Primo</option><option>Secondo</option><option>Contorno</option><option>Bevande</option><option>Altro</option></select>
         </div>
         <div class="mt-2 flex items-center justify-between px-1 text-[10px] text-slate-500">
           <span id="meal-preset-count"></span>
@@ -1603,7 +1606,7 @@
       <div class="flex justify-between items-center pb-2 border-b border-slate-800">
         <h3 class="text-base font-bold text-white flex items-center space-x-2">
           <i class="fa-solid fa-book-bookmark text-amber-400"></i>
-          <span>Database Cibi salvati (per 100g)</span>
+          <span>Database Cibi salvati (per 100g / 100ml)</span>
         </h3>
         <div class="food-db-toolbar flex items-center gap-2">
           <button type="button" onclick="toggleFoodPresetForm()" class="w-11 h-11 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shadow-md" aria-label="Aggiungi alimento" title="Aggiungi alimento">
@@ -1622,6 +1625,7 @@
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
           <input id="food-preset-search" type="search" oninput="renderPresets()" placeholder="Cerca alimento nel database…" autocomplete="off" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/70">
         </div>
+        <select id="food-preset-category" onchange="renderPresets()" class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-[10px] font-bold text-slate-200"><option>Tutte</option><option>Spuntino</option><option>Primo</option><option>Secondo</option><option>Contorno</option><option>Bevande</option><option>Altro</option></select>
         <div class="flex items-center justify-between px-1 text-[10px] text-slate-500"><span id="food-preset-search-count"></span><span id="food-preset-search-empty" class="hidden text-amber-300">Nessun alimento trovato</span></div>
       </div>
 
@@ -1633,6 +1637,13 @@
           <button type="button" onclick="aiFillFoodPreset()" id="preset-ai-fill-btn" class="w-11 h-10 shrink-0 rounded-xl border border-violet-400/30 bg-violet-500/15 text-violet-300 flex items-center justify-center" aria-label="Compila con IA" title="Compila con IA"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
         </div>
         <div id="preset-ai-status" class="hidden rounded-lg border border-violet-500/15 bg-violet-500/5 px-2.5 py-2 text-[9px] leading-relaxed text-violet-200"></div>
+        <div class="space-y-2 rounded-xl border border-amber-500/15 bg-amber-500/5 p-2.5">
+          <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Categoria<select id="preset-category" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white"><option>Spuntino</option><option>Primo</option><option>Secondo</option><option>Contorno</option><option>Bevande</option><option selected>Altro</option></select></label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Unità<select id="preset-unit" onchange="updateFoodUnitMeasureUI()" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white"><option selected>Piatto</option><option>Fetta/Pz</option><option>Bicchiere</option></select></label>
+            <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Misura<div class="mt-1 flex items-center rounded-lg border border-slate-700 bg-slate-900 px-2"><input id="preset-unit-amount" type="number" min="0.01" step="0.01" value="100" class="min-w-0 flex-1 bg-transparent py-2 text-xs text-white outline-none"><span id="preset-unit-measure-label" class="text-[10px] font-bold text-amber-300">g</span></div></label>
+          </div>
+        </div>
         <div class="grid grid-cols-2 gap-2">
           <input type="number" id="preset-kcal" step="0.01" placeholder="kcal/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
           <input type="number" id="preset-p" step="0.01" required placeholder="Proteine/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
@@ -2420,19 +2431,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0486"></script>
+  <script src="./js/language.js?v=0490"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0486"></script>
-  <script src="./js/body.js?v=0486"></script>
-  <script src="./js/meditation.js?v=0486"></script>
-  <script src="./js/nutrition.js?v=0486"></script>
-  <script src="./js/workout.js?v=0486"></script>
-  <script src="./js/home.js?v=0486"></script>
-  <script src="./js/analytics.js?v=0486"></script>
+  <script src="./js/app-core.js?v=0490"></script>
+  <script src="./js/body.js?v=0490"></script>
+  <script src="./js/meditation.js?v=0490"></script>
+  <script src="./js/nutrition.js?v=0490"></script>
+  <script src="./js/workout.js?v=0490"></script>
+  <script src="./js/home.js?v=0490"></script>
+  <script src="./js/analytics.js?v=0490"></script>
 
-  <script src="./js/drive.js?v=0486"></script>
-  <script src="./js/auth.js?v=0486"></script>
+  <script src="./js/drive.js?v=0490"></script>
+  <script src="./js/auth.js?v=0490"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2459,8 +2470,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0486"></script>
-<script src="./js/runtime-health.js?v=0486"></script>
+<script src="./js/app-enhancements.js?v=0490"></script>
+<script src="./js/runtime-health.js?v=0490"></script>
 
 </body>
 </html>

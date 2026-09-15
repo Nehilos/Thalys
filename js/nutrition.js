@@ -25,12 +25,19 @@
 
     let mealPresetTarget = 'Colazione';
 
+    const FOOD_CATEGORIES=['Spuntino','Primo','Secondo','Contorno','Bevande','Altro'];
+    const FOOD_UNITS=['Piatto','Fetta/Pz','Bicchiere'];
+    function foodUnitMeasure(unitType){return unitType==='Bicchiere'?'ml':'g';}
+    function isFoodPresetComplete(p){return !!(p?.name && p?.category && p?.unitType && Number(p?.unitAmount)>0);}
+    function updateFoodUnitMeasureUI(){const unit=document.getElementById('preset-unit')?.value||'Piatto',m=foodUnitMeasure(unit),label=document.getElementById('preset-unit-measure-label'),input=document.getElementById('preset-unit-amount');if(label)label.textContent=m;if(input)input.placeholder=unit==='Piatto'?`Grammi per piatto`:unit==='Fetta/Pz'?`Grammi per fetta/pezzo`:`ml per bicchiere`;}
+
     function openFoodForMeal(meal){
       mealPresetTarget = meal || 'Colazione';
       const title=document.getElementById('meal-preset-target-label');
       if(title)title.textContent=mealPresetTarget;
       const search=document.getElementById('meal-preset-search');
       if(search)search.value='';
+      const category=document.getElementById('meal-preset-category');if(category)category.value='Tutte';
       renderMealPresetPicker();
       openModal('add-food-modal');
       setTimeout(()=>search?.focus(),100);
@@ -43,54 +50,45 @@
       if(!list)return;
       appState.presets=sortFoodPresetsNewestFirst(appState.presets||[]);
       const search=(document.getElementById('meal-preset-search')?.value||'').trim().toLocaleLowerCase('it');
+      const category=document.getElementById('meal-preset-category')?.value||'Tutte';
       const visible=[];
       (appState.presets||[]).forEach((raw,idx)=>{
-        const p=normalizeFoodPreset(raw);
-        appState.presets[idx]=p;
-        if(!search || p.name.toLocaleLowerCase('it').includes(search)) visible.push({p,idx});
+        const p=normalizeFoodPreset(raw);appState.presets[idx]=p;
+        const matchSearch=!search||p.name.toLocaleLowerCase('it').includes(search);
+        const matchCategory=category==='Tutte'||p.category===category;
+        if(matchSearch&&matchCategory)visible.push({p,idx});
       });
-      if(count)count.textContent=search?`${visible.length} risultati`:`${visible.length} alimenti`;
+      if(count)count.textContent=(search||category!=='Tutte')?`${visible.length} risultati`:`${visible.length} alimenti`;
       if(empty)empty.classList.toggle('hidden',visible.length!==0);
-      list.innerHTML=visible.map(({p,idx})=>`
-        <div class="rounded-2xl border border-slate-800 bg-slate-900/75 p-3">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-black text-white">${escapeHTML(p.name)}</div>
-              <div class="mt-1 text-[10px] text-slate-400">${Math.round(p.kcal)} kcal · P ${Number(p.p.toFixed(1))}g · C ${Number(p.c.toFixed(1))}g · G ${Number(p.f.toFixed(1))}g / 100g</div>
-            </div>
+      list.innerHTML=visible.map(({p,idx})=>{
+        const complete=isFoodPresetComplete(p), unitLabel=p.unitType==='Fetta/Pz'?'fette/pz':p.unitType==='Bicchiere'?'bicchieri':'piatti';
+        return `<div class="rounded-2xl border border-slate-800 bg-slate-900/75 p-3">
+          <div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2"><span class="h-2 w-2 shrink-0 rounded-full ${complete?'bg-emerald-400':'bg-rose-500'}"></span><div class="truncate text-sm font-black text-white">${escapeHTML(p.name)}</div></div>
+            <div class="mt-1 text-[10px] text-slate-400">${escapeHTML(p.category||'Categoria da compilare')} · ${p.unitType?`${escapeHTML(p.unitType)} = ${Number(p.unitAmount)||0} ${p.unitMeasure}`:'Unità da compilare'}</div>
+            <div class="mt-1 text-[10px] text-slate-500">${Math.round(p.kcal)} kcal · P ${Number(p.p.toFixed(1))}g · C ${Number(p.c.toFixed(1))}g · G ${Number(p.f.toFixed(1))}g / 100${p.unitMeasure==='ml'?'ml':'g'}</div>
+          </div></div>
+          <div class="mt-3 grid ${complete?'grid-cols-2':'grid-cols-1'} gap-2">
+            <label class="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"><span class="text-[10px] font-bold text-slate-500">${p.unitMeasure==='ml'?'ml':'g'}</span><input id="meal-preset-grams-${idx}" type="number" min="0" step="0.01" value="${complete?'':'100'}" placeholder="Quantità" inputmode="decimal" class="min-w-0 flex-1 bg-transparent text-xs font-bold text-white outline-none"></label>
+            ${complete?`<label class="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2"><span class="text-[10px] font-bold text-slate-500">${unitLabel}</span><input id="meal-preset-units-${idx}" type="number" min="0" step="0.01" value="1" inputmode="decimal" class="min-w-0 flex-1 bg-transparent text-xs font-bold text-white outline-none"></label>`:''}
           </div>
-          <div class="mt-3 flex items-center gap-2">
-            <label class="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2">
-              <span class="text-[10px] font-bold text-slate-500">g</span>
-              <input id="meal-preset-grams-${idx}" type="number" min="1" step="1" value="100" inputmode="decimal" class="min-w-0 flex-1 bg-transparent text-xs font-bold text-white outline-none">
-            </label>
-            <button type="button" onclick="addPresetToCurrentMeal(${idx})" class="min-h-10 shrink-0 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-slate-950">Aggiungi</button>
-          </div>
-        </div>`).join('');
+          <button type="button" onclick="addPresetToCurrentMeal(${idx})" class="mt-2 min-h-10 w-full rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-slate-950">Aggiungi</button>
+        </div>`;
+      }).join('');
     }
 
     function addPresetToCurrentMeal(index){
-      const p=normalizeFoodPreset(appState.presets?.[Number(index)]);
-      if(!p.name)return;
-      const grams=Math.max(1,Number(document.getElementById(`meal-preset-grams-${index}`)?.value||100));
-      const ratio=grams/100;
+      const p=normalizeFoodPreset(appState.presets?.[Number(index)]);if(!p.name)return;
+      const direct=Number(document.getElementById(`meal-preset-grams-${index}`)?.value||0);
+      const units=Number(document.getElementById(`meal-preset-units-${index}`)?.value||0);
+      let amount=direct>0?direct:(isFoodPresetComplete(p)&&units>0?units*Number(p.unitAmount):100);
+      amount=Math.max(0.01,amount);
+      const ratio=amount/100;
       const date=document.getElementById('nutrition-date')?.value||homeSelectedDate||new Date().toISOString().split('T')[0];
-      const scaled=key=>(Number(p[key])||0)*ratio;
-      const protein=scaled('p'),carbs=scaled('c'),fat=scaled('f');
+      const scaled=key=>(Number(p[key])||0)*ratio,protein=scaled('p'),carbs=scaled('c'),fat=scaled('f');
       const kcal=p.kcal>0?Math.round(p.kcal*ratio):Math.round((protein*4)+(carbs*4)+(fat*9));
-      const newLog={
-        id:'food_'+Date.now(),date,name:p.name,meal:mealPresetTarget,grams,
-        p:protein,c:carbs,f:fat,satFat:scaled('satFat'),sugars:scaled('sugars'),
-        calcium:scaled('calcium'),magnesium:scaled('magnesium'),zinc:scaled('zinc'),fiber:scaled('fiber'),salt:scaled('salt'),iron:scaled('iron'),potassium:scaled('potassium'),
-        vitaminsId:p.vitaminsId||'',vitaminsLip:p.vitaminsLip||'',kcal
-      };
-      appState.nutrition.push(newLog);
-      saveStateToLocal({source:'nutrition-meal-preset'});
-      closeModal('add-food-modal');
-      renderNutrition();
-      updateAnalyticsCharts();
-      renderHomeDashboard();
-      showToast(`${p.name} aggiunto a ${mealPresetTarget} ✓`,'fa-circle-check');
+      const newLog={id:'food_'+Date.now(),date,name:p.name,meal:mealPresetTarget,grams:amount,quantity:amount,quantityUnit:p.unitMeasure||'g',unitType:p.unitType||'',unitCount:direct>0?null:(units||null),category:p.category||'',p:protein,c:carbs,f:fat,satFat:scaled('satFat'),sugars:scaled('sugars'),calcium:scaled('calcium'),magnesium:scaled('magnesium'),zinc:scaled('zinc'),fiber:scaled('fiber'),salt:scaled('salt'),iron:scaled('iron'),potassium:scaled('potassium'),vitaminsId:p.vitaminsId||'',vitaminsLip:p.vitaminsLip||'',kcal};
+      appState.nutrition.push(newLog);saveStateToLocal({source:'nutrition-meal-preset'});closeModal('add-food-modal');renderNutrition();updateAnalyticsCharts();renderHomeDashboard();showToast(`${p.name} aggiunto a ${mealPresetTarget} ✓`,'fa-circle-check');
     }
 
     function updateFoodDosePreview(){ /* v0.36.4: legacy no-op, manual meal entry removed */ }
@@ -373,13 +371,11 @@
       });
     }
 
-    function normalizeFoodPreset(item){return {
-      name:String(item?.name||'').trim(),kcal:Number(item?.kcal)||0,p:Number(item?.p)||0,c:Number(item?.c)||0,f:Number(item?.f)||0,
-      satFat:Number(item?.satFat ?? item?.saturatedFat)||0,sugars:Number(item?.sugars)||0,calcium:Number(item?.calcium)||0,magnesium:Number(item?.magnesium)||0,zinc:Number(item?.zinc)||0,
-      fiber:Number(item?.fiber)||0,salt:Number(item?.salt)||0,iron:Number(item?.iron)||0,potassium:Number(item?.potassium)||0,
-      vitaminsId:normalizeVitaminCodes(item?.vitaminsId ?? item?.vitaminsID ?? '', 'id'),vitaminsLip:normalizeVitaminCodes(item?.vitaminsLip ?? '', 'lip'),
-      ...((item?.createdAt||item?.ts)?{createdAt:item.createdAt||item.ts}:{}),
-      ...((item?.updatedAt||item?.createdAt||item?.ts)?{updatedAt:item.updatedAt||item.createdAt||item.ts}:{})
+    function normalizeFoodPreset(item){const unitType=FOOD_UNITS.includes(item?.unitType)?item.unitType:'';return {
+      name:String(item?.name||'').trim(),category:FOOD_CATEGORIES.includes(item?.category)?item.category:'',unitType,unitAmount:Number(item?.unitAmount)||0,unitMeasure:item?.unitMeasure||foodUnitMeasure(unitType),
+      kcal:Number(item?.kcal)||0,p:Number(item?.p)||0,c:Number(item?.c)||0,f:Number(item?.f)||0,satFat:Number(item?.satFat ?? item?.saturatedFat)||0,sugars:Number(item?.sugars)||0,calcium:Number(item?.calcium)||0,magnesium:Number(item?.magnesium)||0,zinc:Number(item?.zinc)||0,
+      fiber:Number(item?.fiber)||0,salt:Number(item?.salt)||0,iron:Number(item?.iron)||0,potassium:Number(item?.potassium)||0,vitaminsId:normalizeVitaminCodes(item?.vitaminsId ?? item?.vitaminsID ?? '', 'id'),vitaminsLip:normalizeVitaminCodes(item?.vitaminsLip ?? '', 'lip'),
+      ...((item?.createdAt||item?.ts)?{createdAt:item.createdAt||item.ts}:{}),...((item?.updatedAt||item?.createdAt||item?.ts)?{updatedAt:item.updatedAt||item.createdAt||item.ts}:{})
     };}
 
     function sortFoodPresetsNewestFirst(items){
@@ -392,7 +388,7 @@
 
     let editingFoodPresetIndex=null;
 
-    const PRESET_FIELD_MAP=[['preset-name','name'],['preset-kcal','kcal'],['preset-p','p'],['preset-c','c'],['preset-f','f'],['preset-sat-fat','satFat'],['preset-sugars','sugars'],['preset-calcium','calcium'],['preset-magnesium','magnesium'],['preset-zinc','zinc'],['preset-fiber','fiber'],['preset-salt','salt'],['preset-iron','iron'],['preset-potassium','potassium'],['preset-vitamins-id','vitaminsId'],['preset-vitamins-lip','vitaminsLip']];
+    const PRESET_FIELD_MAP=[['preset-name','name'],['preset-category','category'],['preset-unit','unitType'],['preset-unit-amount','unitAmount'],['preset-kcal','kcal'],['preset-p','p'],['preset-c','c'],['preset-f','f'],['preset-sat-fat','satFat'],['preset-sugars','sugars'],['preset-calcium','calcium'],['preset-magnesium','magnesium'],['preset-zinc','zinc'],['preset-fiber','fiber'],['preset-salt','salt'],['preset-iron','iron'],['preset-potassium','potassium'],['preset-vitamins-id','vitaminsId'],['preset-vitamins-lip','vitaminsLip']];
 
     function toggleFoodPresetForm(force){
       const form=document.getElementById('food-preset-form'); if(!form)return;
@@ -406,9 +402,9 @@
       }
     }
 
-    function resetFoodPresetForm(){editingFoodPresetIndex=null;PRESET_FIELD_MAP.forEach(([id])=>{const e=document.getElementById(id);if(e)e.value='';});}
+    function resetFoodPresetForm(){editingFoodPresetIndex=null;PRESET_FIELD_MAP.forEach(([id])=>{const e=document.getElementById(id);if(e)e.value='';});const c=document.getElementById('preset-category'),u=document.getElementById('preset-unit'),a=document.getElementById('preset-unit-amount');if(c)c.value='Altro';if(u)u.value='Piatto';if(a)a.value='100';updateFoodUnitMeasureUI();}
 
-    function editFoodPreset(index){const p=normalizeFoodPreset(appState.presets[index]);editingFoodPresetIndex=index;toggleFoodPresetForm(true);PRESET_FIELD_MAP.forEach(([id,key])=>{const e=document.getElementById(id);if(e)e.value=p[key]??'';});showToast('Modalità modifica attiva');}
+    function editFoodPreset(index){const p=normalizeFoodPreset(appState.presets[index]);editingFoodPresetIndex=index;toggleFoodPresetForm(true);PRESET_FIELD_MAP.forEach(([id,key])=>{const e=document.getElementById(id);if(e)e.value=p[key]??'';});updateFoodUnitMeasureUI();showToast('Modalità modifica attiva');}
 
     function applyPresetToForm(){ renderMealPresetPicker(); }
 
@@ -417,23 +413,17 @@
     function saveFoodPreset(e){
       e.preventDefault(); const raw={}; PRESET_FIELD_MAP.forEach(([id,key])=>raw[key]=document.getElementById(id)?.value||''); const now=new Date().toISOString();
       const existing=editingFoodPresetIndex===null?null:normalizeFoodPreset(appState.presets?.[editingFoodPresetIndex]);
-      const p=normalizeFoodPreset({...raw,createdAt:existing?.createdAt||now,updatedAt:now}); if(!p.name)return;
+      const p=normalizeFoodPreset({...raw,unitMeasure:foodUnitMeasure(raw.unitType),createdAt:existing?.createdAt||now,updatedAt:now}); if(!p.name)return;if(!p.category||!p.unitType||p.unitAmount<=0){showToast('Completa Categoria, Unità e misura','fa-circle-exclamation');return;}
       if(editingFoodPresetIndex===null)appState.presets.unshift(p);else appState.presets[editingFoodPresetIndex]=p; persistFoodDatabase();renderPresets();resetFoodPresetForm();toggleFoodPresetForm(false);renderNutrition();renderHomeDashboard();showToast('Alimento salvato ✓ · sincronizzazione avviata','fa-bookmark');
     }
 
     function deletePreset(index){if(!confirm(`Eliminare ${appState.presets[index]?.name||'questo alimento'}?`))return;appState.presets.splice(index,1);saveStateToLocal();renderPresets();}
 
     function renderPresets(){
-      const list=document.getElementById('presets-list');if(!list)return;
-      appState.presets=sortFoodPresetsNewestFirst(appState.presets||[]);
-      const search=(document.getElementById('food-preset-search')?.value||'').trim().toLocaleLowerCase('it');
-      list.innerHTML='';
-      let visible=0;
-      (appState.presets||[]).forEach((raw,idx)=>{const p=normalizeFoodPreset(raw);appState.presets[idx]=p;const matches=!search||p.name.toLocaleLowerCase('it').includes(search);if(matches){visible++;const item=document.createElement('div');item.className='bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs';item.innerHTML=`<div class="flex justify-between gap-2"><div class="min-w-0"><div class="font-bold text-slate-200">${p.name}</div><div class="text-[10px] text-slate-400">${p.kcal} kcal · P ${p.p}g · C ${p.c}g · G ${p.f}g · Sat ${p.satFat}g · Zuc ${p.sugars}g</div><div class="text-[10px] text-slate-500">Fibre ${p.fiber}g · Sale ${p.salt}g · Ca ${p.calcium}mg · Mg ${p.magnesium}mg · Zn ${p.zinc}mg · Fe ${p.iron}mg · K ${p.potassium}mg</div><div class="text-[10px] text-slate-500">Vit ID ${p.vitaminsId||'—'} · Vit LIP ${p.vitaminsLip||'—'} / 100g</div></div><div class="flex gap-1"><button onclick="editFoodPreset(${idx})" class="text-cyan-400 p-2"><i class="fa-solid fa-pen"></i></button><button onclick="deletePreset(${idx})" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button></div></div>`;list.appendChild(item);}
-      });
-      const empty=document.getElementById('food-preset-search-empty'); if(empty)empty.classList.toggle('hidden',visible!==0||!search);
-      const count=document.getElementById('food-preset-search-count'); if(count)count.textContent=search?`${visible} risultati`:`${(appState.presets||[]).length} alimenti`;
-      if(document.getElementById('meal-preset-list'))renderMealPresetPicker();
+      const list=document.getElementById('presets-list');if(!list)return;appState.presets=sortFoodPresetsNewestFirst(appState.presets||[]);
+      const search=(document.getElementById('food-preset-search')?.value||'').trim().toLocaleLowerCase('it'),category=document.getElementById('food-preset-category')?.value||'Tutte';list.innerHTML='';let visible=0;
+      (appState.presets||[]).forEach((raw,idx)=>{const p=normalizeFoodPreset(raw);appState.presets[idx]=p;const matches=(!search||p.name.toLocaleLowerCase('it').includes(search))&&(category==='Tutte'||p.category===category);if(matches){visible++;const item=document.createElement('div'),complete=isFoodPresetComplete(p);item.className='bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs';item.innerHTML=`<div class="flex justify-between gap-2"><div class="min-w-0"><div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full ${complete?'bg-emerald-400':'bg-rose-500'}" title="${complete?'Completo':'Da completare'}"></span><div class="font-bold text-slate-200">${escapeHTML(p.name)}</div></div><div class="mt-1 text-[10px] ${p.category?'text-amber-300':'text-rose-300'}">${p.category||'Categoria da compilare'} · ${p.unitType?`${p.unitType} = ${p.unitAmount} ${p.unitMeasure}`:'Unità da compilare'}</div><div class="text-[10px] text-slate-400">${p.kcal} kcal · P ${p.p}g · C ${p.c}g · G ${p.f}g · Sat ${p.satFat}g · Zuc ${p.sugars}g</div><div class="text-[10px] text-slate-500">Fibre ${p.fiber}g · Sale ${p.salt}g · Ca ${p.calcium}mg · Mg ${p.magnesium}mg · Zn ${p.zinc}mg · Fe ${p.iron}mg · K ${p.potassium}mg</div><div class="text-[10px] text-slate-500">Vit ID ${p.vitaminsId||'—'} · Vit LIP ${p.vitaminsLip||'—'} / 100${p.unitMeasure==='ml'?'ml':'g'}</div></div><div class="flex gap-1"><button onclick="editFoodPreset(${idx})" class="text-cyan-400 p-2"><i class="fa-solid fa-pen"></i></button><button onclick="deletePreset(${idx})" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button></div></div>`;list.appendChild(item);}});
+      const empty=document.getElementById('food-preset-search-empty');if(empty)empty.classList.toggle('hidden',visible!==0||(!search&&category==='Tutte'));const count=document.getElementById('food-preset-search-count');if(count)count.textContent=(search||category!=='Tutte')?`${visible} risultati`:`${(appState.presets||[]).length} alimenti`;if(document.getElementById('meal-preset-list'))renderMealPresetPicker();
     }
 
     function saveTargets(e) {
