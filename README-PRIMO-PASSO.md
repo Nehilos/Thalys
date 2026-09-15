@@ -139,7 +139,7 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Gratitudine: tombstone dedicati in gratitude_deleted.json per propagare le cancellazioni tra dispositivi.
 
 
-## v0.50.0 - Dieta Reale / Pianificato
+## v0.50.1 - Dieta Reale / Pianificato
 - La scheda Acqua e' stata portata sopra al selettore Reale/Pianificato.
 - Reale mantiene il diario nutrizionale attuale.
 - Pianificato introduce piani alimentari settimanali attivabili e modificabili dal gestore piani.
@@ -148,3 +148,11 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Gli alimenti provenienti dal piano sono visualizzati con stile piu leggero e indicazione `dal piano`.
 - Le Bevande usano ml in database, selezione, diario Reale, Pianificato e storico pasti.
 - Piani, override giornalieri e completamenti entrano nello stato sincronizzato Drive.
+
+
+## v0.50.1 - Piani alimentari 2
+- Pulsante esplicito Rendi attivo / Piano attivo nella libreria piani.
+- Hardening responsive del gestore piani e Pianificato per evitare overflow sul bordo destro.
+- Eliminare dal Reale un alimento proveniente dal piano rimuove anche la spunta nel Pianificato.
+- Compila piatti: controlla i piatti unici del piano, completa tramite IA quelli incompleti/assenti, aggiorna il database alimenti e mostra Piatti completati X/Y.
+- Gli alimenti completati vengono riallineati anche nelle copie giornaliere gia create e nei log Reale derivati dal piano.

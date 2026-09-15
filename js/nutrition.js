@@ -95,13 +95,23 @@
     function saveFoodLog(e){ e?.preventDefault?.(); }
 
     function deleteFoodLog(id) {
+      const log=(appState.nutrition||[]).find(n=>n.id===id);
       if(!confirm('Eliminare questo alimento dal diario?')) return;
-      appState.nutrition = appState.nutrition.filter(n => n.id !== id);
-      saveStateToLocal();
+      appState.nutrition = (appState.nutrition||[]).filter(n => n.id !== id);
+      // v0.50.1: if the food came from Pianificato, removing it from Reale
+      // must also remove the completion check in Pianificato.
+      if(log?.source==='meal-plan' && log?.date && log?.plannedItemId){
+        ensureMealPlanStateV0500?.();
+        if(appState.mealPlanCompletions?.[log.date]){
+          delete appState.mealPlanCompletions[log.date][log.plannedItemId];
+          if(!Object.keys(appState.mealPlanCompletions[log.date]).length) delete appState.mealPlanCompletions[log.date];
+        }
+      }
+      saveStateToLocal({source:log?.source==='meal-plan'?'meal-plan-completion':'nutrition-delete'});
       renderNutrition();
-      // Aggiorna grafici in tempo reale
+      renderHomeDashboard?.();
       updateAnalyticsCharts();
-      showToast('Alimento rimosso');
+      showToast(log?.source==='meal-plan'?'Rimosso da Reale e Pianificato':'Alimento rimosso');
     }
 
     function getWaterTarget(date){
@@ -476,7 +486,7 @@
       ensureMealPlanStateV0500();const date=document.getElementById('nutrition-date')?.value||currentLocalDateStr(),head=document.getElementById('meal-plan-active-card'),box=document.getElementById('meal-plan-day-list');if(!head||!box)return;const plan=getActiveMealPlanV0500();
       if(!plan){head.innerHTML=`<div class="text-center py-5"><div class="text-3xl">🥗</div><div class="mt-2 text-sm font-black text-white">Nessun piano alimentare attivo</div><div class="mt-1 text-[10px] text-slate-500">Crea il tuo primo piano settimanale e rendilo attivo.</div><button onclick="openMealPlanManagerV0500()" class="mt-4 rounded-xl bg-violet-500 px-4 py-2 text-xs font-black text-slate-950">Gestisci piani</button></div>`;box.innerHTML='';return;}
       const dayData=getPlannedDayV0500(date,false),items=dayData?.items||[],weekday=mealPlanWeekdayV0500(date),completed=appState.mealPlanCompletions[date]||{};
-      head.innerHTML=`<div class="flex items-start justify-between gap-3"><div><div class="text-[9px] uppercase tracking-[.16em] text-violet-300">Piano attivo · ${weekday}</div><div class="mt-1 text-lg font-black text-white">${escapeHTML(plan.name)}</div><div class="mt-1 text-[10px] text-slate-500">Le modifiche di oggi non cambiano il piano originale.</div></div><button onclick="openMealPlanManagerV0500()" class="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-[10px] font-black text-violet-200">Piani</button></div>`;
+      head.innerHTML=`<div class="flex min-w-0 items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] uppercase tracking-[.16em] text-violet-300">Piano attivo · ${weekday}</div><div class="mt-1 truncate text-lg font-black text-white">${escapeHTML(plan.name)}</div><div class="mt-1 text-[10px] text-slate-500">Le modifiche di oggi non cambiano il piano originale.</div></div><button onclick="openMealPlanManagerV0500()" class="shrink-0 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-[10px] font-black text-violet-200">Piani</button></div><button onclick="compileMealPlanFoodsV0501('${plan.id}')" class="mt-3 w-full rounded-xl border border-violet-500/25 bg-violet-500/10 px-3 py-2 text-[10px] font-black text-violet-200"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Compila piatti</button><div class="meal-plan-compile-status-v0501 mt-2 hidden text-center text-[9px] text-violet-200"></div>`;
       box.innerHTML=MEAL_PLAN_MEALS_V0500.map(meal=>{const xs=items.filter(x=>x.meal===meal);const presetOptions=(appState.presets||[]).map((p,i)=>`<option value="${i}">${escapeHTML(p.name)}</option>`).join('');const sid=`planned-add-${meal.replace(/[^a-z]/gi,'')}`;return `<div class="rounded-2xl border border-slate-800 bg-darkcard p-3"><div class="flex items-center justify-between"><b class="text-xs text-white">${meal}</b><span class="text-[9px] text-slate-500">${xs.filter(x=>completed[x.id]).length}/${xs.length}</span></div><div class="mt-2 space-y-2">${xs.length?xs.map(x=>`<div class="rounded-xl border ${completed[x.id]?'border-emerald-500/25 bg-emerald-500/5':'border-slate-800 bg-slate-950/50'} p-2"><div class="flex items-center gap-2"><input type="checkbox" ${completed[x.id]?'checked':''} onchange="togglePlannedFoodConsumedV0500('${date}','${x.id}',this.checked)" class="h-5 w-5 accent-emerald-500"><div class="min-w-0 flex-1"><div class="truncate text-xs font-bold ${completed[x.id]?'line-through text-emerald-300':'text-slate-200'}">${escapeHTML(x.name)}</div><div class="mt-1 flex items-center gap-1 text-[9px] text-slate-500"><input type="number" min="0.01" step="0.01" value="${Number(x.amount)||100}" onchange="updatePlannedDayAmountV0500('${date}','${x.id}',this.value)" class="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-[10px] text-white"><span>${x.category==='Bevande'?'ml':(x.quantityUnit||'g')}</span><span>· ≈ ${Math.round((Number(x.kcal)||0)*(Number(x.amount)||100)/100)} kcal</span></div></div><button onclick="removePlannedDayItemV0500('${date}','${x.id}')" class="p-2 text-rose-400"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):`<div class="py-2 text-[10px] italic text-slate-600">Nessun alimento previsto</div>`}</div><div class="mt-2 flex gap-2"><select id="${sid}" class="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-2 py-2 text-[10px] text-white"><option value="">Aggiungi alimento…</option>${presetOptions}</select><button onclick="addFoodToPlannedDayV0500('${date}','${meal}','${sid}')" class="rounded-xl bg-slate-800 px-3 text-violet-300"><i class="fa-solid fa-plus"></i></button></div></div>`;}).join('');
     }
     function ensurePlannedOverrideV0500(date){const x=getPlannedDayV0500(date,true);saveStateToLocal({source:'meal-plan-day'});return x;}
@@ -488,7 +498,7 @@
     function openMealPlanManagerV0500(){ensureMealPlanStateV0500();mealPlanBuilderIdV0500=null;mealPlanBuilderDayV0500='Lunedì';renderMealPlanManagerV0500();openModal('meal-plan-manager-modal');}
     function renderMealPlanManagerV0500(){
       const list=document.getElementById('meal-plan-library-v0500'),builder=document.getElementById('meal-plan-builder-v0500');if(!list||!builder)return;const active=appState.activeMealPlanId;
-      list.innerHTML=(appState.mealPlans||[]).length?(appState.mealPlans||[]).map(p=>`<div class="rounded-xl border ${p.id===active?'border-emerald-500/30':'border-slate-800'} bg-slate-950 p-3"><div class="flex justify-between gap-2"><div><b class="text-xs text-white">${escapeHTML(p.name)}</b><div class="text-[9px] ${p.id===active?'text-emerald-300':'text-slate-500'}">${p.id===active?'Attivo':'Salvato'}</div></div><div class="flex gap-1"><button onclick="editMealPlanV0500('${p.id}')" class="p-2 text-cyan-300"><i class="fa-solid fa-pen"></i></button><button onclick="activateMealPlanV0500('${p.id}')" class="p-2 text-emerald-300"><i class="fa-solid fa-check"></i></button><button onclick="deleteMealPlanV0500('${p.id}')" class="p-2 text-rose-400"><i class="fa-solid fa-trash"></i></button></div></div></div>`).join(''):`<div class="text-[10px] text-slate-500">Nessun piano salvato.</div>`;
+      list.innerHTML=(appState.mealPlans||[]).length?(appState.mealPlans||[]).map(p=>`<div class="min-w-0 rounded-xl border ${p.id===active?'border-emerald-500/30':'border-slate-800'} bg-slate-950 p-3"><div class="min-w-0"><div class="min-w-0"><div class="flex min-w-0 items-center justify-between gap-2"><div class="min-w-0"><b class="block truncate text-xs text-white">${escapeHTML(p.name)}</b><div class="text-[9px] ${p.id===active?'text-emerald-300':'text-slate-500'}">${p.id===active?'Attivo':'Salvato'}</div></div><div class="flex shrink-0 gap-1"><button onclick="editMealPlanV0500('${p.id}')" class="p-2 text-cyan-300" title="Modifica"><i class="fa-solid fa-pen"></i></button><button onclick="deleteMealPlanV0500('${p.id}')" class="p-2 text-rose-400" title="Elimina"><i class="fa-solid fa-trash"></i></button></div></div><div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2"><button onclick="activateMealPlanV0500('${p.id}')" class="min-h-9 rounded-xl ${p.id===active?'bg-emerald-500/15 text-emerald-300':'bg-emerald-500 text-slate-950'} px-3 text-[10px] font-black"><i class="fa-solid fa-check mr-1"></i>${p.id===active?'Piano attivo':'Rendi attivo'}</button><button onclick="compileMealPlanFoodsV0501('${p.id}')" class="min-h-9 rounded-xl border border-violet-500/25 bg-violet-500/10 px-3 text-[10px] font-black text-violet-200"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Compila piatti</button></div><div class="meal-plan-compile-status-v0501 mt-2 hidden text-[9px] text-violet-200"></div></div></div></div>`).join(''):`<div class="text-[10px] text-slate-500">Nessun piano salvato.</div>`;
       if(!mealPlanBuilderIdV0500){builder.innerHTML=`<button onclick="newMealPlanV0500()" class="w-full rounded-xl bg-violet-500 px-4 py-3 text-xs font-black text-slate-950"><i class="fa-solid fa-plus mr-1"></i> Nuovo piano alimentare</button>`;return;}
       const p=appState.mealPlans.find(x=>x.id===mealPlanBuilderIdV0500);if(!p){mealPlanBuilderIdV0500=null;return renderMealPlanManagerV0500();}const arr=p.days[mealPlanBuilderDayV0500]||[],opts=(appState.presets||[]).map((x,i)=>`<option value="${i}">${escapeHTML(x.name)}</option>`).join('');
       builder.innerHTML=`<div class="rounded-2xl border border-violet-500/20 bg-slate-950 p-3"><label class="text-[9px] text-slate-500">Nome piano<input id="meal-plan-name-v0500" value="${escapeHTML(p.name)}" onchange="renameMealPlanV0500(this.value)" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white"></label><div class="mt-3 grid grid-cols-7 gap-1">${MEAL_PLAN_WEEKDAYS_V0500.map(d=>`<button onclick="selectMealPlanBuilderDayV0500('${d}')" class="rounded-lg px-1 py-2 text-[8px] font-black ${d===mealPlanBuilderDayV0500?'bg-violet-500 text-slate-950':'bg-slate-900 text-slate-400'}">${d.slice(0,3)}</button>`).join('')}</div><div class="mt-3 space-y-2">${arr.map(x=>`<div class="flex items-center gap-2 rounded-xl bg-slate-900 p-2"><select onchange="updateMealPlanOfficialItemV0500('${x.id}','meal',this.value)" class="rounded-lg bg-slate-950 px-2 py-1 text-[9px] text-white">${MEAL_PLAN_MEALS_V0500.map(m=>`<option ${m===x.meal?'selected':''}>${m}</option>`).join('')}</select><div class="min-w-0 flex-1 truncate text-[10px] font-bold text-white">${escapeHTML(x.name)}</div><input type="number" min=".01" step=".01" value="${x.amount}" onchange="updateMealPlanOfficialItemV0500('${x.id}','amount',this.value)" class="w-20 rounded-lg bg-slate-950 px-2 py-1 text-[10px] text-white"><span class="text-[9px] text-slate-500">${x.category==='Bevande'?'ml':x.quantityUnit||'g'}</span><button onclick="removeMealPlanOfficialItemV0500('${x.id}')" class="p-1 text-rose-400"><i class="fa-solid fa-trash"></i></button></div>`).join('')}</div><div class="mt-3 grid grid-cols-[1fr_auto] gap-2"><select id="meal-plan-add-preset-v0500" class="rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-[10px] text-white"><option value="">Alimento…</option>${opts}</select><select id="meal-plan-add-meal-v0500" class="rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-[10px] text-white">${MEAL_PLAN_MEALS_V0500.map(m=>`<option>${m}</option>`).join('')}</select></div><button onclick="addMealPlanOfficialItemV0500()" class="mt-2 w-full rounded-xl bg-slate-800 py-2 text-[10px] font-black text-violet-300">+ Aggiungi al giorno</button><button onclick="finishMealPlanEditV0500()" class="mt-2 w-full rounded-xl bg-emerald-500 py-2 text-[10px] font-black text-slate-950">Salva piano</button></div>`;
@@ -502,6 +512,63 @@
     function removeMealPlanOfficialItemV0500(id){const p=appState.mealPlans.find(x=>x.id===mealPlanBuilderIdV0500);if(!p)return;p.days[mealPlanBuilderDayV0500]=p.days[mealPlanBuilderDayV0500].filter(x=>x.id!==id);p.updatedAt=new Date().toISOString();renderMealPlanManagerV0500();}
     function finishMealPlanEditV0500(){saveStateToLocal({source:'meal-plan-library'});scheduleDriveSync?.(180);mealPlanBuilderIdV0500=null;renderMealPlanManagerV0500();renderNutrition();showToast('Piano alimentare salvato ✓','fa-circle-check');}
     function activateMealPlanV0500(id){appState.activeMealPlanId=id;saveStateToLocal({source:'meal-plan-active'});scheduleDriveSync?.(180);renderMealPlanManagerV0500();renderNutrition();showToast('Piano alimentare attivato ✓','fa-circle-check');}
+    function mealPlanFoodKeyV0501(name){return String(name||'').trim().toLocaleLowerCase('it').replace(/\s+/g,' ');}
+    function mealPlanFoodHasNutritionV0501(p){
+      const x=normalizeFoodPreset(p||{});
+      return isFoodPresetComplete(x) && (Number(x.kcal)>0 || Number(x.p)>0 || Number(x.c)>0 || Number(x.f)>0);
+    }
+    function setMealPlanCompileStatusV0501(text,busy=false){
+      document.querySelectorAll('.meal-plan-compile-status-v0501').forEach(el=>{el.classList.remove('hidden');el.innerHTML=`${busy?'<i class=\"fa-solid fa-circle-notch fa-spin mr-1\"></i>':''}${escapeHTML(text)}`;});
+    }
+    function applyFoodAIDataToPresetV0501(p,d){
+      const keys=['kcal','p','c','f','satFat','sugars','calcium','magnesium','zinc','fiber','salt','iron','potassium'];
+      keys.forEach(k=>{const n=Number(d?.[k]);if(Number.isFinite(n))p[k]=Math.round(n*100)/100;});
+      if(d?.vitaminsId!==undefined)p.vitaminsId=normalizeVitaminCodes(Array.isArray(d.vitaminsId)?d.vitaminsId.join(' '):d.vitaminsId,'id');
+      if(d?.vitaminsLip!==undefined)p.vitaminsLip=normalizeVitaminCodes(Array.isArray(d.vitaminsLip)?d.vitaminsLip.join(' '):d.vitaminsLip,'lip');
+      p.updatedAt=new Date().toISOString();
+      return normalizeFoodPreset(p);
+    }
+    function syncPresetIntoMealPlanV0501(plan,preset){
+      const key=mealPlanFoodKeyV0501(preset.name),fields=['category','unitType','unitAmount','unitMeasure','kcal','p','c','f','satFat','sugars','calcium','magnesium','zinc','fiber','salt','iron','potassium','vitaminsId','vitaminsLip'];
+      const apply=item=>{if(mealPlanFoodKeyV0501(item.name)!==key)return;fields.forEach(k=>item[k]=preset[k]);};
+      Object.values(plan.days||{}).forEach(items=>(items||[]).forEach(apply));
+      Object.entries(appState.mealPlanDailyOverrides||{}).forEach(([date,day])=>{
+        if(day?.planId!==plan.id)return;(day.items||[]).forEach(apply);
+        (appState.nutrition||[]).filter(n=>n.source==='meal-plan'&&n.date===date&&mealPlanFoodKeyV0501(n.name)===key).forEach(log=>{
+          const item=(day.items||[]).find(x=>x.id===log.plannedItemId);if(!item)return;Object.assign(log,plannedItemToNutritionLogV0500(item,date,plan.id),{id:log.id});
+        });
+      });
+    }
+    async function compileMealPlanFoodsV0501(planId){
+      if(!ensureAIConsent())return;
+      const plan=(appState.mealPlans||[]).find(x=>x.id===planId);if(!plan)return;
+      const unique=new Map();Object.values(plan.days||{}).forEach(items=>(items||[]).forEach(item=>{const k=mealPlanFoodKeyV0501(item.name);if(k&&!unique.has(k))unique.set(k,item);}));
+      const dishes=[...unique.values()];if(!dishes.length){showToast('Il piano non contiene piatti','fa-circle-info');return;}
+      let completed=0;setMealPlanCompileStatusV0501(`Controllo piatti 0/${dishes.length}…`,true);
+      for(let i=0;i<dishes.length;i++){
+        const item=dishes[i],key=mealPlanFoodKeyV0501(item.name);
+        let idx=(appState.presets||[]).findIndex(x=>mealPlanFoodKeyV0501(x.name)===key);
+        let preset=idx>=0?normalizeFoodPreset(appState.presets[idx]):normalizeFoodPreset({name:item.name,category:item.category||'Altro',unitType:item.unitType||((item.category==='Bevande')?'Bicchiere':'Piatto'),unitAmount:Number(item.unitAmount)||100,unitMeasure:item.unitMeasure||((item.category==='Bevande')?'ml':'g'),createdAt:new Date().toISOString()});
+        if(!preset.category)preset.category=item.category||'Altro';
+        if(!preset.unitType)preset.unitType=item.unitType||((preset.category==='Bevande')?'Bicchiere':'Piatto');
+        if(!(Number(preset.unitAmount)>0))preset.unitAmount=Number(item.unitAmount)||100;
+        preset.unitMeasure=foodUnitMeasure(preset.unitType,preset.category);
+        try{
+          if(!mealPlanFoodHasNutritionV0501(preset)){
+            setMealPlanCompileStatusV0501(`Compilo ${i+1}/${dishes.length}: ${item.name}`,true);
+            const response=await callThalysAI({action:'food_lookup',locale:currentLocale(),foodName:item.name});
+            preset=applyFoodAIDataToPresetV0501(preset,response.data||{});
+          }
+          if(idx>=0)appState.presets[idx]=preset;else{appState.presets.unshift(preset);idx=0;}
+          syncPresetIntoMealPlanV0501(plan,preset);
+          if(mealPlanFoodHasNutritionV0501(preset))completed++;
+        }catch(e){console.warn('Compila piatti:',item.name,e);}
+      }
+      plan.updatedAt=new Date().toISOString();persistFoodDatabase();saveStateToLocal({source:'meal-plan-compile-foods'});scheduleDriveSync?.(180);
+      renderPresets();renderMealPlanManagerV0500();renderNutrition();
+      const msg=`Piatti completati ${completed}/${dishes.length}`;setMealPlanCompileStatusV0501(msg,false);showToast(msg,completed===dishes.length?'fa-circle-check':'fa-triangle-exclamation');
+    }
+
     function deleteMealPlanV0500(id){const p=appState.mealPlans.find(x=>x.id===id);if(!p||!confirm(`Eliminare il piano ${p.name}?`))return;appState.mealPlans=appState.mealPlans.filter(x=>x.id!==id);if(appState.activeMealPlanId===id)appState.activeMealPlanId=null;saveStateToLocal({source:'meal-plan-library'});scheduleDriveSync?.(180);mealPlanBuilderIdV0500=null;renderMealPlanManagerV0500();renderNutrition();}
 
     function saveTargets(e) {

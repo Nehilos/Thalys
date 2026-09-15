@@ -24,7 +24,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
   
 
-  <link rel="stylesheet" href="./css/thalys.css?v=024">
+  <link rel="stylesheet" href="./css/thalys.css?v=0501">
 
   <meta name="theme-color" content="#090d16">
   <script>
@@ -32,7 +32,7 @@
     // flashing the Google access screen before auth.js restores the local session.
     (function(){
       try{
-        var current='0.50.0';
+        var current='0.50.1';
         var hasSession=localStorage.getItem('thalys_app_session_v1')==='1';
         var sessionVersion=localStorage.getItem('thalys_auth_software_version_v1')||'';
         if(hasSession && sessionVersion===current) document.documentElement.classList.add('thalys-session-preboot');
@@ -113,7 +113,7 @@
       </div>
       <div class="min-w-0">
         <h1 class="thalys-header-title text-[17px] sm:text-xl font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Thalys</h1>
-        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.50.0</div>
+        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.50.1</div>
         <span class="hidden sm:block text-[10px] text-slate-400 tracking-wider font-semibold uppercase mt-0.5">Wellness</span>
       </div>
       <div class="hidden sm:block text-[9px] italic text-slate-300/80 leading-tight max-w-[190px] ml-1">
@@ -180,17 +180,17 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0500"></script>
-  <script src="./js/capabilities.js?v=0500"></script>
-  <script src="./js/device-media.js?v=0500"></script>
-  <script src="./js/backend-bridge.js?v=0500"></script>
-  <script src="./js/server-auth.js?v=0500"></script>
-  <script src="./js/notifications.js?v=0500"></script>
-  <script src="./js/storage-manager.js?v=0500"></script>
-  <script src="./js/sync-queue.js?v=0500"></script>
-  <script src="./js/conflict-resolver.js?v=0500"></script>
-  <script src="./js/local-db.js?v=0500"></script>
-  <script src="./js/ui-foundation.js?v=0500"></script>
+  <script src="./js/config.js?v=0501"></script>
+  <script src="./js/capabilities.js?v=0501"></script>
+  <script src="./js/device-media.js?v=0501"></script>
+  <script src="./js/backend-bridge.js?v=0501"></script>
+  <script src="./js/server-auth.js?v=0501"></script>
+  <script src="./js/notifications.js?v=0501"></script>
+  <script src="./js/storage-manager.js?v=0501"></script>
+  <script src="./js/sync-queue.js?v=0501"></script>
+  <script src="./js/conflict-resolver.js?v=0501"></script>
+  <script src="./js/local-db.js?v=0501"></script>
+  <script src="./js/ui-foundation.js?v=0501"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -652,7 +652,7 @@
 
       </div>
 
-      <div id="nutrition-planned-view" class="hidden space-y-4">
+      <div id="nutrition-planned-view" class="hidden min-w-0 max-w-full space-y-4 overflow-x-hidden">
         <div id="meal-plan-active-card" class="rounded-3xl border border-violet-500/20 bg-slate-950/70 p-4"></div>
         <div id="meal-plan-day-list" class="space-y-3"></div>
       </div>
@@ -1322,7 +1322,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.50.0
+        Thalys · Software v0.50.1
       </div>
 
     </section>
@@ -1982,10 +1982,10 @@
   </div>
 
   <!-- MODAL: WATER TARGET -->
-  <div id="meal-plan-manager-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="w-full max-w-2xl max-h-[88vh] overflow-auto rounded-3xl border border-violet-500/20 bg-slate-950 p-4 shadow-2xl">
+  <div id="meal-plan-manager-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 hidden overflow-x-hidden">
+    <div class="meal-plan-manager-shell w-full max-w-2xl max-h-[88vh] overflow-y-auto overflow-x-hidden rounded-3xl border border-violet-500/20 bg-slate-950 p-3 sm:p-4 shadow-2xl">
       <div class="flex items-center justify-between"><div><h3 class="text-base font-black text-white">Piani alimentari</h3><p class="text-[10px] text-slate-500">Il piano originale resta separato dalle modifiche quotidiane.</p></div><button onclick="closeModal('meal-plan-manager-modal')" class="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700 text-slate-200"><i class="fa-solid fa-xmark"></i></button></div>
-      <div class="mt-4 grid gap-4 md:grid-cols-2"><div><div class="mb-2 text-[9px] font-black uppercase tracking-[.16em] text-slate-500">Piani salvati</div><div id="meal-plan-library-v0500" class="space-y-2"></div></div><div><div class="mb-2 text-[9px] font-black uppercase tracking-[.16em] text-slate-500">Editor</div><div id="meal-plan-builder-v0500"></div></div></div>
+      <div class="mt-4 grid min-w-0 gap-4 md:grid-cols-2"><div class="min-w-0"><div class="mb-2 text-[9px] font-black uppercase tracking-[.16em] text-slate-500">Piani salvati</div><div id="meal-plan-library-v0500" class="min-w-0 space-y-2"></div></div><div class="min-w-0"><div class="mb-2 text-[9px] font-black uppercase tracking-[.16em] text-slate-500">Editor</div><div id="meal-plan-builder-v0500" class="min-w-0"></div></div></div>
     </div>
   </div>
 
@@ -2453,19 +2453,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0500"></script>
+  <script src="./js/language.js?v=0501"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0500"></script>
-  <script src="./js/body.js?v=0500"></script>
-  <script src="./js/meditation.js?v=0500"></script>
-  <script src="./js/nutrition.js?v=0500"></script>
-  <script src="./js/workout.js?v=0500"></script>
-  <script src="./js/home.js?v=0500"></script>
-  <script src="./js/analytics.js?v=0500"></script>
+  <script src="./js/app-core.js?v=0501"></script>
+  <script src="./js/body.js?v=0501"></script>
+  <script src="./js/meditation.js?v=0501"></script>
+  <script src="./js/nutrition.js?v=0501"></script>
+  <script src="./js/workout.js?v=0501"></script>
+  <script src="./js/home.js?v=0501"></script>
+  <script src="./js/analytics.js?v=0501"></script>
 
-  <script src="./js/drive.js?v=0500"></script>
-  <script src="./js/auth.js?v=0500"></script>
+  <script src="./js/drive.js?v=0501"></script>
+  <script src="./js/auth.js?v=0501"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2492,8 +2492,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0500"></script>
-<script src="./js/runtime-health.js?v=0500"></script>
+<script src="./js/app-enhancements.js?v=0501"></script>
+<script src="./js/runtime-health.js?v=0501"></script>
 
 </body>
 </html>

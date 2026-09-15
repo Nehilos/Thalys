@@ -36,7 +36,7 @@
 
 La versione applicativa, il protocollo sync e il cache bust devono derivare da `js/config.js`. Il Runtime Health Check segnala eventuali divergenze.
 
-## v0.50.0 - Dieta Reale / Pianificato
+## v0.50.1 - Dieta Reale / Pianificato
 - La sezione Dieta separa il diario consumato (Reale) dalla copia quotidiana del piano attivo (Pianificato).
 - `mealPlans` conserva i piani ufficiali settimanali.
 - `mealPlanDailyOverrides[date]` conserva le sole variazioni giornaliere e non modifica il piano ufficiale.
