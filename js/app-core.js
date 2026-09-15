@@ -38,6 +38,7 @@
       workoutCompletions: {}, // { "YYYY-MM-DD": { planId, exercises: { planExerciseId: true }, completedAt } }
       wellness: [], // [{ id, date, sleepHours, stress, recovery, mood, readiness, notes, meditationMinutes, meditationQuality, meditationType }]
       meditation: [],
+      gratitude: [], // [{ id, date, text, updatedAt }]
       presets: [
         { name: "Petto di Pollo (Cotto)", p: 31, c: 0, f: 3.6, sugars: 0, calcium: 15, magnesium: 30, fiber: 0 },
         { name: "Riso Basmati (Crudo)", p: 7, c: 78, f: 0.9, sugars: 0, calcium: 10, magnesium: 50, fiber: 1.6 },

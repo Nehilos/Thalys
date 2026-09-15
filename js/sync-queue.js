@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = window.ThalysConfig?.appVersion || '0.48.5';
+  const APP_VERSION = window.ThalysConfig?.appVersion || '0.48.6';
   const PROTOCOL_VERSION = Number(window.ThalysConfig?.syncProtocolVersion || 7);
   const STORE = 'sync_queue';
   const GLOBAL_STATE_ID_PREFIX = 'state:';
@@ -127,6 +127,7 @@
     if(entity==='workoutPlan')return String(x?.name||index);
     if(entity==='workoutHistory')return `${x?.date||''}|${x?.planId||''}`;
     if(entity==='meditation')return `${x?.date||''}|${x?.completedAt||x?.minutes||''}`;
+    if(entity==='gratitude')return String(x?.id||`${x?.date||''}|${x?.text||''}`);
     return String(x?.date||index);
   }
   function diffMapArray(previous, current, entity, source) {
@@ -175,6 +176,7 @@
     ops.push(...diffMapArray(previousState.workoutPlans,currentState.workoutPlans,'workoutPlan',source));
     ops.push(...diffMapArray(previousState.workoutHistory,currentState.workoutHistory,'workoutHistory',source));
     ops.push(...diffMapArray(previousState.meditation,currentState.meditation,'meditation',source));
+    ops.push(...diffMapArray(previousState.gratitude,currentState.gratitude,'gratitude',source));
 
     if(!same(previousState.activeWorkoutPlanId,currentState.activeWorkoutPlanId)) {
       ops.push(baseRecord({entity:'activeWorkoutPlan',entityId:'active',action:'update',payload:{before:previousState.activeWorkoutPlanId||null,after:currentState.activeWorkoutPlanId||null},source}));
