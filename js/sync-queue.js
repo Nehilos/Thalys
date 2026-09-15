@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = window.ThalysConfig?.appVersion || '0.48.0';
+  const APP_VERSION = window.ThalysConfig?.appVersion || '0.48.1';
   const PROTOCOL_VERSION = Number(window.ThalysConfig?.syncProtocolVersion || 7);
   const STORE = 'sync_queue';
   const GLOBAL_STATE_ID_PREFIX = 'state:';

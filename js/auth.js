@@ -1,4 +1,4 @@
-// Thalys v0.48.0 - Authentication and persistent session module
+// Thalys v0.48.1 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -11,7 +11,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.48.0';
+    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.48.1';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -128,7 +128,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
         } else {
           await refreshFromDrive(false,true);
         }
-        // v0.48.0: never declare reconnect complete while a persisted dirty flag or
+        // v0.48.1: never declare reconnect complete while a persisted dirty flag or
         // pending queue still exists. A concurrent module may have restored the token
         // first; this final gate guarantees the actual Drive flush has finished.
         let stillPending = localStorage.getItem('thalys_drive_dirty') === '1'
@@ -556,14 +556,21 @@ async function reconnectTickV0376(){
   if(thalysReconnectBusyV0376||!navigator.onLine||!hasRememberedGoogleSession())return false;
   thalysReconnectBusyV0376=true;
   try{
+    // v0.48.1: restore the persistent server Google session first.  A cached
+    // Drive access token can still be valid after an offline interval, but it
+    // must not short-circuit server-session recovery.
+    if(window.ThalysServerAuth?.canRefresh?.()){
+      try{
+        const serverOk=typeof window.ThalysServerAuth.recoverAfterNetworkReturn==='function'
+          ? await window.ThalysServerAuth.recoverAfterNetworkReturn()
+          : await window.ThalysServerAuth.refresh(true);
+        if(serverOk){stopReconnectSupervisorV0376();updateAuthUI(savedGoogleProfile());return true;}
+      }catch(_){}
+    }
     if(!getAccessToken()&&gapiInited)restoreCachedDriveAccessToken();
     if(getAccessToken()){
       const ok=await connectDriveAfterToken(true);
       if(ok){stopReconnectSupervisorV0376();updateAuthUI(savedGoogleProfile());return true;}
-    }
-    // v0.47: a persisted server session is the preferred silent recovery path.
-    if(window.ThalysServerAuth?.canRefresh?.()){
-      try{const serverOk=await window.ThalysServerAuth.refresh(true);if(serverOk){stopReconnectSupervisorV0376();updateAuthUI(savedGoogleProfile());return true;}}catch(_){}
     }
     // Safety fallback: preserve the stable browser OAuth flow if no server session exists.
     if(gapiInited&&gisInited&&!authRequestInFlight){startupAccessRequested=false;await handleAuthClick(true,false);}

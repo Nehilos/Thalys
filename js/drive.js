@@ -465,7 +465,7 @@ async function findDriveFolder(name,parentId=null){
     }
     async function syncAfterNetworkRestore(){
       if(!navigator.onLine)return false;
-      // v0.48.0: single-flight recovery. Auth, server-auth and the iOS reconnect
+      // v0.48.1: single-flight recovery. Auth, server-auth and the iOS reconnect
       // supervisor can all wake up on the same 'online' event. They must await the
       // same recovery instead of racing and treating 'already running' as failure.
       if(networkRecoveryPromise)return networkRecoveryPromise;

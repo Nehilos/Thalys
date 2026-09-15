@@ -163,16 +163,36 @@
     refreshBusy=true;
     try{const ok=await refresh(true);await refreshUI();return ok;}finally{refreshBusy=false;}
   }
+  // v0.48.1: when connectivity returns, explicitly restore the persistent
+  // server-side Google session before Drive is considered reconnected.  This
+  // intentionally bypasses the access-token expiry shortcut in proactiveRefresh:
+  // a still-valid Drive token must not leave the server session UI/state stale.
+  async function recoverAfterNetworkReturn(){
+    if(refreshBusy||!navigator.onLine||!enabled())return false;
+    await hydrateSessionFromIndexedDb();
+    if(!canRefresh()){await refreshUI();return false;}
+    refreshBusy=true;
+    try{
+      const st=await status();
+      // If status could not be verified because of a transient network/backend
+      // failure, a previously-active local session may still be refreshed safely.
+      if(st?.active!==true&&!st?.transient){await refreshUI();return false;}
+      const ok=await refresh(true);
+      if(ok)markActive(true);
+      await refreshUI();
+      return !!ok;
+    }finally{refreshBusy=false;}
+  }
   function startRefreshSupervisor(){
     if(refreshTimer)clearInterval(refreshTimer);
     if(!enabled())return;
     setTimeout(proactiveRefresh,1500);
     refreshTimer=setInterval(proactiveRefresh,5*60*1000);
   }
-  window.addEventListener('online',()=>setTimeout(async()=>{await hydrateSessionFromIndexedDb();await proactiveRefresh();await refreshUI();},250),{passive:true});
+  window.addEventListener('online',()=>setTimeout(async()=>{await recoverAfterNetworkReturn();},250),{passive:true});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(proactiveRefresh,250);});
   document.addEventListener('DOMContentLoaded',()=>setTimeout(async()=>{await hydrateSessionFromIndexedDb();await refreshUI();},0));
   window.addEventListener('load',async()=>{if(enabled()){await hydrateSessionFromIndexedDb();buildCodeClient();startRefreshSupervisor();await refreshUI();}},{once:true});
-  window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,proactiveRefresh,status,clearSession,refreshUI});
+  window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,proactiveRefresh,recoverAfterNetworkReturn,status,clearSession,refreshUI});
   window.enableThalysServerSession=authorize;
 })();
