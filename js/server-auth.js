@@ -226,7 +226,7 @@
     refreshTimer=setInterval(proactiveRefresh,5*60*1000);
   }
   window.addEventListener('online',()=>setTimeout(async()=>{await recoverAfterNetworkReturn();},250),{passive:true});
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(proactiveRefresh,250);});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(async()=>{await proactiveRefresh();await refreshUI();},250);});
   document.addEventListener('DOMContentLoaded',()=>setTimeout(async()=>{await hydrateSessionFromIndexedDb();await refreshUI();},0));
   window.addEventListener('load',async()=>{if(enabled()){await hydrateSessionFromIndexedDb();buildCodeClient();startRefreshSupervisor();await refreshUI();}},{once:true});
   window.ThalysServerAuth=Object.freeze({enabled,canRefresh,authorize,refresh,proactiveRefresh,recoverAfterNetworkReturn,status,clearSession,refreshUI});
