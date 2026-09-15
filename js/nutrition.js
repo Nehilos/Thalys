@@ -27,9 +27,9 @@
 
     const FOOD_CATEGORIES=['Spuntino','Primo','Secondo','Contorno','Bevande','Altro'];
     const FOOD_UNITS=['Piatto','Fetta/Pz','Bicchiere'];
-    function foodUnitMeasure(unitType){return unitType==='Bicchiere'?'ml':'g';}
+    function foodUnitMeasure(unitType,category=''){return category==='Bevande'||unitType==='Bicchiere'?'ml':'g';}
     function isFoodPresetComplete(p){return !!(p?.name && p?.category && p?.unitType && Number(p?.unitAmount)>0);}
-    function updateFoodUnitMeasureUI(){const unit=document.getElementById('preset-unit')?.value||'Piatto',m=foodUnitMeasure(unit),label=document.getElementById('preset-unit-measure-label'),input=document.getElementById('preset-unit-amount');if(label)label.textContent=m;if(input)input.placeholder=unit==='Piatto'?`Grammi per piatto`:unit==='Fetta/Pz'?`Grammi per fetta/pezzo`:`ml per bicchiere`;}
+    function updateFoodUnitMeasureUI(){const category=document.getElementById('preset-category')?.value||'',unitEl=document.getElementById('preset-unit');if(category==='Bevande'&&unitEl&&unitEl.value!=='Bicchiere')unitEl.value='Bicchiere';const unit=unitEl?.value||'Piatto',m=foodUnitMeasure(unit,category),label=document.getElementById('preset-unit-measure-label'),input=document.getElementById('preset-unit-amount');if(label)label.textContent=m;if(input)input.placeholder=m==='ml'?`ml per ${unit==='Bicchiere'?'bicchiere':'unità'}`:unit==='Piatto'?`Grammi per piatto`:`Grammi per fetta/pezzo`; }
 
     function openFoodForMeal(meal){
       mealPresetTarget = meal || 'Colazione';
@@ -286,6 +286,13 @@
       }
     }
 
+    function foodLogQuantityLabelV0500(log){
+      const unit=(log?.category==='Bevande'||log?.quantityUnit==='ml'||log?.unitType==='Bicchiere')?'ml':'g';
+      const value=Number(log?.quantity ?? log?.grams ?? 0);
+      const n=Number.isInteger(value)?value:Number(value.toFixed(2));
+      return `${n}${unit}`;
+    }
+
     function renderNutrition() {
       const selectedDate = document.getElementById('nutrition-date').value;
       const container = document.getElementById('meals-container');
@@ -352,9 +359,9 @@
           <div class="space-y-2">
             ${mealLogs.length === 0 ? `<div class="text-[11px] text-slate-500 italic">${tk('nutrition.no_food','Nessun alimento')}</div>` : ''}
             ${mealLogs.map(l => `
-              <div class="flex items-center justify-between text-xs bg-slate-900/40 p-2 rounded-xl border border-slate-800/60">
+              <div class="flex items-center justify-between text-xs ${l.source==='meal-plan'?'bg-violet-950/20 border-violet-500/20 opacity-80':'bg-slate-900/40 border-slate-800/60'} p-2 rounded-xl border">
                 <div>
-                  <div class="font-bold text-slate-200">${l.name} <span class="text-[10px] text-slate-400 font-normal">(${l.grams}g)</span></div>
+                  <div class="font-bold text-slate-200">${l.name} <span class="text-[10px] text-slate-400 font-normal">(${foodLogQuantityLabelV0500(l)})</span>${l.source==='meal-plan'?'<span class="ml-1 text-[8px] font-bold text-violet-300">dal piano</span>':''}</div>
                   <div class="text-[10px] text-slate-400">P ${Number(l.p||0).toFixed(1)}g · C ${Number(l.c||0).toFixed(1)}g · G ${Number(l.f||0).toFixed(1)}g · Sat ${Number(l.satFat||0).toFixed(1)}g</div><div class="text-[9px] leading-relaxed text-slate-500">Ca ${Math.round(Number(l.calcium||0))}mg · Mg ${Math.round(Number(l.magnesium||0))}mg · Zn ${Number(l.zinc||0).toFixed(1)}mg · Fe ${Number(l.iron||0).toFixed(1)}mg · K ${Math.round(Number(l.potassium||0))}mg</div><div class="text-[9px] text-slate-500">Sale ${Number(l.salt||0).toFixed(2)}g · Vit ID ${l.vitaminsId||'—'} · Vit LIP ${l.vitaminsLip||'—'}</div>
                 </div>
                 <div class="flex items-center space-x-2">
@@ -369,10 +376,11 @@
         `;
         container.appendChild(card);
       });
+      renderNutritionModeV0500();
     }
 
     function normalizeFoodPreset(item){const unitType=FOOD_UNITS.includes(item?.unitType)?item.unitType:'';return {
-      name:String(item?.name||'').trim(),category:FOOD_CATEGORIES.includes(item?.category)?item.category:'',unitType,unitAmount:Number(item?.unitAmount)||0,unitMeasure:item?.unitMeasure||foodUnitMeasure(unitType),
+      name:String(item?.name||'').trim(),category:FOOD_CATEGORIES.includes(item?.category)?item.category:'',unitType,unitAmount:Number(item?.unitAmount)||0,unitMeasure:foodUnitMeasure(unitType,FOOD_CATEGORIES.includes(item?.category)?item.category:''),
       kcal:Number(item?.kcal)||0,p:Number(item?.p)||0,c:Number(item?.c)||0,f:Number(item?.f)||0,satFat:Number(item?.satFat ?? item?.saturatedFat)||0,sugars:Number(item?.sugars)||0,calcium:Number(item?.calcium)||0,magnesium:Number(item?.magnesium)||0,zinc:Number(item?.zinc)||0,
       fiber:Number(item?.fiber)||0,salt:Number(item?.salt)||0,iron:Number(item?.iron)||0,potassium:Number(item?.potassium)||0,vitaminsId:normalizeVitaminCodes(item?.vitaminsId ?? item?.vitaminsID ?? '', 'id'),vitaminsLip:normalizeVitaminCodes(item?.vitaminsLip ?? '', 'lip'),
       ...((item?.createdAt||item?.ts)?{createdAt:item.createdAt||item.ts}:{}),...((item?.updatedAt||item?.createdAt||item?.ts)?{updatedAt:item.updatedAt||item.createdAt||item.ts}:{})
@@ -413,7 +421,7 @@
     function saveFoodPreset(e){
       e.preventDefault(); const raw={}; PRESET_FIELD_MAP.forEach(([id,key])=>raw[key]=document.getElementById(id)?.value||''); const now=new Date().toISOString();
       const existing=editingFoodPresetIndex===null?null:normalizeFoodPreset(appState.presets?.[editingFoodPresetIndex]);
-      const p=normalizeFoodPreset({...raw,unitMeasure:foodUnitMeasure(raw.unitType),createdAt:existing?.createdAt||now,updatedAt:now}); if(!p.name)return;if(!p.category||!p.unitType||p.unitAmount<=0){showToast('Completa Categoria, Unità e misura','fa-circle-exclamation');return;}
+      const p=normalizeFoodPreset({...raw,unitMeasure:foodUnitMeasure(raw.unitType,raw.category),createdAt:existing?.createdAt||now,updatedAt:now}); if(!p.name)return;if(!p.category||!p.unitType||p.unitAmount<=0){showToast('Completa Categoria, Unità e misura','fa-circle-exclamation');return;}
       if(editingFoodPresetIndex===null)appState.presets.unshift(p);else appState.presets[editingFoodPresetIndex]=p; persistFoodDatabase();renderPresets();resetFoodPresetForm();toggleFoodPresetForm(false);renderNutrition();renderHomeDashboard();showToast('Alimento salvato ✓ · sincronizzazione avviata','fa-bookmark');
     }
 
@@ -425,6 +433,76 @@
       (appState.presets||[]).forEach((raw,idx)=>{const p=normalizeFoodPreset(raw);appState.presets[idx]=p;const matches=(!search||p.name.toLocaleLowerCase('it').includes(search))&&(category==='Tutte'||p.category===category);if(matches){visible++;const item=document.createElement('div'),complete=isFoodPresetComplete(p);item.className='bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs';item.innerHTML=`<div class="flex justify-between gap-2"><div class="min-w-0"><div class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full ${complete?'bg-emerald-400':'bg-rose-500'}" title="${complete?'Completo':'Da completare'}"></span><div class="font-bold text-slate-200">${escapeHTML(p.name)}</div></div><div class="mt-1 text-[10px] ${p.category?'text-amber-300':'text-rose-300'}">${p.category||'Categoria da compilare'} · ${p.unitType?`${p.unitType} = ${p.unitAmount} ${p.unitMeasure}`:'Unità da compilare'}</div><div class="text-[10px] text-slate-400">${p.kcal} kcal · P ${p.p}g · C ${p.c}g · G ${p.f}g · Sat ${p.satFat}g · Zuc ${p.sugars}g</div><div class="text-[10px] text-slate-500">Fibre ${p.fiber}g · Sale ${p.salt}g · Ca ${p.calcium}mg · Mg ${p.magnesium}mg · Zn ${p.zinc}mg · Fe ${p.iron}mg · K ${p.potassium}mg</div><div class="text-[10px] text-slate-500">Vit ID ${p.vitaminsId||'—'} · Vit LIP ${p.vitaminsLip||'—'} / 100${p.unitMeasure==='ml'?'ml':'g'}</div></div><div class="flex gap-1"><button onclick="editFoodPreset(${idx})" class="text-cyan-400 p-2"><i class="fa-solid fa-pen"></i></button><button onclick="deletePreset(${idx})" class="text-red-400 p-2"><i class="fa-solid fa-trash"></i></button></div></div>`;list.appendChild(item);}});
       const empty=document.getElementById('food-preset-search-empty');if(empty)empty.classList.toggle('hidden',visible!==0||(!search&&category==='Tutte'));const count=document.getElementById('food-preset-search-count');if(count)count.textContent=(search||category!=='Tutte')?`${visible} risultati`:`${(appState.presets||[]).length} alimenti`;if(document.getElementById('meal-preset-list'))renderMealPresetPicker();
     }
+
+    // Thalys v0.50.0 - Reale / Pianificato nutrition plans
+    const MEAL_PLAN_WEEKDAYS_V0500=['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica'];
+    const MEAL_PLAN_MEALS_V0500=['Colazione','Pranzo','Cena','Spuntino'];
+    let nutritionModeV0500='real', mealPlanBuilderIdV0500=null, mealPlanBuilderDayV0500='Lunedì';
+
+    function ensureMealPlanStateV0500(){
+      appState.mealPlans=Array.isArray(appState.mealPlans)?appState.mealPlans:[];
+      appState.mealPlanDailyOverrides=appState.mealPlanDailyOverrides&&typeof appState.mealPlanDailyOverrides==='object'?appState.mealPlanDailyOverrides:{};
+      appState.mealPlanCompletions=appState.mealPlanCompletions&&typeof appState.mealPlanCompletions==='object'?appState.mealPlanCompletions:{};
+    }
+    function mealPlanWeekdayV0500(date){return MEAL_PLAN_WEEKDAYS_V0500[(new Date(`${date}T12:00:00`).getDay()+6)%7];}
+    function getActiveMealPlanV0500(){ensureMealPlanStateV0500();return appState.mealPlans.find(p=>p.id===appState.activeMealPlanId)||null;}
+    function normalizeMealPlanV0500(raw){
+      const days={};MEAL_PLAN_WEEKDAYS_V0500.forEach(d=>days[d]=Array.isArray(raw?.days?.[d])?raw.days[d].map(x=>({...x,id:x.id||`mpi_${Date.now()}_${Math.random().toString(16).slice(2)}`})):[]);
+      return {id:raw?.id||`mealplan_${Date.now()}`,name:String(raw?.name||'Piano alimentare').trim()||'Piano alimentare',days,createdAt:raw?.createdAt||new Date().toISOString(),updatedAt:raw?.updatedAt||new Date().toISOString()};
+    }
+    function mealPlanItemFromPresetV0500(p,meal,amount){
+      p=normalizeFoodPreset(p);const q=Math.max(.01,Number(amount)||Number(p.unitAmount)||100);
+      return {id:`mpi_${Date.now()}_${Math.random().toString(16).slice(2)}`,meal,name:p.name,amount:q,quantityUnit:p.category==='Bevande'?'ml':(p.unitMeasure||'g'),unitType:p.unitType||'',category:p.category||'',kcal:Number(p.kcal)||0,p:Number(p.p)||0,c:Number(p.c)||0,f:Number(p.f)||0,satFat:Number(p.satFat)||0,sugars:Number(p.sugars)||0,calcium:Number(p.calcium)||0,magnesium:Number(p.magnesium)||0,zinc:Number(p.zinc)||0,fiber:Number(p.fiber)||0,salt:Number(p.salt)||0,iron:Number(p.iron)||0,potassium:Number(p.potassium)||0,vitaminsId:p.vitaminsId||'',vitaminsLip:p.vitaminsLip||''};
+    }
+    function plannedItemToNutritionLogV0500(item,date,planId){
+      const amount=Math.max(.01,Number(item.amount)||100),ratio=amount/100,scaled=k=>(Number(item[k])||0)*ratio;
+      const protein=scaled('p'),carbs=scaled('c'),fat=scaled('f');
+      return {id:`planned_${date}_${item.id}`,date,name:item.name,meal:item.meal,grams:amount,quantity:amount,quantityUnit:item.category==='Bevande'?'ml':(item.quantityUnit||'g'),unitType:item.unitType||'',unitCount:null,category:item.category||'',p:protein,c:carbs,f:fat,satFat:scaled('satFat'),sugars:scaled('sugars'),calcium:scaled('calcium'),magnesium:scaled('magnesium'),zinc:scaled('zinc'),fiber:scaled('fiber'),salt:scaled('salt'),iron:scaled('iron'),potassium:scaled('potassium'),vitaminsId:item.vitaminsId||'',vitaminsLip:item.vitaminsLip||'',kcal:Number(item.kcal)>0?Math.round(Number(item.kcal)*ratio):Math.round(protein*4+carbs*4+fat*9),source:'meal-plan',mealPlanId:planId,plannedItemId:item.id,updatedAt:new Date().toISOString()};
+    }
+    function getPlannedDayV0500(date,create=false){
+      ensureMealPlanStateV0500();const plan=getActiveMealPlanV0500();if(!plan)return null;const current=appState.mealPlanDailyOverrides[date];if(current?.planId===plan.id)return current;
+      const day=mealPlanWeekdayV0500(date),copy={planId:plan.id,day,items:(plan.days?.[day]||[]).map(x=>({...x})),updatedAt:new Date().toISOString()};
+      if(create)appState.mealPlanDailyOverrides[date]=copy;return copy;
+    }
+    function setNutritionModeV0500(mode){nutritionModeV0500=mode==='planned'?'planned':'real';renderNutritionModeV0500();}
+    function renderNutritionModeV0500(){
+      const real=document.getElementById('nutrition-real-view'),planned=document.getElementById('nutrition-planned-view'),rb=document.getElementById('nutrition-mode-real'),pb=document.getElementById('nutrition-mode-planned');if(!real||!planned)return;
+      const isPlanned=nutritionModeV0500==='planned';real.classList.toggle('hidden',isPlanned);planned.classList.toggle('hidden',!isPlanned);
+      rb.className=`min-h-11 rounded-2xl border text-xs font-black ${!isPlanned?'border-emerald-500/30 bg-emerald-500/15 text-emerald-200':'border-slate-700 bg-slate-900 text-slate-400'}`;
+      pb.className=`min-h-11 rounded-2xl border text-xs font-black ${isPlanned?'border-violet-500/30 bg-violet-500/15 text-violet-200':'border-slate-700 bg-slate-900 text-slate-400'}`;
+      if(isPlanned)renderPlannedNutritionV0500();
+    }
+    function renderPlannedNutritionV0500(){
+      ensureMealPlanStateV0500();const date=document.getElementById('nutrition-date')?.value||currentLocalDateStr(),head=document.getElementById('meal-plan-active-card'),box=document.getElementById('meal-plan-day-list');if(!head||!box)return;const plan=getActiveMealPlanV0500();
+      if(!plan){head.innerHTML=`<div class="text-center py-5"><div class="text-3xl">🥗</div><div class="mt-2 text-sm font-black text-white">Nessun piano alimentare attivo</div><div class="mt-1 text-[10px] text-slate-500">Crea il tuo primo piano settimanale e rendilo attivo.</div><button onclick="openMealPlanManagerV0500()" class="mt-4 rounded-xl bg-violet-500 px-4 py-2 text-xs font-black text-slate-950">Gestisci piani</button></div>`;box.innerHTML='';return;}
+      const dayData=getPlannedDayV0500(date,false),items=dayData?.items||[],weekday=mealPlanWeekdayV0500(date),completed=appState.mealPlanCompletions[date]||{};
+      head.innerHTML=`<div class="flex items-start justify-between gap-3"><div><div class="text-[9px] uppercase tracking-[.16em] text-violet-300">Piano attivo · ${weekday}</div><div class="mt-1 text-lg font-black text-white">${escapeHTML(plan.name)}</div><div class="mt-1 text-[10px] text-slate-500">Le modifiche di oggi non cambiano il piano originale.</div></div><button onclick="openMealPlanManagerV0500()" class="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-[10px] font-black text-violet-200">Piani</button></div>`;
+      box.innerHTML=MEAL_PLAN_MEALS_V0500.map(meal=>{const xs=items.filter(x=>x.meal===meal);const presetOptions=(appState.presets||[]).map((p,i)=>`<option value="${i}">${escapeHTML(p.name)}</option>`).join('');const sid=`planned-add-${meal.replace(/[^a-z]/gi,'')}`;return `<div class="rounded-2xl border border-slate-800 bg-darkcard p-3"><div class="flex items-center justify-between"><b class="text-xs text-white">${meal}</b><span class="text-[9px] text-slate-500">${xs.filter(x=>completed[x.id]).length}/${xs.length}</span></div><div class="mt-2 space-y-2">${xs.length?xs.map(x=>`<div class="rounded-xl border ${completed[x.id]?'border-emerald-500/25 bg-emerald-500/5':'border-slate-800 bg-slate-950/50'} p-2"><div class="flex items-center gap-2"><input type="checkbox" ${completed[x.id]?'checked':''} onchange="togglePlannedFoodConsumedV0500('${date}','${x.id}',this.checked)" class="h-5 w-5 accent-emerald-500"><div class="min-w-0 flex-1"><div class="truncate text-xs font-bold ${completed[x.id]?'line-through text-emerald-300':'text-slate-200'}">${escapeHTML(x.name)}</div><div class="mt-1 flex items-center gap-1 text-[9px] text-slate-500"><input type="number" min="0.01" step="0.01" value="${Number(x.amount)||100}" onchange="updatePlannedDayAmountV0500('${date}','${x.id}',this.value)" class="w-20 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-[10px] text-white"><span>${x.category==='Bevande'?'ml':(x.quantityUnit||'g')}</span><span>· ≈ ${Math.round((Number(x.kcal)||0)*(Number(x.amount)||100)/100)} kcal</span></div></div><button onclick="removePlannedDayItemV0500('${date}','${x.id}')" class="p-2 text-rose-400"><i class="fa-solid fa-trash"></i></button></div></div>`).join(''):`<div class="py-2 text-[10px] italic text-slate-600">Nessun alimento previsto</div>`}</div><div class="mt-2 flex gap-2"><select id="${sid}" class="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-2 py-2 text-[10px] text-white"><option value="">Aggiungi alimento…</option>${presetOptions}</select><button onclick="addFoodToPlannedDayV0500('${date}','${meal}','${sid}')" class="rounded-xl bg-slate-800 px-3 text-violet-300"><i class="fa-solid fa-plus"></i></button></div></div>`;}).join('');
+    }
+    function ensurePlannedOverrideV0500(date){const x=getPlannedDayV0500(date,true);saveStateToLocal({source:'meal-plan-day'});return x;}
+    function updatePlannedDayAmountV0500(date,id,value){const d=ensurePlannedOverrideV0500(date),x=d?.items.find(i=>i.id===id);if(!x)return;x.amount=Math.max(.01,Number(value)||.01);d.updatedAt=new Date().toISOString();if(appState.mealPlanCompletions?.[date]?.[id]){appState.nutrition=(appState.nutrition||[]).filter(n=>!(n.source==='meal-plan'&&n.date===date&&n.plannedItemId===id));appState.nutrition.push(plannedItemToNutritionLogV0500(x,date,d.planId));}saveStateToLocal({source:'meal-plan-day'});renderNutrition();}
+    function removePlannedDayItemV0500(date,id){if(!confirm('Rimuovere questo alimento solo dal pianificato di questo giorno?'))return;const d=ensurePlannedOverrideV0500(date);if(!d)return;d.items=d.items.filter(x=>x.id!==id);if(appState.mealPlanCompletions?.[date])delete appState.mealPlanCompletions[date][id];appState.nutrition=(appState.nutrition||[]).filter(n=>!(n.source==='meal-plan'&&n.date===date&&n.plannedItemId===id));saveStateToLocal({source:'meal-plan-day'});renderNutrition();renderHomeDashboard();}
+    function addFoodToPlannedDayV0500(date,meal,selectId){const raw=document.getElementById(selectId)?.value;if(raw===undefined||raw===null||raw==='')return;const idx=Number(raw),p=appState.presets?.[idx];if(!p)return;const d=ensurePlannedOverrideV0500(date);d.items.push(mealPlanItemFromPresetV0500(p,meal,Number(normalizeFoodPreset(p).unitAmount)||100));d.updatedAt=new Date().toISOString();saveStateToLocal({source:'meal-plan-day'});renderNutrition();}
+    function togglePlannedFoodConsumedV0500(date,id,on){const d=ensurePlannedOverrideV0500(date),x=d?.items.find(i=>i.id===id);if(!x)return;appState.mealPlanCompletions[date]=appState.mealPlanCompletions[date]||{};appState.mealPlanCompletions[date][id]=!!on;appState.nutrition=(appState.nutrition||[]).filter(n=>!(n.source==='meal-plan'&&n.date===date&&n.plannedItemId===id));if(on)appState.nutrition.push(plannedItemToNutritionLogV0500(x,date,d.planId));saveStateToLocal({source:'meal-plan-completion'});renderNutrition();renderHomeDashboard();updateAnalyticsCharts();showToast(on?'Aggiunto a Reale ✓':'Rimosso da Reale','fa-circle-check');}
+
+    function openMealPlanManagerV0500(){ensureMealPlanStateV0500();mealPlanBuilderIdV0500=null;mealPlanBuilderDayV0500='Lunedì';renderMealPlanManagerV0500();openModal('meal-plan-manager-modal');}
+    function renderMealPlanManagerV0500(){
+      const list=document.getElementById('meal-plan-library-v0500'),builder=document.getElementById('meal-plan-builder-v0500');if(!list||!builder)return;const active=appState.activeMealPlanId;
+      list.innerHTML=(appState.mealPlans||[]).length?(appState.mealPlans||[]).map(p=>`<div class="rounded-xl border ${p.id===active?'border-emerald-500/30':'border-slate-800'} bg-slate-950 p-3"><div class="flex justify-between gap-2"><div><b class="text-xs text-white">${escapeHTML(p.name)}</b><div class="text-[9px] ${p.id===active?'text-emerald-300':'text-slate-500'}">${p.id===active?'Attivo':'Salvato'}</div></div><div class="flex gap-1"><button onclick="editMealPlanV0500('${p.id}')" class="p-2 text-cyan-300"><i class="fa-solid fa-pen"></i></button><button onclick="activateMealPlanV0500('${p.id}')" class="p-2 text-emerald-300"><i class="fa-solid fa-check"></i></button><button onclick="deleteMealPlanV0500('${p.id}')" class="p-2 text-rose-400"><i class="fa-solid fa-trash"></i></button></div></div></div>`).join(''):`<div class="text-[10px] text-slate-500">Nessun piano salvato.</div>`;
+      if(!mealPlanBuilderIdV0500){builder.innerHTML=`<button onclick="newMealPlanV0500()" class="w-full rounded-xl bg-violet-500 px-4 py-3 text-xs font-black text-slate-950"><i class="fa-solid fa-plus mr-1"></i> Nuovo piano alimentare</button>`;return;}
+      const p=appState.mealPlans.find(x=>x.id===mealPlanBuilderIdV0500);if(!p){mealPlanBuilderIdV0500=null;return renderMealPlanManagerV0500();}const arr=p.days[mealPlanBuilderDayV0500]||[],opts=(appState.presets||[]).map((x,i)=>`<option value="${i}">${escapeHTML(x.name)}</option>`).join('');
+      builder.innerHTML=`<div class="rounded-2xl border border-violet-500/20 bg-slate-950 p-3"><label class="text-[9px] text-slate-500">Nome piano<input id="meal-plan-name-v0500" value="${escapeHTML(p.name)}" onchange="renameMealPlanV0500(this.value)" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white"></label><div class="mt-3 grid grid-cols-7 gap-1">${MEAL_PLAN_WEEKDAYS_V0500.map(d=>`<button onclick="selectMealPlanBuilderDayV0500('${d}')" class="rounded-lg px-1 py-2 text-[8px] font-black ${d===mealPlanBuilderDayV0500?'bg-violet-500 text-slate-950':'bg-slate-900 text-slate-400'}">${d.slice(0,3)}</button>`).join('')}</div><div class="mt-3 space-y-2">${arr.map(x=>`<div class="flex items-center gap-2 rounded-xl bg-slate-900 p-2"><select onchange="updateMealPlanOfficialItemV0500('${x.id}','meal',this.value)" class="rounded-lg bg-slate-950 px-2 py-1 text-[9px] text-white">${MEAL_PLAN_MEALS_V0500.map(m=>`<option ${m===x.meal?'selected':''}>${m}</option>`).join('')}</select><div class="min-w-0 flex-1 truncate text-[10px] font-bold text-white">${escapeHTML(x.name)}</div><input type="number" min=".01" step=".01" value="${x.amount}" onchange="updateMealPlanOfficialItemV0500('${x.id}','amount',this.value)" class="w-20 rounded-lg bg-slate-950 px-2 py-1 text-[10px] text-white"><span class="text-[9px] text-slate-500">${x.category==='Bevande'?'ml':x.quantityUnit||'g'}</span><button onclick="removeMealPlanOfficialItemV0500('${x.id}')" class="p-1 text-rose-400"><i class="fa-solid fa-trash"></i></button></div>`).join('')}</div><div class="mt-3 grid grid-cols-[1fr_auto] gap-2"><select id="meal-plan-add-preset-v0500" class="rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-[10px] text-white"><option value="">Alimento…</option>${opts}</select><select id="meal-plan-add-meal-v0500" class="rounded-xl border border-slate-700 bg-slate-900 px-2 py-2 text-[10px] text-white">${MEAL_PLAN_MEALS_V0500.map(m=>`<option>${m}</option>`).join('')}</select></div><button onclick="addMealPlanOfficialItemV0500()" class="mt-2 w-full rounded-xl bg-slate-800 py-2 text-[10px] font-black text-violet-300">+ Aggiungi al giorno</button><button onclick="finishMealPlanEditV0500()" class="mt-2 w-full rounded-xl bg-emerald-500 py-2 text-[10px] font-black text-slate-950">Salva piano</button></div>`;
+    }
+    function newMealPlanV0500(){const p=normalizeMealPlanV0500({id:`mealplan_${Date.now()}`,name:'Nuovo piano',days:{}});appState.mealPlans.push(p);mealPlanBuilderIdV0500=p.id;renderMealPlanManagerV0500();}
+    function editMealPlanV0500(id){mealPlanBuilderIdV0500=id;mealPlanBuilderDayV0500='Lunedì';renderMealPlanManagerV0500();}
+    function selectMealPlanBuilderDayV0500(day){mealPlanBuilderDayV0500=day;renderMealPlanManagerV0500();}
+    function renameMealPlanV0500(name){const p=appState.mealPlans.find(x=>x.id===mealPlanBuilderIdV0500);if(p){p.name=String(name||'Piano alimentare').trim()||'Piano alimentare';p.updatedAt=new Date().toISOString();}}
+    function addMealPlanOfficialItemV0500(){const p=appState.mealPlans.find(x=>x.id===mealPlanBuilderIdV0500),raw=document.getElementById('meal-plan-add-preset-v0500')?.value;if(!p||raw===undefined||raw===null||raw==='')return;const idx=Number(raw),meal=document.getElementById('meal-plan-add-meal-v0500')?.value||'Pranzo',preset=appState.presets?.[idx];if(!preset)return;p.days[mealPlanBuilderDayV0500].push(mealPlanItemFromPresetV0500(preset,meal,Number(normalizeFoodPreset(preset).unitAmount)||100));p.updatedAt=new Date().toISOString();renderMealPlanManagerV0500();}
+    function updateMealPlanOfficialItemV0500(id,key,value){const p=appState.mealPlans.find(x=>x.id===mealPlanBuilderIdV0500),x=p?.days?.[mealPlanBuilderDayV0500]?.find(i=>i.id===id);if(!x)return;x[key]=key==='amount'?Math.max(.01,Number(value)||.01):value;p.updatedAt=new Date().toISOString();}
+    function removeMealPlanOfficialItemV0500(id){const p=appState.mealPlans.find(x=>x.id===mealPlanBuilderIdV0500);if(!p)return;p.days[mealPlanBuilderDayV0500]=p.days[mealPlanBuilderDayV0500].filter(x=>x.id!==id);p.updatedAt=new Date().toISOString();renderMealPlanManagerV0500();}
+    function finishMealPlanEditV0500(){saveStateToLocal({source:'meal-plan-library'});scheduleDriveSync?.(180);mealPlanBuilderIdV0500=null;renderMealPlanManagerV0500();renderNutrition();showToast('Piano alimentare salvato ✓','fa-circle-check');}
+    function activateMealPlanV0500(id){appState.activeMealPlanId=id;saveStateToLocal({source:'meal-plan-active'});scheduleDriveSync?.(180);renderMealPlanManagerV0500();renderNutrition();showToast('Piano alimentare attivato ✓','fa-circle-check');}
+    function deleteMealPlanV0500(id){const p=appState.mealPlans.find(x=>x.id===id);if(!p||!confirm(`Eliminare il piano ${p.name}?`))return;appState.mealPlans=appState.mealPlans.filter(x=>x.id!==id);if(appState.activeMealPlanId===id)appState.activeMealPlanId=null;saveStateToLocal({source:'meal-plan-library'});scheduleDriveSync?.(180);mealPlanBuilderIdV0500=null;renderMealPlanManagerV0500();renderNutrition();}
 
     function saveTargets(e) {
       e.preventDefault();

@@ -29,6 +29,10 @@
       workoutHistory: [], // completed training days
       activeWorkoutPlanHistory: [], // plan activation timeline
       nutrition: [], // consumed-dose values; vitamins are code strings (e.g. B1 B12 C / A D E K)
+      mealPlans: [], // official weekly nutrition plans
+      activeMealPlanId: null,
+      mealPlanDailyOverrides: {}, // per-date editable copies; never mutate official plan
+      mealPlanCompletions: {}, // per-date planned item completion flags
       water: {}, // { "YYYY-MM-DD": 1500 }
       settings: { waterTargetMl: 2500 },
       avatar: { skin:'#ddb28f', hairStyle:'short', hairColor:'#18120f', view:'front', showMeasures:false },

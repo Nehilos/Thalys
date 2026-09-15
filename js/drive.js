@@ -207,6 +207,10 @@ async function findDriveFolder(name,parentId=null){
       result.targets={...DEFAULT_STATE.targets,...c.targets,...local.targets};result.settings={...DEFAULT_STATE.settings,...c.settings,...local.settings};
       result.workouts=mergeByKey(local.workouts,c.workouts,x=>x.id||`${x.date}|${x.name}`);
       result.nutrition=mergeByKey(local.nutrition,c.nutrition,x=>x.id||`${x.date}|${x.meal}|${x.name}|${x.grams}`);
+      result.mealPlans=mergeByKey(local.mealPlans,c.mealPlans,x=>x.id||x.name);
+      result.activeMealPlanId=(driveDirty?local.activeMealPlanId:(c.activeMealPlanId??local.activeMealPlanId))||null;
+      result.mealPlanDailyOverrides={...(c.mealPlanDailyOverrides||{}),...(local.mealPlanDailyOverrides||{})};
+      result.mealPlanCompletions={...(c.mealPlanCompletions||{}),...(local.mealPlanCompletions||{})};
       result.bodyMetrics=mergeByKey(local.bodyMetrics,c.bodyMetrics,x=>x.id||x.date);
       result.wellness=mergeByKey(local.wellness,c.wellness,x=>x.date||x.id);
       result.meditation=mergeByKey(local.meditation,c.meditation,x=>x.id||`${x.date}|${x.completedAt||x.minutes}`);

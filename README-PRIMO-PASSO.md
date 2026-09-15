@@ -107,7 +107,7 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Lo stato `Attiva` viene persistito e ripristinato da IndexedDB/localStorage per evitare il falso stato desktop `Verifica connessione...` dopo riaperture o riconnessioni transitorie.
 
 
-## v0.49.0 - Stabilizzazione dati e UX
+## v0.48.4 - Stabilizzazione dati e UX
 - Valori nutrizionali: input fino a 2 decimali anche per kcal/macronutrienti/minerali.
 - Pausa mentale Home: completata con almeno una tra Mindfulness, Body Scan o Gratitudine.
 - Gratitudine: migrata nello stato app sincronizzato con Drive, mantenendo compatibilita con il vecchio localStorage.
@@ -115,13 +115,13 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Sincronizzazione/rerender: mantiene la posizione corrente; il cambio scheda continua a partire dall'alto.
 - Barcode/proposta nutrizionale: dopo il salvataggio mostra "Alimento aggiunto" e torna al database alimenti.
 
-## v0.49.0 - Stabilizzazione 2
+## v0.48.5 - Stabilizzazione 2
 - Gratitudine: messaggio "Pensiero salvato", pulizia automatica del box dopo salvataggio riuscito e cancellazione singola con conferma.
 - Allenamento: stima non invasiva dei minuti della sessione e del totale settimanale, calcolata dai dati gia presenti nella scheda (serie, recuperi e tempi medi di esecuzione/transizione).
 - Sessione Google: controllo finale del flusso persistente; al ritorno in primo piano viene anche riallineato lo stato UI della sessione server senza modificare la politica di login/disconnessione.
 
 
-## v0.49.0 - Gratitudine sync fix e stima allenamento
+## v0.48.6 - Gratitudine sync fix e stima allenamento
 - Corretto falso errore dopo il salvataggio Gratitudine.
 - Gratitudine sincronizzata come raccolta dedicata (`gratitude.json`) e inclusa nel conflict resolver/sync queue.
 - Eliminazioni Gratitudine propagate tra dispositivi e aggiornate subito nella UI.
@@ -137,3 +137,14 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Filtri per categoria nel database e nella selezione alimento.
 - Valori nutrizionali vuoti normalizzati a 0.
 - Gratitudine: tombstone dedicati in gratitude_deleted.json per propagare le cancellazioni tra dispositivi.
+
+
+## v0.50.0 - Dieta Reale / Pianificato
+- La scheda Acqua e' stata portata sopra al selettore Reale/Pianificato.
+- Reale mantiene il diario nutrizionale attuale.
+- Pianificato introduce piani alimentari settimanali attivabili e modificabili dal gestore piani.
+- Le modifiche quotidiane generano una copia per data e non alterano il piano ufficiale.
+- Spuntando un alimento pianificato viene creato il corrispondente consumo in Reale; togliendo la spunta viene rimosso.
+- Gli alimenti provenienti dal piano sono visualizzati con stile piu leggero e indicazione `dal piano`.
+- Le Bevande usano ml in database, selezione, diario Reale, Pianificato e storico pasti.
+- Piani, override giornalieri e completamenti entrano nello stato sincronizzato Drive.

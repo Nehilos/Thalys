@@ -20,7 +20,7 @@ let chartMacroV7=null,chartMicroV7=null;
 async function loadExternalAvatarArtwork(force=false){
   if(window._thalysExternalAvatarLoaded&&!force)return true;
   try{
-    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0490',{cache:'reload'}),fetch('./female.svg?v=0490',{cache:'reload'})]);
+    const [mr,fr]=await Promise.all([fetch('./male.svg?v=0500',{cache:'reload'}),fetch('./female.svg?v=0500',{cache:'reload'})]);
     if(!mr.ok||!fr.ok)throw new Error('SVG_NOT_FOUND');
     const parser=new DOMParser();
     async function install(res,id){const doc=parser.parseFromString(await res.text(),'image/svg+xml'),svg=doc.documentElement,s=document.getElementById(id);if(!s)return;const vb=svg.getAttribute('viewBox');if(vb)s.setAttribute('viewBox',vb);s.replaceChildren(...Array.from(svg.children).filter(n=>n.tagName.toLowerCase()!=='script').map(n=>document.importNode(n,true)));}
@@ -47,7 +47,7 @@ function getDayGamification(date){
 function openMealHistory(){clearMealHistoryFilter(false);renderMealHistory();openModal('meal-history-modal');}
 function clearMealHistoryFilter(r=true){for(const id of ['meal-history-from','meal-history-to']){const e=document.getElementById(id);if(e)e.value=''}if(r)renderMealHistory();}
 function setMealHistoryToday(){const d=currentLocalDateStr();document.getElementById('meal-history-from').value=d;document.getElementById('meal-history-to').value=d;renderMealHistory();}
-function renderMealHistory(){const box=document.getElementById('meal-history-list');if(!box)return;let a=document.getElementById('meal-history-from')?.value||'',b=document.getElementById('meal-history-to')?.value||'';if(a&&b&&a>b)[a,b]=[b,a];const rows=(appState.nutrition||[]).filter(x=>(!a||x.date>=a)&&(!b||x.date<=b)),dates=[...new Set(rows.map(x=>x.date))].sort().reverse();box.innerHTML=dates.length?dates.map(d=>`<div class="rounded-2xl bg-slate-900/60 p-3"><div class="flex justify-between"><b>${weekdayLabel(d)}</b><span class="text-[9px] text-emerald-300">${d}</span></div><div class="mt-2 space-y-2">${['Colazione','Pranzo','Cena','Spuntino'].map(m=>{const xs=rows.filter(x=>x.date===d&&x.meal===m);return `<div class="rounded-xl bg-slate-950 p-2"><b class="text-[9px] text-emerald-300">${tr(m)}</b>${xs.length?xs.map(x=>`<div class="mt-1 flex justify-between text-[9px]"><span>${escapeHTML(x.name)} · ${x.grams}g</span><span class="text-slate-500">${Math.round(x.kcal||0)} kcal</span></div>`).join(''):`<div class="mt-1 text-[9px] text-slate-600">${tr('Nessun alimento')}</div>`}</div>`}).join('')}</div></div>`).join(''):`<div class="p-5 text-center text-[10px] text-slate-500">${tr('Nessun pasto nel periodo selezionato.')}</div>`;}
+function renderMealHistory(){const box=document.getElementById('meal-history-list');if(!box)return;let a=document.getElementById('meal-history-from')?.value||'',b=document.getElementById('meal-history-to')?.value||'';if(a&&b&&a>b)[a,b]=[b,a];const rows=(appState.nutrition||[]).filter(x=>(!a||x.date>=a)&&(!b||x.date<=b)),dates=[...new Set(rows.map(x=>x.date))].sort().reverse();box.innerHTML=dates.length?dates.map(d=>`<div class="rounded-2xl bg-slate-900/60 p-3"><div class="flex justify-between"><b>${weekdayLabel(d)}</b><span class="text-[9px] text-emerald-300">${d}</span></div><div class="mt-2 space-y-2">${['Colazione','Pranzo','Cena','Spuntino'].map(m=>{const xs=rows.filter(x=>x.date===d&&x.meal===m);return `<div class="rounded-xl bg-slate-950 p-2"><b class="text-[9px] text-emerald-300">${tr(m)}</b>${xs.length?xs.map(x=>`<div class="mt-1 flex justify-between text-[9px]"><span>${escapeHTML(x.name)} · ${(x.category==='Bevande'||x.quantityUnit==='ml'||x.unitType==='Bicchiere')?(Number(x.quantity??x.grams)||0)+'ml':(Number(x.quantity??x.grams)||0)+'g'}</span><span class="text-slate-500">${Math.round(x.kcal||0)} kcal</span></div>`).join(''):`<div class="mt-1 text-[9px] text-slate-600">${tr('Nessun alimento')}</div>`}</div>`}).join('')}</div></div>`).join(''):`<div class="p-5 text-center text-[10px] text-slate-500">${tr('Nessun pasto nel periodo selezionato.')}</div>`;}
 
 /* Nutrition donuts */
 function nutritionPeriodDataV7(){const mode=document.getElementById('nutrition-donut-period')?.value||'day',ref=document.getElementById('nutrition-date')?.value||currentLocalDateStr();let dates=[],mult=1,label='';if(mode==='day'){dates=[ref];label=tr('Target del giorno selezionato')}else if(mode==='7'){for(let i=6;i>=0;i--){const d=new Date(ref+'T12:00:00');d.setDate(d.getDate()-i);dates.push(d.toISOString().slice(0,10))}mult=7;label=tr('Target × 7 giorni')}else{const d=new Date(ref+'T12:00:00'),n=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();for(let i=1;i<=n;i++)dates.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`);mult=n;label=`${tr('Target mensile')} × ${n} ${tr('giorni')}`}const logs=(appState.nutrition||[]).filter(x=>dates.includes(x.date)),sum=k=>logs.reduce((s,x)=>s+Number(x[k]||0),0);return {dates,mult,label,water:dates.reduce((s,d)=>s+Number(appState.water?.[d]||0),0),vitId:mergeVitaminCodes(logs.map(x=>x.vitaminsId),'id'),vitLip:mergeVitaminCodes(logs.map(x=>x.vitaminsLip),'lip'),v:{p:sum('p'),c:sum('c'),f:sum('f'),satFat:sum('satFat'),sugars:sum('sugars'),fiber:sum('fiber'),calcium:sum('calcium'),magnesium:sum('magnesium'),zinc:sum('zinc'),iron:sum('iron'),potassium:sum('potassium'),salt:sum('salt')}};}
@@ -97,7 +97,7 @@ function avatarSetArtworkV8(gender,{force=false}={}){
   if(!group)return false;
   const file=female?'female.svg':'male.svg';
   const ns='http://www.w3.org/2000/svg';
-  const href=`./${file}?v=0490${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
+  const href=`./${file}?v=0500${force?`&thalys_avatar=${Date.now()}_${++thalysAvatarRefreshSeqV8}`:''}`;
   const image=document.createElementNS(ns,'image');
   image.setAttribute('x','0');image.setAttribute('y','0');image.setAttribute('width','768');image.setAttribute('height','1536');
   image.setAttribute('preserveAspectRatio','xMidYMid meet');image.setAttribute('href',href);
@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 /* ==========================================================
    THALYS V10 — iOS/WebKit robustness + full PDF export
    ========================================================== */
-const THALYS_APP_VERSION_V10=window.ThalysConfig?.appVersion||'0.49.0';
+const THALYS_APP_VERSION_V10=window.ThalysConfig?.appVersion||'0.50.0';
 const THALYS_VERSION_KEY_V10='thalys_app_version';
 const THALYS_RELOAD_KEY_V10='thalys_version_reload_guard';
 
@@ -3254,14 +3254,14 @@ openPhotoManagerV19=async function(){
 
 
 /* ==========================================================
-   THALYS v0.49.0 — preserve current scroll during cloud/local re-render
+   THALYS v0.50.0 — preserve current scroll during cloud/local re-render
    Tab changes still use switchTabV15 and intentionally start at the top.
    ========================================================== */
-const _renderAllViewsV0490Base=renderAllViews;
+const _renderAllViewsV0500Base=renderAllViews;
 renderAllViews=function(){
   const main=document.querySelector('#app-shell > main');
   const keep=main?main.scrollTop:0;
-  _renderAllViewsV0490Base();
+  _renderAllViewsV0500Base();
   if(main){
     const restore=()=>{if(Math.abs(main.scrollTop-keep)>2)main.scrollTop=keep;};
     restore();

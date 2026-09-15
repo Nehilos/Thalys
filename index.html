@@ -32,7 +32,7 @@
     // flashing the Google access screen before auth.js restores the local session.
     (function(){
       try{
-        var current='0.49.0';
+        var current='0.50.0';
         var hasSession=localStorage.getItem('thalys_app_session_v1')==='1';
         var sessionVersion=localStorage.getItem('thalys_auth_software_version_v1')||'';
         if(hasSession && sessionVersion===current) document.documentElement.classList.add('thalys-session-preboot');
@@ -113,7 +113,7 @@
       </div>
       <div class="min-w-0">
         <h1 class="thalys-header-title text-[17px] sm:text-xl font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Thalys</h1>
-        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.49.0</div>
+        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.50.0</div>
         <span class="hidden sm:block text-[10px] text-slate-400 tracking-wider font-semibold uppercase mt-0.5">Wellness</span>
       </div>
       <div class="hidden sm:block text-[9px] italic text-slate-300/80 leading-tight max-w-[190px] ml-1">
@@ -180,17 +180,17 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0490"></script>
-  <script src="./js/capabilities.js?v=0490"></script>
-  <script src="./js/device-media.js?v=0490"></script>
-  <script src="./js/backend-bridge.js?v=0490"></script>
-  <script src="./js/server-auth.js?v=0490"></script>
-  <script src="./js/notifications.js?v=0490"></script>
-  <script src="./js/storage-manager.js?v=0490"></script>
-  <script src="./js/sync-queue.js?v=0490"></script>
-  <script src="./js/conflict-resolver.js?v=0490"></script>
-  <script src="./js/local-db.js?v=0490"></script>
-  <script src="./js/ui-foundation.js?v=0490"></script>
+  <script src="./js/config.js?v=0500"></script>
+  <script src="./js/capabilities.js?v=0500"></script>
+  <script src="./js/device-media.js?v=0500"></script>
+  <script src="./js/backend-bridge.js?v=0500"></script>
+  <script src="./js/server-auth.js?v=0500"></script>
+  <script src="./js/notifications.js?v=0500"></script>
+  <script src="./js/storage-manager.js?v=0500"></script>
+  <script src="./js/sync-queue.js?v=0500"></script>
+  <script src="./js/conflict-resolver.js?v=0500"></script>
+  <script src="./js/local-db.js?v=0500"></script>
+  <script src="./js/ui-foundation.js?v=0500"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -542,6 +542,37 @@
         </button>
       </div>
 
+      <!-- Water Tracker Card -->
+      <div class="bg-darkcard border border-darkborder rounded-2xl p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-950/60 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg">
+              <i class="fa-solid fa-glass-water"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-white">Acqua Bevuta</div>
+              <div class="text-[9px] text-slate-500">Target giornaliero <span id="water-target-display">2500</span> ml</div>
+            </div>
+          </div>
+          <button type="button" onclick="openWaterTargetModal()" class="h-9 px-3 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-300 text-[10px] font-bold">Target</button>
+        </div>
+        <div class="mt-4 text-center">
+          <div class="text-3xl font-black text-blue-200"><span id="water-amount">0</span><span class="ml-1 text-sm font-bold text-slate-400">ml</span></div>
+          <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-900"><div id="water-progress-bar" class="h-full rounded-full bg-blue-500 transition-all" style="width:0%"></div></div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" onclick="addWater(-250)" class="min-h-11 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs"><i class="fa-solid fa-minus mr-1"></i>250 ml</button>
+          <button type="button" onclick="addWater(250)" class="min-h-11 rounded-xl bg-blue-600 text-white font-bold text-xs shadow-md"><i class="fa-solid fa-plus mr-1"></i>250 ml</button>
+        </div>
+      </div>
+
+      <!-- Reale / Pianificato -->
+      <div class="grid grid-cols-2 gap-2" id="nutrition-mode-switch">
+        <button id="nutrition-mode-real" type="button" onclick="setNutritionModeV0500('real')" class="min-h-11 rounded-2xl border border-emerald-500/30 bg-emerald-500/15 text-xs font-black text-emerald-200">Reale</button>
+        <button id="nutrition-mode-planned" type="button" onclick="setNutritionModeV0500('planned')" class="min-h-11 rounded-2xl border border-slate-700 bg-slate-900 text-xs font-black text-slate-300">Pianificato</button>
+      </div>
+
+      <div id="nutrition-real-view" class="space-y-5">
       <!-- Pasti del giorno: prima sezione operativa -->
       <!-- Meals List by Category -->
       <div id="meals-container" class="space-y-4">
@@ -619,29 +650,13 @@
         </div>
       </div>
 
-      <!-- Water Tracker Card -->
-      <div class="bg-darkcard border border-darkborder rounded-2xl p-4">
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-950/60 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg">
-              <i class="fa-solid fa-glass-water"></i>
-            </div>
-            <div>
-              <div class="text-xs font-bold text-white">Acqua Bevuta</div>
-              <div class="text-[9px] text-slate-500">Target giornaliero <span id="water-target-display">2500</span> ml</div>
-            </div>
-          </div>
-          <button type="button" onclick="openWaterTargetModal()" class="h-9 px-3 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-300 text-[10px] font-bold">Target</button>
-        </div>
-        <div class="mt-4 text-center">
-          <div class="text-3xl font-black text-blue-200"><span id="water-amount">0</span><span class="ml-1 text-sm font-bold text-slate-400">ml</span></div>
-          <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-900"><div id="water-progress-bar" class="h-full rounded-full bg-blue-500 transition-all" style="width:0%"></div></div>
-        </div>
-        <div class="mt-4 grid grid-cols-2 gap-2">
-          <button type="button" onclick="addWater(-250)" class="min-h-11 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs"><i class="fa-solid fa-minus mr-1"></i>250 ml</button>
-          <button type="button" onclick="addWater(250)" class="min-h-11 rounded-xl bg-blue-600 text-white font-bold text-xs shadow-md"><i class="fa-solid fa-plus mr-1"></i>250 ml</button>
-        </div>
       </div>
+
+      <div id="nutrition-planned-view" class="hidden space-y-4">
+        <div id="meal-plan-active-card" class="rounded-3xl border border-violet-500/20 bg-slate-950/70 p-4"></div>
+        <div id="meal-plan-day-list" class="space-y-3"></div>
+      </div>
+
 
     </section>
 
@@ -1307,7 +1322,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.49.0
+        Thalys · Software v0.50.0
       </div>
 
     </section>
@@ -1638,7 +1653,7 @@
         </div>
         <div id="preset-ai-status" class="hidden rounded-lg border border-violet-500/15 bg-violet-500/5 px-2.5 py-2 text-[9px] leading-relaxed text-violet-200"></div>
         <div class="space-y-2 rounded-xl border border-amber-500/15 bg-amber-500/5 p-2.5">
-          <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Categoria<select id="preset-category" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white"><option>Spuntino</option><option>Primo</option><option>Secondo</option><option>Contorno</option><option>Bevande</option><option selected>Altro</option></select></label>
+          <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Categoria<select id="preset-category" onchange="updateFoodUnitMeasureUI()" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white"><option>Spuntino</option><option>Primo</option><option>Secondo</option><option>Contorno</option><option>Bevande</option><option selected>Altro</option></select></label>
           <div class="grid grid-cols-2 gap-2">
             <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Unità<select id="preset-unit" onchange="updateFoodUnitMeasureUI()" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-white"><option selected>Piatto</option><option>Fetta/Pz</option><option>Bicchiere</option></select></label>
             <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Misura<div class="mt-1 flex items-center rounded-lg border border-slate-700 bg-slate-900 px-2"><input id="preset-unit-amount" type="number" min="0.01" step="0.01" value="100" class="min-w-0 flex-1 bg-transparent py-2 text-xs text-white outline-none"><span id="preset-unit-measure-label" class="text-[10px] font-bold text-amber-300">g</span></div></label>
@@ -1967,6 +1982,13 @@
   </div>
 
   <!-- MODAL: WATER TARGET -->
+  <div id="meal-plan-manager-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-2xl max-h-[88vh] overflow-auto rounded-3xl border border-violet-500/20 bg-slate-950 p-4 shadow-2xl">
+      <div class="flex items-center justify-between"><div><h3 class="text-base font-black text-white">Piani alimentari</h3><p class="text-[10px] text-slate-500">Il piano originale resta separato dalle modifiche quotidiane.</p></div><button onclick="closeModal('meal-plan-manager-modal')" class="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700 text-slate-200"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="mt-4 grid gap-4 md:grid-cols-2"><div><div class="mb-2 text-[9px] font-black uppercase tracking-[.16em] text-slate-500">Piani salvati</div><div id="meal-plan-library-v0500" class="space-y-2"></div></div><div><div class="mb-2 text-[9px] font-black uppercase tracking-[.16em] text-slate-500">Editor</div><div id="meal-plan-builder-v0500"></div></div></div>
+    </div>
+  </div>
+
   <div id="water-target-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="bg-darkcard border border-blue-500/20 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
       <div class="flex justify-between items-center"><div><h3 class="text-base font-black text-white">Target acqua</h3><p class="text-[10px] text-slate-500">Imposta il tuo obiettivo giornaliero</p></div><button onclick="closeModal('water-target-modal')" class="w-11 h-11 rounded-xl bg-slate-800 border border-slate-700 text-slate-200"><i class="fa-solid fa-xmark"></i></button></div>
@@ -2431,19 +2453,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0490"></script>
+  <script src="./js/language.js?v=0500"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0490"></script>
-  <script src="./js/body.js?v=0490"></script>
-  <script src="./js/meditation.js?v=0490"></script>
-  <script src="./js/nutrition.js?v=0490"></script>
-  <script src="./js/workout.js?v=0490"></script>
-  <script src="./js/home.js?v=0490"></script>
-  <script src="./js/analytics.js?v=0490"></script>
+  <script src="./js/app-core.js?v=0500"></script>
+  <script src="./js/body.js?v=0500"></script>
+  <script src="./js/meditation.js?v=0500"></script>
+  <script src="./js/nutrition.js?v=0500"></script>
+  <script src="./js/workout.js?v=0500"></script>
+  <script src="./js/home.js?v=0500"></script>
+  <script src="./js/analytics.js?v=0500"></script>
 
-  <script src="./js/drive.js?v=0490"></script>
-  <script src="./js/auth.js?v=0490"></script>
+  <script src="./js/drive.js?v=0500"></script>
+  <script src="./js/auth.js?v=0500"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2470,8 +2492,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0490"></script>
-<script src="./js/runtime-health.js?v=0490"></script>
+<script src="./js/app-enhancements.js?v=0500"></script>
+<script src="./js/runtime-health.js?v=0500"></script>
 
 </body>
 </html>
