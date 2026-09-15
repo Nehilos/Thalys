@@ -201,7 +201,10 @@ async function findDriveFolder(name,parentId=null){
       const result={...DEFAULT_STATE,...c,...local};
       result.profile=isMeaningfulProfile(local.profile)?{...DEFAULT_STATE.profile,...c.profile,...local.profile}:{...DEFAULT_STATE.profile,...local.profile,...c.profile};
       const lp=local.profilePhoto||null,cp=c.profilePhoto||null;
-      if(lp&&cp){const lt=Date.parse(lp.updatedAt||0)||0,ct=Date.parse(cp.updatedAt||0)||0;result.profilePhoto=lt>=ct?lp:cp;}
+      const lpCustom=!!lp?.dataUrl, cpCustom=!!cp?.dataUrl;
+      if(lpCustom&&!cpCustom&&!cp?.explicitUserChoice) result.profilePhoto=lp;
+      else if(cpCustom&&!lpCustom&&!lp?.explicitUserChoice) result.profilePhoto=cp;
+      else if(lp&&cp){const lt=Date.parse(lp.updatedAt||0)||0,ct=Date.parse(cp.updatedAt||0)||0;result.profilePhoto=lt>=ct?lp:cp;}
       else result.profilePhoto=lp||cp||null;
       result.targets={...DEFAULT_STATE.targets,...c.targets,...local.targets};result.settings={...DEFAULT_STATE.settings,...c.settings,...local.settings};
       result.workouts=mergeByKey(local.workouts,c.workouts,x=>x.id||`${x.date}|${x.name}`);
@@ -276,17 +279,26 @@ async function findDriveFolder(name,parentId=null){
       }catch(e){console.warn('Conflict resolver fallback',e);conflictResolution=null;}
       appState=mergeCloudIntoLocal(cloud);
       if(conflictResolution&&window.ThalysConflictResolver?.overlayResolved){appState=window.ThalysConflictResolver.overlayResolved(appState,cloud,conflictResolution);}
-      // v0.49.3: foto_profilo.json is the dedicated cross-device profile-photo database.
+      // v0.49.4: foto_profilo.json is the dedicated cross-device profile-photo database.
       // Re-apply it after conflict resolution so a compact/null app_state copy or a
       // stale mobile bootstrap can never hide the custom photo that exists on Drive.
       if(dedicated.profilePhoto!==undefined){
         const remotePhoto=dedicated.profilePhoto;
         const localPhoto=appState.profilePhoto||null;
+        const remoteCustom=!!remotePhoto?.dataUrl;
+        const localCustom=!!localPhoto?.dataUrl;
+        const remoteExplicitGoogle=remotePhoto?.mode==='google' && remotePhoto?.explicitUserChoice===true;
         const rt=Date.parse(remotePhoto?.updatedAt||0)||0;
         const lt=Date.parse(localPhoto?.updatedAt||0)||0;
         const localPending=localStorage.getItem('thalys_drive_dirty')==='1'||localStorage.getItem('thalys_sync_queue_pending')==='1';
-        if(!localPending || !localPhoto || rt>=lt){
-          appState.profilePhoto=remotePhoto?.dataUrl?{...remotePhoto,mode:'custom'}:(remotePhoto||{mode:'google',dataUrl:'',updatedAt:new Date(0).toISOString()});
+        // v0.49.4 safety rule: an empty/bootstrap copy can NEVER delete a custom photo.
+        // A custom photo can be replaced by Google only after the explicit "Usa Google" action.
+        if(remoteCustom){
+          if(!localCustom || !localPending || rt>=lt) appState.profilePhoto={...remotePhoto,mode:'custom'};
+        }else if(remoteExplicitGoogle){
+          if(!localCustom || rt>=lt) appState.profilePhoto={...remotePhoto,mode:'google',dataUrl:''};
+        }else if(!localCustom && !localPending){
+          appState.profilePhoto=remotePhoto||{mode:'google',dataUrl:'',updatedAt:new Date(0).toISOString()};
         }
       }
       window.appState=appState;

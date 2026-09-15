@@ -1413,7 +1413,7 @@ handleProfilePhotoChange=async function(event){
   if(!file.type.startsWith('image/')){showToast(tr('Seleziona un file immagine'),'fa-triangle-exclamation');event.target.value='';return;}
   try{
     const dataUrl=await resizeProfilePhoto(file);
-    appState.profilePhoto={mode:'custom',dataUrl,updatedAt:new Date().toISOString()};
+    appState.profilePhoto={mode:'custom',dataUrl,explicitUserChoice:true,updatedAt:new Date().toISOString()};
     saveStateToLocal();
     try{scheduleDriveSync?.(150)}catch(_){}
     renderProfilePhotoUI();
@@ -1424,7 +1424,7 @@ handleProfilePhotoChange=async function(event){
   }finally{event.target.value='';}
 };
 removeProfilePhoto=function(){
-  appState.profilePhoto={mode:'google',dataUrl:'',updatedAt:new Date().toISOString()};
+  appState.profilePhoto={mode:'google',dataUrl:'',explicitUserChoice:true,updatedAt:new Date().toISOString()};
   saveStateToLocal();
   try{scheduleDriveSync?.(150)}catch(_){}
   renderProfilePhotoUI();
