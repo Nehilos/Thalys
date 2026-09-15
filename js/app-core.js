@@ -38,6 +38,7 @@
       workoutCompletions: {}, // { "YYYY-MM-DD": { planId, exercises: { planExerciseId: true }, completedAt } }
       wellness: [], // [{ id, date, sleepHours, stress, recovery, mood, readiness, notes, meditationMinutes, meditationQuality, meditationType }]
       meditation: [],
+      gratitude: [], // gratitude journal entries, synced like other app domains
       presets: [
         { name: "Petto di Pollo (Cotto)", p: 31, c: 0, f: 3.6, sugars: 0, calcium: 15, magnesium: 30, fiber: 0 },
         { name: "Riso Basmati (Crudo)", p: 7, c: 78, f: 0.9, sugars: 0, calcium: 10, magnesium: 50, fiber: 1.6 },
@@ -683,10 +684,10 @@
       openModal('consult-snapshot-modal');
     }
 
-    function deleteConsultSnapshot(id){appState.consultations=(appState.consultations||[]).filter(x=>x.id!==id);saveStateToLocal();renderConsultations();refreshConsultSelectors();}
+    function deleteConsultSnapshot(id){if(!confirm('Eliminare questo quadro salvato?'))return;appState.consultations=(appState.consultations||[]).filter(x=>x.id!==id);saveStateToLocal();renderConsultations();refreshConsultSelectors();}
     function toggleConsultSnapshotSelection(){consultSnapshotSelectionMode=!consultSnapshotSelectionMode;selectedConsultSnapshotIds.clear();document.getElementById('consult-snapshot-delete-btn')?.classList.toggle('hidden',!consultSnapshotSelectionMode);renderConsultations();}
     function toggleConsultSnapshot(id,on){on?selectedConsultSnapshotIds.add(id):selectedConsultSnapshotIds.delete(id)}
-    function deleteSelectedConsultSnapshots(){appState.consultations=(appState.consultations||[]).filter(x=>!selectedConsultSnapshotIds.has(x.id));selectedConsultSnapshotIds.clear();consultSnapshotSelectionMode=false;saveStateToLocal();document.getElementById('consult-snapshot-delete-btn')?.classList.add('hidden');renderConsultations();refreshConsultSelectors();}
+    function deleteSelectedConsultSnapshots(){if(selectedConsultSnapshotIds.size&&!confirm(`Eliminare ${selectedConsultSnapshotIds.size} quadri selezionati?`))return;appState.consultations=(appState.consultations||[]).filter(x=>!selectedConsultSnapshotIds.has(x.id));selectedConsultSnapshotIds.clear();consultSnapshotSelectionMode=false;saveStateToLocal();document.getElementById('consult-snapshot-delete-btn')?.classList.add('hidden');renderConsultations();refreshConsultSelectors();}
     function clearConsultFilters(){const t=document.getElementById('consult-filter-type'),m=document.getElementById('consult-filter-month');if(t)t.value='all';if(m)m.value='';document.querySelectorAll('[data-consult-filter]').forEach(b=>b.classList.toggle('active',b.dataset.consultFilter==='all'));renderConsultationsStable();}
 
     function refreshConsultSelectors(){

@@ -133,6 +133,7 @@ if(c)c.innerHTML='';
     }
 
     function deleteWorkoutPlan(planId) {
+      const plan=(appState.workoutPlans||[]).find(x=>x.id===planId);if(!confirm(`Eliminare la scheda ${plan?.name||'selezionata'}?`))return;
       appState.workoutPlans = appState.workoutPlans.filter(item => item.id !== planId);
       if(appState.activeWorkoutPlanId===planId)appState.activeWorkoutPlanId=null;
       Object.keys(appState.workoutAssignments || {}).forEach(date => {

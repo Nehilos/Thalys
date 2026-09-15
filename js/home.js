@@ -16,7 +16,7 @@ function setHomeDate(date){
       const exerciseTotal=dayExercises.length; const exerciseDone=plan?dayExercises.filter(ex=>c?.exercises?.[ex.id]).length:0;
       const workoutDone=exerciseTotal>0 && exerciseDone===exerciseTotal;
       const nutrition=(appState.nutrition||[]).filter(x=>x.date===date); const kcal=nutrition.reduce((a,x)=>a+Number(x.kcal||0),0); const target=appState.targets||{};
-      const water=Number(appState.water?.[date]||0); const waterTarget=getWaterTarget(date); const wellness=appState.wellness?.find(x=>x.date===date); const meditation=(appState.meditation||[]).filter(x=>x.date===date).reduce((a,x)=>a+Number(x.minutes||0),0);
+      const water=Number(appState.water?.[date]||0); const waterTarget=getWaterTarget(date); const wellness=appState.wellness?.find(x=>x.date===date); const meditation=(appState.meditation||[]).filter(x=>x.date===date).reduce((a,x)=>a+Number(x.minutes||0),0); const mentalPauseDone=(appState.meditation||[]).some(x=>x.date===date&&/mindfulness|body scan/i.test(String(x.type||'')))||(appState.gratitude||[]).some(x=>String(x.date||'').slice(0,10)===date);
       const activePlan=getActiveWorkoutPlan();
       const scheduled=isPlanScheduledOnDate(activePlan,date);
       const steps=[];
@@ -26,7 +26,7 @@ function setHomeDate(date){
         {label:tr('Check-in wellness'),done:!!wellness,icon:'fa-heart-pulse'},
         {label:tr('Idratazione'),done:water>=waterTarget*0.8,icon:'fa-glass-water'},
         {label:tr('Registra la dieta'),done:nutrition.length>0 && (kcal>=Number(target.calories||2200)*0.8),icon:'fa-utensils'},
-        {label:tr('Pausa mentale'),done:meditation>=5,icon:'fa-spa'}
+        {label:tr('Pausa mentale'),done:mentalPauseDone||meditation>=5,icon:'fa-spa'}
       );
       return {plan,exerciseDone,exerciseTotal,workoutDone,steps,done:steps.filter(x=>x.done).length,total:steps.length,water,waterTarget,kcal,wellness,meditation};
     }
