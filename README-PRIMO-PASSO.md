@@ -193,10 +193,18 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Il punteggio non inventa dati mancanti.
 
 
-## v0.53.0 - Home cleanup + tracker essenziali
+## v0.54.0 - Home cleanup + tracker essenziali
 - Rimossa la card "Target nutrizionali oggi" dalla Home.
 - Rimosse le card secondarie "Meditazione" e "Trend" dalla Home.
 - Spostata la card "Compagno di giornata" subito sotto "La tua giornata" e sopra il Wellness Score.
 - Wellness Score e radar lasciati invariati nelle logiche di calcolo.
 - La precedente area "Priorità di oggi" diventa "Tracker di oggi" con quattro tracker essenziali derivati dai dati esistenti: Alimentazione, Idratazione, Allenamento e Sonno.
 - Nessun nuovo database o permesso richiesto; nessuna modifica a Reale/Pianificato, sync, login o offline.
+
+
+## v0.54.0 - Progressione giornata, nuovo Check-in e Passi
+- Home: Progressione giornata X/5 con Alimentazione, Idratazione, Sonno, Allenamento e Meditazione.
+- Coppa visibile al completamento di tutte e 5 le aree.
+- Check-in Home ridisegnato con grafico circolare a quattro settori per Sonno, Recupero, Umore e Stress.
+- Allenamento: primo tracker giornaliero Passi sincronizzato via app_state, con valore manuale, +/-500 e target configurabile.
+- La lettura automatica dai sensori non viene attivata in questa versione per preservare compatibilità e stabilità PWA/iOS/desktop.

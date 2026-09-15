@@ -394,6 +394,19 @@ function setHomeDate(date){
       }
     }
 
+    function renderHomeCheckinV0540(w){
+      const scoreEl=document.getElementById('home-checkin-score'), legend=document.getElementById('home-checkin-legend');
+      const values=w?[
+        {key:'sleep',label:'Sonno',value:Math.min(100,Math.round((Number(w.sleepHours||0)/8)*100)),text:`${Number(w.sleepHours||0).toFixed(1)} h`,color:'text-cyan-300'},
+        {key:'recovery',label:'Recupero',value:Math.min(100,Number(w.recovery||0)*10),text:`${Number(w.recovery||0)}/10`,color:'text-emerald-300'},
+        {key:'mood',label:'Umore',value:Math.min(100,Number(w.mood||0)*10),text:`${Number(w.mood||0)}/10`,color:'text-violet-300'},
+        {key:'stress',label:'Stress',value:Math.max(0,100-Number(w.stress||0)*10),text:`${Number(w.stress||0)}/10`,color:'text-rose-300'}
+      ]:[];
+      if(scoreEl)scoreEl.textContent=w?`${Math.round(values.reduce((a,x)=>a+x.value,0)/values.length)}%`:'—';
+      ['sleep','recovery','mood','stress'].forEach(key=>{const arc=document.getElementById(`home-checkin-arc-${key}`),x=values.find(v=>v.key===key);if(arc)arc.style.opacity=w?String(.22+.78*(x.value/100)):'0.18';});
+      if(legend)legend.innerHTML=w?values.map(x=>`<div class="rounded-2xl border border-white/5 bg-slate-950/45 p-2.5"><div class="text-[9px] text-slate-500">${x.label}</div><div class="mt-1 text-sm font-black ${x.color}">${x.text}</div></div>`).join(''):`<div class="col-span-2 rounded-2xl border border-dashed border-slate-700 p-4 text-center text-[10px] text-slate-500">Registra il check-in per vedere il grafico.</div>`;
+    }
+
     function renderHomeDashboard(){
       const d=homeSelectedDate || new Date().toISOString().split('T')[0];
       const workouts=(appState.workouts||[]).filter(x=>x.date===d), nutrition=(appState.nutrition||[]).filter(x=>x.date===d);
@@ -402,9 +415,8 @@ function setHomeDate(date){
       const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
       const hp=document.getElementById('home-date-picker'); if(hp) hp.value=d;
       set('home-date',new Date(d+'T12:00:00').toLocaleDateString(currentLocale(),{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
-      const waterTarget=getWaterTarget(d); set('home-water',`${water} ml`);set('home-water-target',`/ ${waterTarget} ml`);set('home-kcal',Math.round(kcal));set('home-kcal-target',`/ ${target.calories||2200} kcal`);renderHomeNutritionTargetsV0510(d);renderHomeWellnessScoreV0520(d);set('home-workout-count',workouts.length);set('home-readiness',w?`${w.readiness}/10`:'—');set('home-sleep',w?`${w.sleepHours} h`:'—');set('home-recovery',w?`${w.recovery}/10`:'—');set('home-mood',w?`${w.mood}/10`:'—');set('home-stress',w?`${w.stress}/10`:'—');set('home-med-today',`${med} min`);
-      const arr=Array.isArray(appState.meditation)?appState.meditation:[]; let streak=0; for(let i=0;i<365;i++){const dd=new Date();dd.setDate(dd.getDate()-i);const ds=dd.toISOString().split('T')[0];if(arr.some(x=>x.date===ds))streak++;else if(i>0)break;} set('home-med-streak',`${tr('Streak')}: ${streak} ${tr('giorni')}`);
-      [['home-sleep-bar',w?Math.min(100,(Number(w.sleepHours)/8)*100):0],['home-recovery-bar',w?Number(w.recovery)*10:0],['home-mood-bar',w?Number(w.mood)*10:0],['home-stress-bar',w?Number(w.stress)*10:0]].forEach(([id,width])=>{const e=document.getElementById(id);if(e)e.style.width=width+'%';});
+      const waterTarget=getWaterTarget(d); set('home-water',`${water} ml`);set('home-water-target',`/ ${waterTarget} ml`);set('home-kcal',Math.round(kcal));set('home-kcal-target',`/ ${target.calories||2200} kcal`);renderHomeNutritionTargetsV0510(d);renderHomeWellnessScoreV0520(d);set('home-workout-count',workouts.length);set('home-readiness',w?`${w.readiness}/10`:'—');
+      renderHomeCheckinV0540(w);
       const g=getDayGamification(d);
       const activePlanForHome=getActiveWorkoutPlan();
       const scheduledForHome=isPlanScheduledOnDate(activePlanForHome,d);
@@ -427,13 +439,20 @@ function setHomeDate(date){
         if(activePlanForHome && !scheduledForHome){workoutPct=100;workoutText='Riposo programmato';}
         else if(g.plan && g.exerciseTotal>0){workoutPct=Math.min(100,Math.round((g.exerciseDone/g.exerciseTotal)*100));workoutText=`${g.exerciseDone}/${g.exerciseTotal} esercizi`;}
         else if(workouts.length){workoutPct=100;workoutText='Allenamento registrato';}
+        const meditationDone=med>0;
         const trackers=[
-          {label:'Alimentazione',icon:'fa-utensils',pct:nutritionPct,text:`${Math.round(kcal)} / ${Math.round(calorieTarget)} kcal`},
-          {label:'Idratazione',icon:'fa-glass-water',pct:hydrationPct,text:`${Math.round(water)} / ${Math.round(waterTarget)} ml`},
-          {label:'Allenamento',icon:'fa-dumbbell',pct:workoutPct,text:workoutText},
-          {label:'Sonno',icon:'fa-moon',pct:sleepPct,text:w?`${Number(sleepHours.toFixed(1))} / 8 h`:'Da registrare'}
+          {label:'Alimentazione',icon:'fa-utensils',pct:nutritionPct,done:nutritionPct>=100,text:`${Math.round(kcal)} / ${Math.round(calorieTarget)} kcal`},
+          {label:'Idratazione',icon:'fa-glass-water',pct:hydrationPct,done:hydrationPct>=100,text:`${Math.round(water)} / ${Math.round(waterTarget)} ml`},
+          {label:'Sonno',icon:'fa-moon',pct:sleepPct,done:sleepPct>=100,text:w?`${Number(sleepHours.toFixed(1))} / 8 h`:'Da registrare'},
+          {label:'Allenamento',icon:'fa-dumbbell',pct:workoutPct,done:workoutPct>=100,text:workoutText},
+          {label:'Meditazione',icon:'fa-spa',pct:meditationDone?100:0,done:meditationDone,text:meditationDone?`${Math.round(med)} min completati`:'Da completare'}
         ];
-        pe.innerHTML=`<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">${trackers.map(t=>`<div class="rounded-2xl border border-slate-800 bg-slate-950/45 p-3"><div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2"><i class="fa-solid ${t.icon} text-cyan-300"></i><span class="text-[10px] font-bold text-white">${t.label}</span></div><span class="text-[10px] font-black ${t.pct>=100?'text-emerald-300':'text-slate-400'}">${t.pct}%</span></div><div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800"><div class="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400" style="width:${t.pct}%"></div></div><div class="mt-1.5 text-[9px] text-slate-500">${t.text}</div></div>`).join('')}</div>`;
+        const completed=trackers.filter(t=>t.done).length, pct=Math.round((completed/trackers.length)*100);
+        set('home-day-progress-count',`${completed}/${trackers.length}`);
+        set('home-day-progress-label',completed===trackers.length?'giornata completa':'completati');
+        const pb=document.getElementById('home-day-progress-bar');if(pb)pb.style.width=`${pct}%`;
+        const trophy=document.getElementById('home-day-trophy');if(trophy)trophy.className=`${completed===trackers.length?'flex':'hidden'} h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/30 bg-amber-400/10 text-2xl shadow-lg`;
+        pe.innerHTML=trackers.map(t=>`<div class="rounded-2xl border ${t.done?'border-emerald-500/20 bg-emerald-500/5':'border-slate-800 bg-slate-950/45'} p-3"><div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2"><span class="flex h-7 w-7 items-center justify-center rounded-xl ${t.done?'bg-emerald-500/15 text-emerald-300':'bg-slate-800 text-slate-400'}"><i class="fa-solid ${t.done?'fa-check':t.icon}"></i></span><div><div class="text-[10px] font-bold text-white">${t.label}</div><div class="text-[9px] text-slate-500">${t.text}</div></div></div><span class="text-[10px] font-black ${t.done?'text-emerald-300':'text-slate-400'}">${t.done?'Fatto':`${t.pct}%`}</span></div></div>`).join('');
       }
       const ie=document.getElementById('home-insight'); if(ie){
         ie.textContent=g.workoutDone

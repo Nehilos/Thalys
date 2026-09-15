@@ -71,5 +71,13 @@ La Home espone un riepilogo dei target nutrizionali attivi e usa il target acqua
 - Nessuna modifica a Dieta Reale/Pianificato o sincronizzazione.
 
 
-## v0.53.0 - Tracker essenziali Home
+## v0.54.0 - Tracker essenziali Home
 La Home viene semplificata rimuovendo card ridondanti. Il tracker essenziale e' una vista derivata dello stato gia sincronizzato: nutrizione, acqua, allenamento/scheda attiva e wellness/sonno. Non introduce nuovi store o file Drive. Il contapassi reale resta separato per evitare dipendenze da API/sensori non ancora consolidate nella PWA.
+
+
+## v0.54.0 - Progressione giornata, nuovo Check-in e Passi
+- Home: Progressione giornata X/5 con Alimentazione, Idratazione, Sonno, Allenamento e Meditazione.
+- Coppa visibile al completamento di tutte e 5 le aree.
+- Check-in Home ridisegnato con grafico circolare a quattro settori per Sonno, Recupero, Umore e Stress.
+- Allenamento: primo tracker giornaliero Passi sincronizzato via app_state, con valore manuale, +/-500 e target configurabile.
+- La lettura automatica dai sensori non viene attivata in questa versione per preservare compatibilità e stabilità PWA/iOS/desktop.
