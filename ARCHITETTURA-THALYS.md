@@ -51,7 +51,11 @@ La versione applicativa, il protocollo sync e il cache bust devono derivare da `
 - Le calorie pianificate sono calcolate dalle quantita giornaliere, per pasto e totale giorno.
 
 
-## v0.50.3 - Sync live Pianificato
+## v0.50.4 - Sync live Pianificato
 - Nessuna modifica alla UI mobile.
 - Il desktop accetta Drive come sorgente canonica per Pianificato quando non ha modifiche locali pendenti.
 - Controllo leggero ogni 5 secondi di app_state.json per aggiornare piano attivo, override giornalieri e spunte completamento tra dispositivi.
+
+
+### v0.50.4 - Picker alimenti condiviso Reale/Pianificato
+Il modal `add-food-modal` e il relativo motore di ricerca/selezione sono ora condivisi tra Reale e Pianificato. Il contesto di apertura determina la destinazione del salvataggio: diario reale oppure override giornaliero del piano.

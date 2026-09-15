@@ -166,7 +166,15 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Conservata la possibilita di aggiungere alimenti solo alla copia quotidiana senza modificare il piano ufficiale.
 
 
-## v0.50.3 - Sync live Pianificato
+## v0.50.4 - Sync live Pianificato
 - Nessuna modifica alla UI mobile.
 - Il desktop accetta Drive come sorgente canonica per Pianificato quando non ha modifiche locali pendenti.
 - Controllo leggero ogni 5 secondi di app_state.json per aggiornare piano attivo, override giornalieri e spunte completamento tra dispositivi.
+
+
+## v0.50.4 - Aggiunta rapida Pianificato
+- Rimossa la vecchia voce `Aggiungi solo a oggi` con menu a discesa.
+- Ogni pasto del Pianificato usa ora lo stesso pulsante circolare `+` del Reale.
+- Il pulsante apre esattamente lo stesso selettore alimenti del Reale: ricerca, filtri categoria, dettagli nutrizionali, grammi/ml e unita.
+- Quando il selettore viene aperto dal Pianificato, l'alimento viene salvato esclusivamente nella copia giornaliera del piano e non modifica il piano ufficiale.
+- La sincronizzazione live Pianificato introdotta in v0.50.3 resta invariata.

@@ -209,7 +209,7 @@ async function findDriveFolder(name,parentId=null){
       result.nutrition=mergeByKey(local.nutrition,c.nutrition,x=>x.id||`${x.date}|${x.meal}|${x.name}|${x.grams}`);
       result.mealPlans=mergeByKey(local.mealPlans,c.mealPlans,x=>x.id||x.name);
       result.activeMealPlanId=(driveDirty?local.activeMealPlanId:(c.activeMealPlanId??local.activeMealPlanId))||null;
-      // v0.50.3: Pianificato follows the same clean-device rule as the dedicated
+      // v0.50.4: Pianificato follows the same clean-device rule as the dedicated
       // live databases. When this device has no pending writes, Drive is canonical;
       // otherwise keep local edits until they are uploaded. This prevents a stale
       // desktop copy from masking a phone checkbox/quantity change.
@@ -469,7 +469,7 @@ async function findDriveFolder(name,parentId=null){
     }
     window.refreshWaterFromDriveLive=refreshWaterFromDriveLive;
 
-    // v0.50.3: lightweight live synchronization for Reale/Pianificato.
+    // v0.50.4: lightweight live synchronization for Reale/Pianificato.
     // app_state.json already contains the meal-plan domain, so we only read that
     // file when its Drive version changes and update these fields. No UI or phone
     // interaction changes are required.

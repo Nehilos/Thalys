@@ -24,7 +24,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
   
 
-  <link rel="stylesheet" href="./css/thalys.css?v=0503">
+  <link rel="stylesheet" href="./css/thalys.css?v=0504">
 
   <meta name="theme-color" content="#090d16">
   <script>
@@ -32,7 +32,7 @@
     // flashing the Google access screen before auth.js restores the local session.
     (function(){
       try{
-        var current='0.50.3';
+        var current='0.50.4';
         var hasSession=localStorage.getItem('thalys_app_session_v1')==='1';
         var sessionVersion=localStorage.getItem('thalys_auth_software_version_v1')||'';
         if(hasSession && sessionVersion===current) document.documentElement.classList.add('thalys-session-preboot');
@@ -113,7 +113,7 @@
       </div>
       <div class="min-w-0">
         <h1 class="thalys-header-title text-[17px] sm:text-xl font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Thalys</h1>
-        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.50.3</div>
+        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.50.4</div>
         <span class="hidden sm:block text-[10px] text-slate-400 tracking-wider font-semibold uppercase mt-0.5">Wellness</span>
       </div>
       <div class="hidden sm:block text-[9px] italic text-slate-300/80 leading-tight max-w-[190px] ml-1">
@@ -180,17 +180,17 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0503"></script>
-  <script src="./js/capabilities.js?v=0503"></script>
-  <script src="./js/device-media.js?v=0503"></script>
-  <script src="./js/backend-bridge.js?v=0503"></script>
-  <script src="./js/server-auth.js?v=0503"></script>
-  <script src="./js/notifications.js?v=0503"></script>
-  <script src="./js/storage-manager.js?v=0503"></script>
-  <script src="./js/sync-queue.js?v=0503"></script>
-  <script src="./js/conflict-resolver.js?v=0503"></script>
-  <script src="./js/local-db.js?v=0503"></script>
-  <script src="./js/ui-foundation.js?v=0503"></script>
+  <script src="./js/config.js?v=0504"></script>
+  <script src="./js/capabilities.js?v=0504"></script>
+  <script src="./js/device-media.js?v=0504"></script>
+  <script src="./js/backend-bridge.js?v=0504"></script>
+  <script src="./js/server-auth.js?v=0504"></script>
+  <script src="./js/notifications.js?v=0504"></script>
+  <script src="./js/storage-manager.js?v=0504"></script>
+  <script src="./js/sync-queue.js?v=0504"></script>
+  <script src="./js/conflict-resolver.js?v=0504"></script>
+  <script src="./js/local-db.js?v=0504"></script>
+  <script src="./js/ui-foundation.js?v=0504"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -1322,7 +1322,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.50.3
+        Thalys · Software v0.50.4
       </div>
 
     </section>
@@ -1532,7 +1532,7 @@
     <div class="bg-darkcard border-t sm:border border-darkborder rounded-t-3xl sm:rounded-3xl p-5 w-full max-w-md shadow-2xl max-h-[90dvh] flex flex-col">
       <div class="flex justify-between items-center pb-3 border-b border-slate-800">
         <div>
-          <div class="text-[9px] uppercase tracking-[.16em] text-emerald-300">Aggiungi pasto</div>
+          <div id="meal-preset-mode-label" class="text-[9px] uppercase tracking-[.16em] text-emerald-300">Aggiungi pasto</div>
           <h3 class="text-base font-black text-white"><span id="meal-preset-target-label">Colazione</span></h3>
         </div>
         <button type="button" onclick="closeModal('add-food-modal')" class="w-10 h-10 rounded-xl bg-slate-800 text-slate-300 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -2453,19 +2453,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0503"></script>
+  <script src="./js/language.js?v=0504"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0503"></script>
-  <script src="./js/body.js?v=0503"></script>
-  <script src="./js/meditation.js?v=0503"></script>
-  <script src="./js/nutrition.js?v=0503"></script>
-  <script src="./js/workout.js?v=0503"></script>
-  <script src="./js/home.js?v=0503"></script>
-  <script src="./js/analytics.js?v=0503"></script>
+  <script src="./js/app-core.js?v=0504"></script>
+  <script src="./js/body.js?v=0504"></script>
+  <script src="./js/meditation.js?v=0504"></script>
+  <script src="./js/nutrition.js?v=0504"></script>
+  <script src="./js/workout.js?v=0504"></script>
+  <script src="./js/home.js?v=0504"></script>
+  <script src="./js/analytics.js?v=0504"></script>
 
-  <script src="./js/drive.js?v=0503"></script>
-  <script src="./js/auth.js?v=0503"></script>
+  <script src="./js/drive.js?v=0504"></script>
+  <script src="./js/auth.js?v=0504"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2492,8 +2492,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0503"></script>
-<script src="./js/runtime-health.js?v=0503"></script>
+<script src="./js/app-enhancements.js?v=0504"></script>
+<script src="./js/runtime-health.js?v=0504"></script>
 
 </body>
 </html>
