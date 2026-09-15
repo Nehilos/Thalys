@@ -36,9 +36,16 @@
 
 La versione applicativa, il protocollo sync e il cache bust devono derivare da `js/config.js`. Il Runtime Health Check segnala eventuali divergenze.
 
-## v0.50.1 - Dieta Reale / Pianificato
+## v0.50.2 - Dieta Reale / Pianificato
 - La sezione Dieta separa il diario consumato (Reale) dalla copia quotidiana del piano attivo (Pianificato).
 - `mealPlans` conserva i piani ufficiali settimanali.
 - `mealPlanDailyOverrides[date]` conserva le sole variazioni giornaliere e non modifica il piano ufficiale.
 - `mealPlanCompletions[date]` conserva le spunte; una spunta genera/rimuove un record `nutrition` con `source: meal-plan`.
 - Gli alimenti categoria `Bevande` sono normalizzati e visualizzati in ml in tutti i flussi nutrizionali.
+
+## v0.50.2 - Editor piani alimentari e progresso
+- Il piano ufficiale continua a referenziare copie dei dati nutrizionali del database alimenti al momento dell'inserimento.
+- Nessuna compilazione automatica dei piatti nel piano: la sorgente e il database alimenti gia compilato.
+- L'editor usa ricerca e categoria per selezionare i preset, con quantita esplicita g/ml.
+- Il completamento giornaliero deriva da mealPlanCompletions e viene rappresentato come done/total + percentuale.
+- Le calorie pianificate sono calcolate dalle quantita giornaliere, per pasto e totale giorno.

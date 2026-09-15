@@ -3333,7 +3333,7 @@
 #breathing-modal { z-index: 145; }
 
 
-/* Thalys v0.50.1 - meal-plan mobile width hardening */
+/* Thalys v0.50.2 - meal-plan mobile width hardening */
 #meal-plan-manager-modal,
 #nutrition-planned-view,
 .meal-plan-manager-shell { box-sizing: border-box; max-width: 100%; }
@@ -3343,4 +3343,11 @@
 #meal-plan-builder-v0500 input { max-width: 100%; }
 @media (max-width: 639px){
   .meal-plan-manager-shell { width: calc(100vw - 1rem) !important; margin: 0 auto; }
+}
+
+/* Thalys v0.50.2 - meal-plan editor and compact saved-plan rows */
+.meal-plan-saved-row-v0502 { width: 100%; max-width: 100%; overflow: hidden; }
+@media (max-width: 520px){
+  .meal-plan-saved-row-v0502 { gap: .25rem; padding-left: .4rem; padding-right: .4rem; }
+  .meal-plan-saved-row-v0502 button { padding-left: .38rem; padding-right: .38rem; font-size: 8px; }
 }

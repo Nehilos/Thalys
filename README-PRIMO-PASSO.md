@@ -139,7 +139,7 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Gratitudine: tombstone dedicati in gratitude_deleted.json per propagare le cancellazioni tra dispositivi.
 
 
-## v0.50.1 - Dieta Reale / Pianificato
+## v0.50.2 - Dieta Reale / Pianificato
 - La scheda Acqua e' stata portata sopra al selettore Reale/Pianificato.
 - Reale mantiene il diario nutrizionale attuale.
 - Pianificato introduce piani alimentari settimanali attivabili e modificabili dal gestore piani.
@@ -150,9 +150,17 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Piani, override giornalieri e completamenti entrano nello stato sincronizzato Drive.
 
 
-## v0.50.1 - Piani alimentari 2
+## v0.50.2 - Piani alimentari 2
 - Pulsante esplicito Rendi attivo / Piano attivo nella libreria piani.
 - Hardening responsive del gestore piani e Pianificato per evitare overflow sul bordo destro.
 - Eliminare dal Reale un alimento proveniente dal piano rimuove anche la spunta nel Pianificato.
-- Compila piatti: controlla i piatti unici del piano, completa tramite IA quelli incompleti/assenti, aggiorna il database alimenti e mostra Piatti completati X/Y.
 - Gli alimenti completati vengono riallineati anche nelle copie giornaliere gia create e nei log Reale derivati dal piano.
+
+## v0.50.2 - Piani alimentari 3
+- Rimossi Compila piatti / Compila tutto: i piani usano esclusivamente alimenti gia presenti nel database.
+- Editor piano spostato sopra ai piani salvati e reso a tutta larghezza.
+- Selezione alimenti con ricerca testuale, filtro categoria, dettagli nutrizionali e quantita in g/ml prima dell'aggiunta.
+- Piani salvati compattati su una sola riga: titolo, Rendi attivo/Attivo, Modifica, Elimina.
+- Pianificato: grafico di completamento giornaliero, kcal per pasto e kcal totali del giorno.
+- Le schede degli alimenti pianificati mostrano quantita, kcal e macro.
+- Conservata la possibilita di aggiungere alimenti solo alla copia quotidiana senza modificare il piano ufficiale.
