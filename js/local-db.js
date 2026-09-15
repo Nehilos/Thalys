@@ -102,9 +102,9 @@
 
   async function warmOfflineAppShell() {
     if (!window.caches || !window.isSecureContext) return 0;
-    const urls = ['./', './index.html', './manifest.json', './Thalys Logo Dark.png?v=22', './Thalys Logo Light.png?v=22', './Loto.png?v=22', './male.svg?v=0482', './female.svg?v=0482', './css/thalys.css?v=024', './js/config.js?v=0482', './js/capabilities.js?v=0482', './js/device-media.js?v=0482', './js/backend-bridge.js?v=0482', './js/server-auth.js?v=0482', './js/notifications.js?v=0482', './js/storage-manager.js?v=0482', './js/sync-queue.js?v=0482', './js/conflict-resolver.js?v=0482', './js/local-db.js?v=0482', './js/ui-foundation.js?v=0482', './js/language.js?v=0482', './js/drive.js?v=0482', './js/auth.js?v=0482', './js/app-core.js?v=0482', './js/body.js?v=0482', './js/meditation.js?v=0482', './js/nutrition.js?v=0482', './js/workout.js?v=0482', './js/home.js?v=0482', './js/analytics.js?v=0482', './js/app-enhancements.js?v=0482', './js/runtime-health.js?v=0482']
-    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.48.2').map(k=>caches.delete(k)));}catch(_){}
-    const cache = await caches.open('thalys-manual-offline-v0.48.2');
+    const urls = ['./', './index.html', './manifest.json', './Thalys Logo Dark.png?v=22', './Thalys Logo Light.png?v=22', './Loto.png?v=22', './male.svg?v=0483', './female.svg?v=0483', './css/thalys.css?v=024', './js/config.js?v=0483', './js/capabilities.js?v=0483', './js/device-media.js?v=0483', './js/backend-bridge.js?v=0483', './js/server-auth.js?v=0483', './js/notifications.js?v=0483', './js/storage-manager.js?v=0483', './js/sync-queue.js?v=0483', './js/conflict-resolver.js?v=0483', './js/local-db.js?v=0483', './js/ui-foundation.js?v=0483', './js/language.js?v=0483', './js/drive.js?v=0483', './js/auth.js?v=0483', './js/app-core.js?v=0483', './js/body.js?v=0483', './js/meditation.js?v=0483', './js/nutrition.js?v=0483', './js/workout.js?v=0483', './js/home.js?v=0483', './js/analytics.js?v=0483', './js/app-enhancements.js?v=0483', './js/runtime-health.js?v=0483']
+    try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('thalys-manual-offline-')&&k!=='thalys-manual-offline-v0.48.3').map(k=>caches.delete(k)));}catch(_){}
+    const cache = await caches.open('thalys-manual-offline-v0.48.3');
     let saved = 0;
     for (const url of urls) {
       try { await cache.add(url); saved += 1; } catch (_) {}

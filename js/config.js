@@ -2,8 +2,8 @@
   'use strict';
   const CONFIG=Object.freeze({
     appName:'Thalys',
-    appVersion:'0.48.2',
-    cacheBust:'0482',
+    appVersion:'0.48.3',
+    cacheBust:'0483',
     sessionSchema:'v1',
     storageSchemaVersion:4,
     syncProtocolVersion:7,

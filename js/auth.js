@@ -1,4 +1,4 @@
-// Thalys v0.48.2 - Authentication and persistent session module
+// Thalys v0.48.3 - Authentication and persistent session module
 // Owns Google identity/OAuth, token persistence, startup session restore, login/logout and access gating.
 
 // ===== Google OAuth / Drive authorization =====
@@ -11,7 +11,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     const AUTH_PROFILE_STORAGE_KEY = 'thalys_google_profile';
     const AUTH_DRIVE_TOKEN_STORAGE_KEY = 'thalys_drive_access_v1';
     const AUTH_SESSION_VERSION_KEY = 'thalys_auth_software_version_v1';
-    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.48.2';
+    const THALYS_SOFTWARE_VERSION = window.ThalysConfig?.appVersion || '0.48.3';
     let tokenClient = null, gapiInited = false, gisInited = false, startupAccessRequested = false, authRequestInFlight = false, manualAuthFallbackUsed = false;
     let authRequestSerial = 0, reconnectRetryTimer = null, reconnectRetryCount = 0;
 
@@ -45,13 +45,19 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
     function sessionAuthorizedForCurrentVersion(){return localStorage.getItem('thalys_app_session_v1')==='1' && rememberedSessionVersion()===THALYS_SOFTWARE_VERSION;}
     function needsSoftwareVersionReconnect(){return hasRememberedGoogleSession() && !sessionAuthorizedForCurrentVersion();}
     function markCurrentVersionAuthorized(){try{localStorage.setItem('thalys_app_session_v1','1');localStorage.setItem(AUTH_SESSION_VERSION_KEY,THALYS_SOFTWARE_VERSION);}catch(_){}}
+    window.thalysUnifiedGoogleAuthorized=function(){
+      markCurrentVersionAuthorized();
+      unlockApp(false);
+      updateAuthUI(savedGoogleProfile());
+      return true;
+    };
 
     function updateAuthUI(profile){
       profile=profile||savedGoogleProfile();
       const connected=navigator.onLine&&!!getAccessToken();
       const reconnecting=navigator.onLine&&!connected&&!!profile;
       const appPreferredName=String(window.appState?.profile?.preferredName||'').trim();
-      document.querySelectorAll('#cloud-user-name').forEach(el=>el.textContent=(connected||reconnecting)?(appPreferredName||profile?.name||profile?.displayName||profile?.email||'Utente Google'):'Utente Ospite');
+      document.querySelectorAll('#cloud-user-name').forEach(el=>el.textContent=(appPreferredName||profile?.name||profile?.displayName||profile?.email||(hasRememberedGoogleSession()?'Utente Google':'Utente Ospite')));
       document.querySelectorAll('#cloud-user-email').forEach(el=>el.textContent=(connected||reconnecting)?(profile?.email||''):'' );
       document.querySelectorAll('#cloud-user-status').forEach(el=>{el.textContent=connected?'Google Drive · Thalys App attivo':reconnecting?'Connessione automatica a Google Drive…':'Salvataggio locale sul dispositivo';el.classList.toggle('text-emerald-400',connected);el.classList.toggle('text-amber-300',reconnecting);el.classList.toggle('text-slate-400',!connected&&!reconnecting);});
       const icon=document.getElementById('cloud-status-icon');
@@ -64,7 +70,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       }
             const btn=document.getElementById('google-login-btn'); if(btn){btn.innerText=connected?'Disconnetti':'Accedi con Google';btn.onclick=connected?handleSignoutClick:handleAuthClick;}
       const driveActions=document.getElementById('drive-actions'); if(driveActions) driveActions.style.display=(connected||reconnecting)?'flex':'none';
-      const details=document.getElementById('auth-user-details'); if(details) details.classList.toggle('hidden',!connected&&!reconnecting);
+      const details=document.getElementById('auth-user-details'); if(details) details.classList.toggle('hidden',!connected&&!reconnecting&&!hasRememberedGoogleSession());
       if(connected)setDriveStatus('ok','Drive pronto');else if(reconnecting)setDriveStatus('saving','Connessione automatica…');else setDriveStatus('idle','Locale');
       const pd=document.getElementById('profile-connection-dot');
       if(pd)pd.className='profile-connection-dot '+(connected?'online':reconnecting?'reconnecting':'offline');
@@ -337,6 +343,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       let thalysWasOffline = !navigator.onLine;
 
       function unlockApp(rememberSession = true) {
+        document.documentElement.classList.remove('thalys-session-preboot');
         const welcomeScreen = document.getElementById('welcome-screen');
         const appShell = document.getElementById('app-shell');
         if (welcomeScreen) welcomeScreen.classList.add('hidden');
@@ -346,6 +353,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       }
 
       function showReconnectGateForVersion() {
+        document.documentElement.classList.remove('thalys-session-preboot');
         const welcomeScreen = document.getElementById('welcome-screen');
         const appShell = document.getElementById('app-shell');
         if (appShell) appShell.classList.add('hidden');
@@ -356,6 +364,7 @@ const GYM_CLIENT_ID = '530515970912-7mlo4stsbcbcajrov07f911se4upv8t2.apps.google
       }
 
       function lockApp() {
+        document.documentElement.classList.remove('thalys-session-preboot');
         localStorage.removeItem(THALYS_APP_SESSION_KEY);
         localStorage.removeItem(AUTH_SESSION_VERSION_KEY);
         const welcomeScreen = document.getElementById('welcome-screen');

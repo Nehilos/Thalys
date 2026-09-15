@@ -110,6 +110,10 @@
           // persistent refresh token. This makes the single login popup authoritative.
           if(data?.refreshStored!==true)throw Object.assign(new Error('REFRESH_TOKEN_NOT_STORED'),{code:'REFRESH_TOKEN_NOT_STORED'});
           markActive(true);
+          // The durable Google/server session is established at this point. Open the
+          // app immediately; Drive initialization/synchronization can finish in the
+          // background without leaving the user staring at the access screen.
+          try{window.thalysUnifiedGoogleAuthorized?.();}catch(_){}
           const ok=await installAccessToken(data,false);
           if(!ok)throw Object.assign(new Error('DRIVE_CONNECT_FAILED'),{code:'DRIVE_CONNECT_FAILED'});
           window.showToast?.('Google collegato · sessione server attiva','fa-shield-halved');

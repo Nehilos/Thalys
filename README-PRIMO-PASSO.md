@@ -99,7 +99,7 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - se la sessione server e realmente revocata/scaduta resta attivo il normale fallback OAuth;
 - cache/versione applicazione aggiornate a 0.48.1 / 0481.
 
-## v0.48.2 - Login Google unificato e sessione server persistente
+## v0.48.3 - Login Google unificato e sessione server persistente
 - `Continua con Google` e' ora l'unico flusso di accesso: un solo consenso Google crea sia accesso Drive sia sessione server persistente.
 - Dopo un cambio versione il consenso viene richiesto una volta per dispositivo; completato con successo, la versione viene autorizzata.
 - Dopo offline -> online la sessione server viene recuperata/aggiornata automaticamente senza popup e senza passare da Opzioni.
