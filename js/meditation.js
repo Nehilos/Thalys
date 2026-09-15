@@ -246,10 +246,29 @@ function openMindInfo(type){
 
     const GRATITUDE_PROMPTS=['Per quale piccola cosa sei grato oggi?','Chi ti ha fatto sorridere di recente?','Quale momento della giornata vorresti ricordare?','Quale gesto gentile hai ricevuto o fatto?','Quale parte del tuo corpo ti ha permesso di fare qualcosa che ami?','Che cosa hai imparato oggi?','Quale sapore, profumo o suono ti ha fatto stare bene?','C’è un luogo in cui oggi ti sei sentito al sicuro?'];let gratitudePromptIndex=0;
     function nextGratitudePrompt(){gratitudePromptIndex=(gratitudePromptIndex+1)%GRATITUDE_PROMPTS.length;const e=document.getElementById('gratitude-prompt');if(e)e.textContent=GRATITUDE_PROMPTS[gratitudePromptIndex];}
-    function getGratitudeEntries(){try{return JSON.parse(localStorage.getItem('thalys_gratitude')||'[]')}catch(_){return[]}}
+    function getGratitudeEntries(){
+      appState.gratitude=Array.isArray(appState.gratitude)?appState.gratitude:[];
+      try{
+        const legacy=JSON.parse(localStorage.getItem('thalys_gratitude')||'[]');
+        if(Array.isArray(legacy)&&legacy.length){
+          const byId=new Map(appState.gratitude.map(x=>[x.id,x]));
+          legacy.forEach(x=>{if(x?.id&&!byId.has(x.id))byId.set(x.id,x)});
+          if(byId.size!==appState.gratitude.length){appState.gratitude=[...byId.values()];saveStateToLocal({source:'gratitude-migration'});}
+          localStorage.setItem('thalys_gratitude',JSON.stringify(appState.gratitude));
+        }
+      }catch(_){}
+      return appState.gratitude;
+    }
+    function isMentalPauseCompleted(date){
+      const ds=String(date||currentLocalDateStr()).slice(0,10);
+      const meditationDone=(appState.meditation||[]).some(x=>x.date===ds&&['mindfulness','body scan','bodyscan'].includes(String(x.type||'').trim().toLowerCase()));
+      const gratitudeDone=getGratitudeEntries().some(x=>String(x.date||'').slice(0,10)===ds);
+      return meditationDone||gratitudeDone;
+    }
+    window.isMentalPauseCompleted=isMentalPauseCompleted;
     let gratitudeSelectMode=false;
     const gratitudeSelectedIds=new Set();
-    function saveGratitudeEntry(){const ta=document.getElementById('gratitude-text'),value=ta?.value?.trim();if(!value){showToast('Scrivi prima un pensiero di gratitudine');return;}const arr=getGratitudeEntries();arr.push({id:'grat_'+Date.now(),date:new Date().toISOString(),text:value});localStorage.setItem('thalys_gratitude',JSON.stringify(arr));if(ta)ta.value='';renderGratitudeHistory();showToast('Ricordo salvato ✓','fa-heart');}
+    function saveGratitudeEntry(){const ta=document.getElementById('gratitude-text'),value=ta?.value?.trim();if(!value){showToast('Scrivi prima un pensiero di gratitudine');return;}const arr=getGratitudeEntries();arr.push({id:'grat_'+Date.now(),date:new Date().toISOString(),text:value,updatedAt:new Date().toISOString()});appState.gratitude=arr;localStorage.setItem('thalys_gratitude',JSON.stringify(arr));saveStateToLocal({source:'gratitude'});scheduleAutosave?.();if(ta)ta.value='';renderGratitudeHistory();renderHomeDashboard();showToast('Ricordo salvato ✓ · sincronizzazione avviata','fa-heart');}
     function updateGratitudeFilterUI(){const type=document.getElementById('gratitude-filter-type')?.value||'all';document.getElementById('gratitude-filter-date')?.classList.toggle('hidden',type!=='date');document.getElementById('gratitude-filter-month')?.classList.toggle('hidden',type!=='month');}
     function getFilteredGratitudeEntries(){const arr=getGratitudeEntries().sort((a,b)=>new Date(b.date)-new Date(a.date));const type=document.getElementById('gratitude-filter-type')?.value||'all';if(type==='date'){const d=document.getElementById('gratitude-filter-date')?.value;if(!d)return arr;return arr.filter(x=>String(x.date).slice(0,10)===d);}if(type==='month'){const m=document.getElementById('gratitude-filter-month')?.value;if(!m)return arr;return arr.filter(x=>String(x.date).slice(0,7)===m);}return arr;}
     function toggleGratitudeSelectMode(){gratitudeSelectMode=!gratitudeSelectMode;if(!gratitudeSelectMode)gratitudeSelectedIds.clear();document.getElementById('gratitude-export-actions')?.classList.toggle('hidden',!gratitudeSelectMode);document.getElementById('gratitude-select-all-btn')?.classList.toggle('hidden',!gratitudeSelectMode);const b=document.getElementById('gratitude-select-mode-btn');if(b)b.innerHTML=gratitudeSelectMode?'<i class="fa-solid fa-xmark mr-1"></i>Fine':'<i class="fa-solid fa-check-double mr-1"></i>Seleziona';renderGratitudeHistory();}

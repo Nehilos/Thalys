@@ -524,9 +524,9 @@ function openNutritionProposalModal(data, dataUrl) {
 function saveRecognizedNutrition(e) {
   e.preventDefault();
   const name = document.getElementById('prop-name').value.trim();
-  const kcal = parseInt(document.getElementById('prop-kcal').value) || 0;
-  const p = parseInt(document.getElementById('prop-p').value) || 0;
-  const c = parseInt(document.getElementById('prop-c').value) || 0;
+  const kcal = parseFloat(document.getElementById('prop-kcal').value) || 0;
+  const p = parseFloat(document.getElementById('prop-p').value) || 0;
+  const c = parseFloat(document.getElementById('prop-c').value) || 0;
   const f = parseFloat(document.getElementById('prop-f').value) || 0;
   const satFat = parseFloat(document.getElementById('prop-sat-fat').value) || 0;
   const sugars = parseFloat(document.getElementById('prop-sugars').value) || 0;
@@ -563,11 +563,15 @@ function saveRecognizedNutrition(e) {
   renderNutrition();
   renderHomeDashboard();
   scheduleAutosave();
-  const modal = document.getElementById('nutrition-proposal-modal');
-  if (modal) modal.classList.add('hidden');
-  updateModalScrollLock();
+  closeModal('nutrition-proposal-modal');
+  closeScanProductModal();
   e.target?.reset?.();
-  setTimeout(() => showToast('Alimento salvato ✓','fa-circle-check'), 60);
+  setTimeout(() => {
+    renderPresets();
+    openModal('food-preset-modal');
+    toggleFoodPresetForm(false);
+    showToast('Alimento aggiunto ✓','fa-circle-check');
+  }, 60);
 }
 
 

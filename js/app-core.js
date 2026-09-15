@@ -239,7 +239,7 @@
 
     function toggleMessageSelection(){messageSelectionMode=!messageSelectionMode;if(!messageSelectionMode)selectedMessageIds.clear();document.getElementById('message-delete-btn')?.classList.toggle('hidden',!messageSelectionMode);document.getElementById('message-select-btn').textContent=messageSelectionMode?'Fine':'Seleziona';renderMessages()}
     function toggleMessageSelect(id,on){if(on)selectedMessageIds.add(id);else selectedMessageIds.delete(id)}
-    function deleteSelectedMessages(){ensureMessageArrayOnly();selectedMessageIds.forEach(id=>{if(!appState.deletedMessageIds.includes(id))appState.deletedMessageIds.push(id)});appState.messages=appState.messages.filter(m=>!selectedMessageIds.has(m.id));selectedMessageIds.clear();messageSelectionMode=false;saveStateToLocal();renderMessages();renderMessageBadge()}
+    function deleteSelectedMessages(){if(!selectedMessageIds.size||!confirm(`Eliminare ${selectedMessageIds.size} messaggi selezionati?`))return;ensureMessageArrayOnly();selectedMessageIds.forEach(id=>{if(!appState.deletedMessageIds.includes(id))appState.deletedMessageIds.push(id)});appState.messages=appState.messages.filter(m=>!selectedMessageIds.has(m.id));selectedMessageIds.clear();messageSelectionMode=false;saveStateToLocal();renderMessages();renderMessageBadge()}
 
 
 
@@ -683,10 +683,10 @@
       openModal('consult-snapshot-modal');
     }
 
-    function deleteConsultSnapshot(id){appState.consultations=(appState.consultations||[]).filter(x=>x.id!==id);saveStateToLocal();renderConsultations();refreshConsultSelectors();}
+    function deleteConsultSnapshot(id){if(!confirm('Eliminare questo quadro salvato?'))return;appState.consultations=(appState.consultations||[]).filter(x=>x.id!==id);saveStateToLocal();renderConsultations();refreshConsultSelectors();}
     function toggleConsultSnapshotSelection(){consultSnapshotSelectionMode=!consultSnapshotSelectionMode;selectedConsultSnapshotIds.clear();document.getElementById('consult-snapshot-delete-btn')?.classList.toggle('hidden',!consultSnapshotSelectionMode);renderConsultations();}
     function toggleConsultSnapshot(id,on){on?selectedConsultSnapshotIds.add(id):selectedConsultSnapshotIds.delete(id)}
-    function deleteSelectedConsultSnapshots(){appState.consultations=(appState.consultations||[]).filter(x=>!selectedConsultSnapshotIds.has(x.id));selectedConsultSnapshotIds.clear();consultSnapshotSelectionMode=false;saveStateToLocal();document.getElementById('consult-snapshot-delete-btn')?.classList.add('hidden');renderConsultations();refreshConsultSelectors();}
+    function deleteSelectedConsultSnapshots(){if(!selectedConsultSnapshotIds.size||!confirm(`Eliminare ${selectedConsultSnapshotIds.size} quadri selezionati?`))return;appState.consultations=(appState.consultations||[]).filter(x=>!selectedConsultSnapshotIds.has(x.id));selectedConsultSnapshotIds.clear();consultSnapshotSelectionMode=false;saveStateToLocal();document.getElementById('consult-snapshot-delete-btn')?.classList.add('hidden');renderConsultations();refreshConsultSelectors();}
     function clearConsultFilters(){const t=document.getElementById('consult-filter-type'),m=document.getElementById('consult-filter-month');if(t)t.value='all';if(m)m.value='';document.querySelectorAll('[data-consult-filter]').forEach(b=>b.classList.toggle('active',b.dataset.consultFilter==='all'));renderConsultationsStable();}
 
     function refreshConsultSelectors(){
@@ -823,10 +823,10 @@
       openModal('consult-snapshot-modal');
     }
     function loadStoredAIWorkoutPlan(id){const x=(appState.aiConsults||[]).find(r=>r.id===id);if(!x?.generatedWorkoutPlan)return;lastAIWorkoutProposal=x.generatedWorkoutPlan;const box=document.getElementById('consult-ai-result');if(box)box.innerHTML=`<div class="text-xs font-black text-white">${tr('Scheda proposta')}</div><pre class="mt-3 max-h-[18rem] overflow-auto whitespace-pre-wrap rounded-xl bg-slate-950 p-3 text-[9px] text-slate-300">${escapeHTML(JSON.stringify(lastAIWorkoutProposal,null,2))}</pre><div class="mt-3 grid grid-cols-2 gap-2"><button onclick="downloadAIWorkoutPlan()" class="min-h-10 rounded-xl bg-slate-800 text-[10px] font-bold text-cyan-300">${tr('Scarica JSON')}</button><button onclick="importAIWorkoutPlan()" class="min-h-10 rounded-xl bg-emerald-500 text-[10px] font-black text-slate-950">${tr('Importa in Schede')}</button></div>`}
-    function deleteAIConsult(id){appState.aiConsults=(appState.aiConsults||[]).filter(x=>x.id!==id);saveStateToLocal();renderAIConsultHistory();}
+    function deleteAIConsult(id){if(!confirm('Eliminare questo consulto AI?'))return;appState.aiConsults=(appState.aiConsults||[]).filter(x=>x.id!==id);saveStateToLocal();renderAIConsultHistory();}
     function toggleAIConsultSelection(){aiConsultSelectionMode=!aiConsultSelectionMode;selectedAIConsultIds.clear();document.getElementById('ai-history-delete-btn')?.classList.toggle('hidden',!aiConsultSelectionMode);renderAIConsultHistory();}
     function toggleAIConsultSelect(id,on){on?selectedAIConsultIds.add(id):selectedAIConsultIds.delete(id)}
-    function deleteSelectedAIConsults(){appState.aiConsults=(appState.aiConsults||[]).filter(x=>!selectedAIConsultIds.has(x.id));selectedAIConsultIds.clear();aiConsultSelectionMode=false;saveStateToLocal();document.getElementById('ai-history-delete-btn')?.classList.add('hidden');renderAIConsultHistory();}
+    function deleteSelectedAIConsults(){if(!selectedAIConsultIds.size||!confirm(`Eliminare ${selectedAIConsultIds.size} consulti AI selezionati?`))return;appState.aiConsults=(appState.aiConsults||[]).filter(x=>!selectedAIConsultIds.has(x.id));selectedAIConsultIds.clear();aiConsultSelectionMode=false;saveStateToLocal();document.getElementById('ai-history-delete-btn')?.classList.add('hidden');renderAIConsultHistory();}
     function clearAIHistoryFilters(){const t=document.getElementById('ai-history-filter-type'),m=document.getElementById('ai-history-filter-month');if(t)t.value='all';if(m)m.value='';renderAIConsultHistory();}
 
     async function aiFillFoodPreset(){

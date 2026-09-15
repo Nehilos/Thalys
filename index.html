@@ -32,7 +32,7 @@
     // flashing the Google access screen before auth.js restores the local session.
     (function(){
       try{
-        var current='0.48.3';
+        var current='0.48.4';
         var hasSession=localStorage.getItem('thalys_app_session_v1')==='1';
         var sessionVersion=localStorage.getItem('thalys_auth_software_version_v1')||'';
         if(hasSession && sessionVersion===current) document.documentElement.classList.add('thalys-session-preboot');
@@ -113,7 +113,7 @@
       </div>
       <div class="min-w-0">
         <h1 class="thalys-header-title text-[17px] sm:text-xl font-bold leading-none bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Thalys</h1>
-        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.48.3</div>
+        <div class="text-[8px] sm:text-[9px] leading-none mt-0.5 text-slate-400/65 font-medium tracking-wide">v0.48.4</div>
         <span class="hidden sm:block text-[10px] text-slate-400 tracking-wider font-semibold uppercase mt-0.5">Wellness</span>
       </div>
       <div class="hidden sm:block text-[9px] italic text-slate-300/80 leading-tight max-w-[190px] ml-1">
@@ -180,17 +180,17 @@
   <!-- Main Scrollable Area -->
   <main class="flex-1 overflow-y-auto pb-24 p-4 max-w-lg mx-auto w-full">
     
-  <script src="./js/config.js?v=0483"></script>
-  <script src="./js/capabilities.js?v=0483"></script>
-  <script src="./js/device-media.js?v=0483"></script>
-  <script src="./js/backend-bridge.js?v=0483"></script>
-  <script src="./js/server-auth.js?v=0483"></script>
-  <script src="./js/notifications.js?v=0483"></script>
-  <script src="./js/storage-manager.js?v=0483"></script>
-  <script src="./js/sync-queue.js?v=0483"></script>
-  <script src="./js/conflict-resolver.js?v=0483"></script>
-  <script src="./js/local-db.js?v=0483"></script>
-  <script src="./js/ui-foundation.js?v=0483"></script>
+  <script src="./js/config.js?v=0484"></script>
+  <script src="./js/capabilities.js?v=0484"></script>
+  <script src="./js/device-media.js?v=0484"></script>
+  <script src="./js/backend-bridge.js?v=0484"></script>
+  <script src="./js/server-auth.js?v=0484"></script>
+  <script src="./js/notifications.js?v=0484"></script>
+  <script src="./js/storage-manager.js?v=0484"></script>
+  <script src="./js/sync-queue.js?v=0484"></script>
+  <script src="./js/conflict-resolver.js?v=0484"></script>
+  <script src="./js/local-db.js?v=0484"></script>
+  <script src="./js/ui-foundation.js?v=0484"></script>
 
     <!-- ========================================== -->
     <!-- TAB HOME: DAILY DASHBOARD                  -->
@@ -1307,7 +1307,7 @@
       </div>
 
       <div id="app-version-label" class="pb-2 pt-1 text-center text-[10px] font-semibold tracking-[0.14em] text-slate-500" aria-label="Versione software Thalys 0.21">
-        Thalys · Software v0.48.3
+        Thalys · Software v0.48.4
       </div>
 
     </section>
@@ -1634,19 +1634,19 @@
         </div>
         <div id="preset-ai-status" class="hidden rounded-lg border border-violet-500/15 bg-violet-500/5 px-2.5 py-2 text-[9px] leading-relaxed text-violet-200"></div>
         <div class="grid grid-cols-2 gap-2">
-          <input type="number" id="preset-kcal" step="1" placeholder="kcal/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
-          <input type="number" id="preset-p" step="0.1" required placeholder="Proteine/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
-          <input type="number" id="preset-c" step="0.1" required placeholder="Carbo/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
-          <input type="number" id="preset-f" step="0.1" required placeholder="Grassi/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
-          <input type="number" id="preset-sat-fat" step="0.1" placeholder="Saturi/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
-          <input type="number" id="preset-sugars" step="0.1" placeholder="Zuccheri/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
-          <input type="number" id="preset-calcium" step="1" placeholder="Calcio mg/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
-          <input type="number" id="preset-magnesium" step="1" placeholder="Magnesio mg/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-kcal" step="0.01" placeholder="kcal/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-p" step="0.01" required placeholder="Proteine/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-c" step="0.01" required placeholder="Carbo/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-f" step="0.01" required placeholder="Grassi/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-sat-fat" step="0.01" placeholder="Saturi/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-sugars" step="0.01" placeholder="Zuccheri/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-calcium" step="0.01" placeholder="Calcio mg/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-magnesium" step="0.01" placeholder="Magnesio mg/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
           <input type="number" id="preset-zinc" step="0.01" placeholder="Zinco mg/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
-          <input type="number" id="preset-fiber" step="0.1" placeholder="Fibre/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-fiber" step="0.01" placeholder="Fibre/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
           <input type="number" id="preset-salt" step="0.01" placeholder="Sale g/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
           <input type="number" id="preset-iron" step="0.01" placeholder="Ferro mg/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
-          <input type="number" id="preset-potassium" step="1" placeholder="Potassio mg/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+          <input type="number" id="preset-potassium" step="0.01" placeholder="Potassio mg/100g" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
           <input type="text" id="preset-vitamins-id" placeholder="Vitamine ID: B1 B6 C" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white uppercase">
           <input type="text" id="preset-vitamins-lip" placeholder="Vitamine LIP: A D E K" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white uppercase">
         </div>
@@ -1683,38 +1683,38 @@
           <div class="grid grid-cols-3 gap-2">
             <div>
               <label class="text-[10px] text-rose-400 block mb-1">Kcal</label>
-              <input id="prop-kcal" type="number" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-kcal" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="text-[10px] text-rose-400 block mb-1">Proteine</label>
-              <input id="prop-p" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-p" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="text-[10px] text-amber-400 block mb-1">Carbo</label>
-              <input id="prop-c" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-c" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="text-[10px] text-blue-400 block mb-1">Grassi</label>
-              <input id="prop-f" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-f" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="text-[10px] text-sky-300 block mb-1">Grassi saturi</label>
-              <input id="prop-sat-fat" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-sat-fat" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="text-[10px] text-violet-400 block mb-1">Zuccheri</label>
-              <input id="prop-sugars" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-sugars" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="text-[10px] text-cyan-400 block mb-1">Calcio</label>
-              <input id="prop-calcium" type="number" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-calcium" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="text-[10px] text-emerald-400 block mb-1">Magnesio</label>
-              <input id="prop-magnesium" type="number" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-magnesium" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="text-[10px] text-teal-300 block mb-1">Zinco</label>
@@ -1722,7 +1722,7 @@
             </div>
             <div>
               <label class="text-[10px] text-amber-300 block mb-1">Fibre</label>
-              <input id="prop-fiber" type="number" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-fiber" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="text-[10px] text-fuchsia-300 block mb-1">Sale (g)</label>
@@ -1734,7 +1734,7 @@
             </div>
             <div>
               <label class="text-[10px] text-lime-300 block mb-1">Potassio (mg)</label>
-              <input id="prop-potassium" type="number" step="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
+              <input id="prop-potassium" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-white">
             </div>
             <div>
               <label class="text-[10px] text-indigo-300 block mb-1">Vitamine ID</label>
@@ -2419,19 +2419,19 @@
   </div>
 
   <!-- Google Drive Cloud Backend: one unified Google login, Drive as cloud source of truth -->
-  <script src="./js/language.js?v=0483"></script>
+  <script src="./js/language.js?v=0484"></script>
 
   <!-- Core modules must fully initialize before Drive/Auth can start asynchronous bootstrap. -->
-  <script src="./js/app-core.js?v=0483"></script>
-  <script src="./js/body.js?v=0483"></script>
-  <script src="./js/meditation.js?v=0483"></script>
-  <script src="./js/nutrition.js?v=0483"></script>
-  <script src="./js/workout.js?v=0483"></script>
-  <script src="./js/home.js?v=0483"></script>
-  <script src="./js/analytics.js?v=0483"></script>
+  <script src="./js/app-core.js?v=0484"></script>
+  <script src="./js/body.js?v=0484"></script>
+  <script src="./js/meditation.js?v=0484"></script>
+  <script src="./js/nutrition.js?v=0484"></script>
+  <script src="./js/workout.js?v=0484"></script>
+  <script src="./js/home.js?v=0484"></script>
+  <script src="./js/analytics.js?v=0484"></script>
 
-  <script src="./js/drive.js?v=0483"></script>
-  <script src="./js/auth.js?v=0483"></script>
+  <script src="./js/drive.js?v=0484"></script>
+  <script src="./js/auth.js?v=0484"></script>
   <!-- Librerie Google per Auth e Drive -->
 <script src="https://accounts.google.com/gsi/client" async defer onload="window.gisLoaded && window.gisLoaded()"></script>
 <script src="https://apis.google.com/js/api.js" onload="window.gapiLoaded && window.gapiLoaded()"></script>
@@ -2458,8 +2458,8 @@
 <script src="./js/media-tools.js?v=025"></script>
 <!-- Librerie Google per Auth e Drive -->
 <script src="./js/pwa-register.js?v=015"></script>
-<script src="./js/app-enhancements.js?v=0483"></script>
-<script src="./js/runtime-health.js?v=0483"></script>
+<script src="./js/app-enhancements.js?v=0484"></script>
+<script src="./js/runtime-health.js?v=0484"></script>
 
 </body>
 </html>

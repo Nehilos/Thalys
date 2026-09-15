@@ -26,7 +26,7 @@ function setHomeDate(date){
         {label:tr('Check-in wellness'),done:!!wellness,icon:'fa-heart-pulse'},
         {label:tr('Idratazione'),done:water>=waterTarget*0.8,icon:'fa-glass-water'},
         {label:tr('Registra la dieta'),done:nutrition.length>0 && (kcal>=Number(target.calories||2200)*0.8),icon:'fa-utensils'},
-        {label:tr('Pausa mentale'),done:meditation>=5,icon:'fa-spa'}
+        {label:tr('Pausa mentale'),done:(typeof isMentalPauseCompleted==='function'?isMentalPauseCompleted(date):meditation>=5),icon:'fa-spa'}
       );
       return {plan,exerciseDone,exerciseTotal,workoutDone,steps,done:steps.filter(x=>x.done).length,total:steps.length,water,waterTarget,kcal,wellness,meditation};
     }

@@ -97,6 +97,7 @@
     function saveFoodLog(e){ e?.preventDefault?.(); }
 
     function deleteFoodLog(id) {
+      if(!confirm('Eliminare questo alimento dal diario?')) return;
       appState.nutrition = appState.nutrition.filter(n => n.id !== id);
       saveStateToLocal();
       renderNutrition();

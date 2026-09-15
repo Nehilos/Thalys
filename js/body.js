@@ -90,6 +90,7 @@
     }
 
     function removeProfilePhoto(){
+      if(!confirm('Rimuovere la foto profilo?')) return;
       appState.profilePhoto={dataUrl:'',updatedAt:new Date().toISOString()};
       saveStateToLocal();renderProfilePhotoUI();
       showToast('Foto profilo rimossa','fa-user');
@@ -448,6 +449,7 @@
     }
 
     function deleteBodyLog(id) {
+      if(!confirm('Eliminare questa misurazione?')) return;
       appState.bodyMetrics = appState.bodyMetrics.filter(b => b.id !== id);
       saveStateToLocal();
       renderBodyMetrics();
@@ -533,6 +535,7 @@
     }
 
     function deletePhoto(id) {
+      if(!confirm('Eliminare questa foto?')) return;
       appState.photos = appState.photos.filter(p => p.id !== id);
       saveStateToLocal();
       renderPhotos();
