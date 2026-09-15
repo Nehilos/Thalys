@@ -321,6 +321,79 @@ function setHomeDate(date){
       set('home-calorie-balance-detail-v0510',remaining>=0?`Residuo rispetto al target: ${Math.round(remaining)} kcal`:`Oltre il target di ${Math.round(Math.abs(remaining))} kcal`);
     }
 
+
+
+    let homeWellnessRadarV0520=null;
+    function clampWellnessV0520(n){return Math.max(0,Math.min(100,Number.isFinite(Number(n))?Number(n):0));}
+    function progressToTargetV0520(value,target){
+      value=Number(value||0); target=Number(target||0);
+      if(target<=0)return value>0?100:0;
+      return clampWellnessV0520((value/target)*100);
+    }
+    function nutritionGoalScoreV0520(value,target){
+      value=Number(value||0); target=Number(target||0);
+      if(target<=0)return value>0?100:0;
+      if(value<=target)return clampWellnessV0520((value/target)*100);
+      const over=(value-target)/target;
+      return clampWellnessV0520(100-(over*100));
+    }
+    function getWellnessScoreV0520(date){
+      const wellness=(appState.wellness||[]).find(x=>x.date===date)||null;
+      const water=Number(appState.water?.[date]||0), waterTarget=Math.max(1,Number(getWaterTarget(date)||2500));
+      const selfCare=Math.round((progressToTargetV0520(water,waterTarget)+(wellness?100:0))/2);
+
+      const plan=typeof getDayWorkoutPlan==='function'?getDayWorkoutPlan(date):null;
+      let body=0;
+      if(plan){
+        const exercises=typeof getExercisesForDate==='function'?getExercisesForDate(plan,date):[];
+        if(exercises.length){
+          const c=typeof getWorkoutCompletion==='function'?getWorkoutCompletion(date,plan.id):null;
+          body=Math.round(progressToTargetV0520(exercises.filter(ex=>c?.exercises?.[ex.id]).length,exercises.length));
+        }else body=100; // giorno di riposo previsto dalla scheda
+      }else if((appState.workouts||[]).some(x=>x.date===date)) body=100;
+
+      const mind=typeof isMentalPauseCompleted==='function'&&isMentalPauseCompleted(date)?100:0;
+
+      let rest=0;
+      if(wellness){
+        const sleep=progressToTargetV0520(Number(wellness.sleepHours||0),8);
+        const recovery=progressToTargetV0520(Number(wellness.recovery||0),10);
+        rest=Math.round((sleep+recovery)/2);
+      }
+
+      const logs=(appState.nutrition||[]).filter(x=>x.date===date), sum=k=>logs.reduce((a,x)=>a+Number(x[k]||0),0), t=appState.targets||{};
+      const nScores=[
+        nutritionGoalScoreV0520(sum('kcal'),Number(t.calories||2200)),
+        nutritionGoalScoreV0520(sum('p'),Number(t.p||150)),
+        nutritionGoalScoreV0520(sum('c'),Number(t.c||250)),
+        nutritionGoalScoreV0520(sum('f'),Number(t.f||70))
+      ];
+      const nutrition=Math.round(nScores.reduce((a,b)=>a+b,0)/nScores.length);
+      const areas=[
+        {key:'self',label:'Cura di sé',score:selfCare,icon:'fa-heart'},
+        {key:'body',label:'Corpo / Allenamento',score:body,icon:'fa-dumbbell'},
+        {key:'mind',label:'Mente',score:mind,icon:'fa-spa'},
+        {key:'rest',label:'Riposo',score:rest,icon:'fa-moon'},
+        {key:'nutrition',label:'Nutrizione',score:nutrition,icon:'fa-utensils'}
+      ];
+      return {score:Math.round(areas.reduce((a,x)=>a+x.score,0)/areas.length),areas};
+    }
+    function renderHomeWellnessScoreV0520(date){
+      const data=getWellnessScoreV0520(date), scoreEl=document.getElementById('home-wellness-score-v0520'), labelEl=document.getElementById('home-wellness-score-label-v0520'), list=document.getElementById('home-wellness-areas-v0520');
+      if(scoreEl)scoreEl.textContent=String(data.score);
+      if(labelEl){
+        const label=data.score>=85?'Ottimo equilibrio':data.score>=70?'Buona giornata':data.score>=45?'In costruzione':data.score>0?'Da migliorare':'Da iniziare';
+        labelEl.textContent=label;
+        labelEl.className=`rounded-full px-2.5 py-1 text-[9px] font-bold ${data.score>=70?'bg-emerald-500/10 text-emerald-300':data.score>=45?'bg-amber-500/10 text-amber-300':'bg-slate-800 text-slate-300'}`;
+      }
+      if(list)list.innerHTML=data.areas.map(a=>`<div class="rounded-2xl border border-white/5 bg-slate-950/45 p-2.5"><div class="flex items-center justify-between gap-2"><div class="flex min-w-0 items-center gap-2"><i class="fa-solid ${a.icon} text-violet-300"></i><span class="truncate text-[10px] font-bold text-slate-200">${a.label}</span></div><span class="text-[10px] font-black text-white">${a.score}%</span></div><div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-800"><div class="h-full rounded-full bg-gradient-to-r from-violet-400 to-cyan-400" style="width:${a.score}%"></div></div></div>`).join('');
+      const canvas=document.getElementById('home-wellness-radar-v0520');
+      if(canvas&&typeof Chart!=='undefined'){
+        if(homeWellnessRadarV0520)homeWellnessRadarV0520.destroy();
+        homeWellnessRadarV0520=new Chart(canvas.getContext('2d'),{type:'radar',data:{labels:data.areas.map(a=>a.label),datasets:[{label:'Oggi',data:data.areas.map(a=>a.score),borderColor:'rgba(103,232,249,.9)',backgroundColor:'rgba(139,92,246,.18)',pointBackgroundColor:'rgba(103,232,249,1)',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:250},plugins:{legend:{display:false}},scales:{r:{beginAtZero:true,min:0,max:100,ticks:{display:false,stepSize:25},angleLines:{color:'rgba(148,163,184,.16)'},grid:{color:'rgba(148,163,184,.14)'},pointLabels:{color:'#cbd5e1',font:{size:9,weight:'600'}}}}}});
+      }
+    }
+
     function renderHomeDashboard(){
       const d=homeSelectedDate || new Date().toISOString().split('T')[0];
       const workouts=(appState.workouts||[]).filter(x=>x.date===d), nutrition=(appState.nutrition||[]).filter(x=>x.date===d);
@@ -329,7 +402,7 @@ function setHomeDate(date){
       const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
       const hp=document.getElementById('home-date-picker'); if(hp) hp.value=d;
       set('home-date',new Date(d+'T12:00:00').toLocaleDateString(currentLocale(),{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
-      const waterTarget=getWaterTarget(d); set('home-water',`${water} ml`);set('home-water-target',`/ ${waterTarget} ml`);set('home-kcal',Math.round(kcal));set('home-kcal-target',`/ ${target.calories||2200} kcal`);renderHomeNutritionTargetsV0510(d);set('home-workout-count',workouts.length);set('home-readiness',w?`${w.readiness}/10`:'—');set('home-sleep',w?`${w.sleepHours} h`:'—');set('home-recovery',w?`${w.recovery}/10`:'—');set('home-mood',w?`${w.mood}/10`:'—');set('home-stress',w?`${w.stress}/10`:'—');set('home-med-today',`${med} min`);
+      const waterTarget=getWaterTarget(d); set('home-water',`${water} ml`);set('home-water-target',`/ ${waterTarget} ml`);set('home-kcal',Math.round(kcal));set('home-kcal-target',`/ ${target.calories||2200} kcal`);renderHomeNutritionTargetsV0510(d);renderHomeWellnessScoreV0520(d);set('home-workout-count',workouts.length);set('home-readiness',w?`${w.readiness}/10`:'—');set('home-sleep',w?`${w.sleepHours} h`:'—');set('home-recovery',w?`${w.recovery}/10`:'—');set('home-mood',w?`${w.mood}/10`:'—');set('home-stress',w?`${w.stress}/10`:'—');set('home-med-today',`${med} min`);
       const arr=Array.isArray(appState.meditation)?appState.meditation:[]; let streak=0; for(let i=0;i<365;i++){const dd=new Date();dd.setDate(dd.getDate()-i);const ds=dd.toISOString().split('T')[0];if(arr.some(x=>x.date===ds))streak++;else if(i>0)break;} set('home-med-streak',`${tr('Streak')}: ${streak} ${tr('giorni')}`);
       [['home-sleep-bar',w?Math.min(100,(Number(w.sleepHours)/8)*100):0],['home-recovery-bar',w?Number(w.recovery)*10:0],['home-mood-bar',w?Number(w.mood)*10:0],['home-stress-bar',w?Number(w.stress)*10:0]].forEach(([id,width])=>{const e=document.getElementById(id);if(e)e.style.width=width+'%';});
       const g=getDayGamification(d);

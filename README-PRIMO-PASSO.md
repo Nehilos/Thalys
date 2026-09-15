@@ -186,3 +186,9 @@ Le foto progresso restano esclusivamente su Google Drive. Il backend resta Cloud
 - Home mostra una nuova scheda compatta dei target nutrizionali del giorno: calorie, proteine, carboidrati e grassi.
 - La scheda mostra avanzamento calorie, residuo rispetto al target o eventuale superamento.
 - Nessuna modifica al flusso Dieta Reale/Pianificato o alla sincronizzazione v0.50.4.
+
+## v0.52.0 - Wellness Score e progressi giornalieri
+- Home mostra il nuovo Wellness Score con cinque aree e grafico radar.
+- Cura di sé usa check-in + idratazione; Corpo usa il completamento allenamento; Mente usa la pausa mentale; Riposo usa sonno + recupero; Nutrizione usa calorie e macro rispetto ai target.
+- Il punteggio non inventa dati mancanti.
+

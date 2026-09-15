@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = window.ThalysConfig?.appVersion || '0.51.0';
+  const APP_VERSION = window.ThalysConfig?.appVersion || '0.52.0';
   const PROTOCOL_VERSION = Number(window.ThalysConfig?.syncProtocolVersion || 7);
 
   function clone(value) {

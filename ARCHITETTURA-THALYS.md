@@ -63,3 +63,10 @@ Il modal `add-food-modal` e il relativo motore di ricerca/selezione sono ora con
 
 ## v0.51.0 - Target giornalieri Home
 La Home espone un riepilogo dei target nutrizionali attivi e usa il target acqua effettivo come soglia di completamento (100%). Questa versione prepara il successivo bilancio energetico completo; il consumo energetico da passi/attività sarà collegato quando verrà introdotto il relativo tracker, evitando stime non ancora supportate dai dati dell'app.
+
+## v0.52.0 - Wellness Score + radar Home
+- Nuovo Thalys Wellness Score giornaliero 0-100.
+- Cinque aree: Cura di sé, Corpo/Allenamento, Mente, Riposo, Nutrizione.
+- Grafico radar giornaliero in Home basato esclusivamente sui dati già registrati.
+- Nessuna modifica a Dieta Reale/Pianificato o sincronizzazione.
+
